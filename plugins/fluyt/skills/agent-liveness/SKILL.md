@@ -176,8 +176,8 @@ Get-CimInstance Win32_Process |
 ```
 
 Use `-like` rather than `-match` above: `-match` is a regular expression, and a Windows path's
-backslashes are read as escapes — `C:\Repos\...` fails outright on `\R`, and a path whose segments start
-with `s`, `w`, `d`, `b` or `a` silently matches nothing at all.
+backslashes are read as escapes — `<drive>:\Repos\...` fails outright on `\R`, and a path whose
+segments start with `s`, `w`, `d`, `b` or `a` silently matches nothing at all.
 
 Four constraints, all load-bearing:
 
