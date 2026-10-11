@@ -13,19 +13,16 @@ description: >-
 
 # Hook authoring - four failure modes and a trust boundary, read before you write one
 
-Read this - like `versioning-and-changelog` - every time you're about to **author** or edit a hook:
-adding a new hook, editing a `hooks.json` entry, or designing any event hook that writes a file,
-stamps a time, or resolves a path. It's a per-authoring read, not a one-time onboarding. The trust
-boundary after the four failure modes is binding on any hook other people install.
+A per-authoring read, not a one-time onboarding: read it every time you **author** or edit a hook.
+The trust boundary after the four failure modes is binding on any hook other people install.
 
 ## The four failure modes
 
 ### 1. A hook that writes must own its output file
 
 A machine-appended file and a human-authored file must never share a path. A shared filename makes a
-feed unrotatable (you cannot safely truncate a file a human is also writing to), untrustable (a
-reader cannot tell which lines are which), undiffable, and can produce two same-named files - one
-per session root - with only one of them git-ignored.
+feed unrotatable, untrustable (a reader cannot tell which lines are which), undiffable, and can produce two same-named files - one
+per session root - with only one git-ignored.
 
 The shipped hook writes its own `docs/process/dispatch.local.md`, separate from the hand-written
 friction log at `docs/process/retro-log.local.md`. Generalise: before a hook writes anything, give
@@ -48,14 +45,11 @@ A session rooted one directory above the repo makes a hook that assumes `$CLAUDE
 repo write outside the repo entirely - to a same-named file the repo's own `.gitignore` never covers,
 because that file isn't inside the repo at all.
 
-This is independent of the retrospective guidance that a worktree-isolated spawn's hook stamp
-survives cleanup because it lands in the session's project dir: true, but irrelevant when the
-session root isn't the repo root, and fixing one doesn't fix the other.
-
 The rule: a hook that must write **inside the repo** resolves upward from `$CLAUDE_PROJECT_DIR` to
 the directory containing `.git` and verifies it found one before writing. A hook that writes to the
 session root **by design** documents that choice, including what happens when the session root and
-repo root differ.
+repo root differ. This is independent of a worktree spawn's stamp surviving cleanup (it lands in the
+session's project dir): that does not help when the session root isn't the repo root.
 
 ### 4. Silent failure is a design choice, not a safe default
 
@@ -67,12 +61,10 @@ failed, or was never wired up at all.
 Swallow errors deliberately, not by default, and pair every silent-failure hook with something that
 would notice its absence. This generalises past hooks: any check whose useful answer can legitimately
 be "absent" needs a control case that must come back "present" - otherwise a check that always
-reports absent and a check that never ran look identical. E.g. a registry probe whose CLI is missing
-from `PATH` answers "not published" - exactly this failure; only a known-good control catches it.
+reports absent and a check that never ran look identical.
 
-What that control looks like for a hook, and the trap that makes it necessary - on Windows hosts,
-named concretely because the abstract rule does not reveal the mechanism. First:
-**a hook script must contain no doubled backslash.** In a shell-to-runtime argv hand-off (`bash`
+What that control looks like for a hook, and the trap that makes it necessary, on Windows hosts.
+First: **a hook script must contain no doubled backslash.** In a shell-to-runtime argv hand-off (`bash`
 invoking `node`, or any equivalent), `\\` collapses to a single `\` before the runtime sees it, so a
 pattern assembled from *strings* carrying `\\` arrives malformed, its construction throws, and the
 hook's own fail-open `catch` swallows the throw - leaving a hook that allows everything, wearing
@@ -114,10 +106,8 @@ the installer's machine, so these rules bind it.
 2. **No runtime instruction fetch.** A hook never downloads text, instructions or scripts and feeds
    them to the model or executes them; **everything it does is in the shipped `hooks.json`**.
 3. **A network or credential call is allowed only when triggered by a tool call that already does
-   the same kind of thing**, scoped to it, fail-open, and bounded by a timeout. Precedent: two
-   `PreToolUse` hooks on `Bash` call `gh` - on a `gh pr merge` (re-reads the PR body) and on a
-   branch delete (`gh pr list --head`) - each with a 10-second timeout, on the user's existing `gh`
-   auth.
+   the same kind of thing**, scoped to it, fail-open, and bounded by a timeout. Precedent: the plugin
+   README's *Hooks* section.
 4. **Every shipped hook is disclosed** in the plugin README's hooks section: event, trigger, what it
    reads and writes, whether it blocks, and whether it uses the network or credentials. A hook added
    without that is incomplete work.
@@ -133,8 +123,7 @@ the installer's machine, so these rules bind it.
   nowhere else - it is also the most expensive place for a bug, since a misfiring `PreToolUse` hook
   blocks legitimate work, not just its own. Other events are not all write-only: several gate their
   OWN flow (a prompt, a stop, a compaction), so check what your event can block or alter first. A
-  mistake in an observational hook costs a bad log line; one in any flow-gating event costs blocked
-  work, same as `PreToolUse` misfiring.
+  mistake in an observational hook costs a bad log line; in a flow-gating event, blocked work.
 
 ## Tripwire, not metric
 
@@ -147,8 +136,6 @@ never a metric, read the `scrum` skill's *Dispatch feed* bullet and the `scrum-m
 ## What this is not
 
 This skill does not claim hook definitions are snapshotted at session start, or that a mid-session
-edit has no effect until a restart - unverified, not asserted. The one verified fact is narrower and
-belongs to worktree isolation: a worktree-isolated agent loads the **committed** definition and
-settings from its base commit, not uncommitted edits. A hook change (like any agent-definition or
-settings change) must be committed before an isolated spawn can pick it up - see the
-`ship-work-item` skill's worktree-agent hygiene rule.
+edit has no effect until a restart - unverified, not asserted. A worktree-isolated agent loads the
+**committed** definition and settings, so a hook change must be committed before an isolated spawn
+can pick it up - see the `ship-work-item` skill's worktree-agent hygiene rule.

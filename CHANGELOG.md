@@ -14,9 +14,24 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.7.1**
+Current version: **1.7.2**
 
 ---
+
+## [1.7.2] — 2026-10-11
+
+**17 shipped skill files:** a second size cut, about 26 KB in total, with wording-only cuts landing
+at least 2% under the new budgets. Budgets are lowered per the user's call in three tiers:
+- **15%:** `orchestrator`, `scrum`, `report-upstream`, `dispatch-role`, `backlog`, `handover`, and
+  the `ship-work-item` reference files `parallel-work`, `known-failure-modes` and `portability`.
+- **9%:** `ship-work-item`, `closing-keyword-grep`, `release`, `install-refresh-plugin`, `hub`,
+  `hook-authoring` and `versioning-and-changelog`.
+- **6%:** `adopt-conventions`.
+
+Most cuts replace an explanation with a pointer to the skill that owns it. `orchestrator`'s chain
+diagram is redrawn in ASCII. An adversarial review of every removed span found fifteen small
+losses of logic (a dropped qualifier, warning or scope), and each was restored. PATCH: no instruction
+a consumer follows changes.
 
 ## [1.7.1] — 2026-10-11
 

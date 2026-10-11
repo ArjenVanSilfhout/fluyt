@@ -3,8 +3,7 @@ name: versioning-and-changelog
 description: >-
   The CHANGELOG-as-single-source-of-truth discipline and the MINOR-vs-PATCH version-bump rule. Use
   whenever you add a CHANGELOG entry, pick a version bump, write a version-stamped commit subject, or
-  need to settle whether a change is MINOR or PATCH. The CHANGELOG is the ONLY place versions and
-  completed work are recorded.
+  need to settle whether a change is MINOR or PATCH.
 ---
 
 # Versioning & the CHANGELOG
@@ -54,10 +53,8 @@ against the tree: a measured number, a quoted prior text, or an assertion about 
 or tool does. Where a claim's only source is the issue, either **attribute it** ("as recorded on
 issue #N") or **narrow it** to what the repo's own record supports.
 
-This failure is systematic, not careless: you have just read the issue, the claim is sitting right
-there, and it is *usually* true - which is what lets it survive a review. The CHANGELOG raises the
-stakes - an issue can be superseded by its next comment, while a false claim in the CHANGELOG is
-corrected by nothing downstream, because it is where the project records what is settled.
+The claim is *usually* true, which lets it survive review; a false claim in the CHANGELOG is
+corrected by nothing downstream.
 
 **Before citing a rule, decision, or policy by name, confirm it resolves in the tree** - one grep.
 When one item *applies* a policy and a different item *records* it, **the recording item lands
@@ -65,10 +62,8 @@ first**: an application that ships ahead of its record publishes a citation to s
 not exist yet. The claim is true in intent and false in the tree, so verifying the claim itself does
 not catch it. If it does not resolve while you are writing, either land the recording item first, or
 describe the rule inline and cite the issue that will record it - never assert a home it does not
-have. This is a check, not an aspiration: the entry is not finished until every named
-cross-reference is findable. Ordering is the whole remedy: once released, correcting the entry is
-governed by the project's amendment policy rather than a quiet edit, and the dangling citation stays
-published meanwhile.
+have. The entry is not finished until every named cross-reference is findable; once released, only
+the project's amendment policy corrects it.
 
 ## The bump rule (MINOR vs PATCH while pre-1.0)
 
@@ -79,9 +74,8 @@ Use the consumer's `version-rules` from Project Facts. The **canonical shape** i
 - **PATCH** (`0.x.X`) - a change that alters **no** behaviour (a wording / formatting / typo fix),
   **OR any tooling / docs / process / CI change** even across many files.
 
-**Tie-breaker:** when in doubt, ask *did the product's behaviour change?* No → PATCH - this stops
-"multi-file ⇒ MINOR" naively applied from letting scaffolding churn inflate the version and drift it
-from real product progress.
+**Tie-breaker:** when in doubt, ask *did the product's behaviour change?* No → PATCH, so scaffolding
+churn does not inflate the version.
 
 **What counts as "product" vs "tooling" is project-specific.** For an application the product is its
 runtime, and its skills / agents / CI are tooling (PATCH). For a **plugin or library whose product IS
@@ -91,9 +85,8 @@ applies, and if it defines the split differently, follow THAT - it wins over thi
 
 ## Crossing 1.0 (MAJOR)
 
-The MINOR/PATCH split above is the whole rule **while pre-1.0** (`0.y.z`): the leading `0.` is
-semver's "no stability promise yet", so even a breaking change ships as a MINOR. Once a project cuts
-**1.0** the major digit starts carrying meaning and a third class turns on:
+The MINOR/PATCH split above is the whole rule **while pre-1.0** (`0.y.z`): even a breaking change
+ships as a MINOR. Once a project cuts **1.0** a third class turns on:
 
 - **MAJOR** (`X.0.0`) - a **breaking / incompatible** change to the product's contract: a removed or
   renamed capability, or a changed instruction / output / format that existing consumers cannot adopt
@@ -101,9 +94,8 @@ semver's "no stability promise yet", so even a breaking change ships as a MINOR.
 - **MINOR** stays backward-compatible (a new capability, an additive change); **PATCH** stays a
   behaviour-neutral fix.
 
-What counts as "breaking" is **project-specific** - the MINOR rule's axis, escalated from "behaviour
-changed" to "consumers must change to keep working" - and the consumer's `version-rules` may spell
-it out (for a plugin/library whose product IS its shipped components: removing or renaming a shipped
+What counts as "breaking" is **project-specific** - the MINOR rule's axis, escalated to "consumers
+must change to keep working" - and the consumer's `version-rules` may spell it out (for a plugin/library whose product IS its shipped components: removing or renaming a shipped
 component, or an incompatible change to a Project Facts key's contract). A project still at `0.y`
 can ignore this section until it plans its 1.0.
 

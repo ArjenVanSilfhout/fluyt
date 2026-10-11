@@ -110,25 +110,17 @@ repo's contract files - do it in the open.
      same confirm-first posture: the consumer's CHANGELOG is theirs, so propose, never rewrite
      silently. Correcting the key alone would leave two disagreeing statements of the versioning axis
      in the repo.
-  7. **Re-derive an existing key by its provenance marker, not uniformly.** A key that already has
-     content is normally step 4's territory (never overwritten) - this step is the one exception,
-     applying `templates/CLAUDE-project-facts.md`'s "Provenance markers" vocabulary verbatim. Read the
-     key's trailing `<!-- provenance: ... -->` marker (absent reads as `inferred`, same as the
-     template states):
-     - **`inferred`** (or unmarked) - freely re-derivable. Re-survey it and propose the current
-       recommendation exactly as you would a missing key; confirm and merge as usual.
+  7. **Re-derive an existing key by its provenance marker, not uniformly.** The one exception to
+     step 4's never-overwrite rule; the vocabulary is `templates/CLAUDE-project-facts.md`'s
+     "Provenance markers" (absent marker reads as `inferred`):
+     - **`inferred`** - re-survey and propose the current recommendation as for a missing key.
      - **`ratified @vX.Y.Z`** - **re-presented, never silently overwritten**, and only when that key's
-       own definition in `templates/CLAUDE-project-facts.md` now carries a
-       `<!-- recommendation-changed: vW.Z.Y -->` annotation NEWER than the key's own `@vX.Y.Z` stamp -
-       that annotation is the cheap tell; no plugin-history diff needed. When it fires, show the same
-       purpose / options / recommendation the interview would and let the consumer re-decide.
-       **Bulk-accepting the re-presentation re-stamps `ratified @<new plugin version>` - it does NOT
-       become `chosen`** (no silent marker upgrade: the state ratchets to `chosen` only when the
-       consumer specifically engages with that one key). No `recommendation-changed` tell newer than
-       the key's own stamp → leave it alone, exactly like any other already-filled key.
-     - **`chosen`** - never touched, by this step or by anything else, regardless of any
-       `recommendation-changed` tell. The consumer decided this key specifically; re-sync does not
-       revisit it.
+       definition in the template carries a `<!-- recommendation-changed: vW.Z.Y -->` annotation
+       NEWER than the key's `@vX.Y.Z` stamp; show the interview's purpose / options / recommendation
+       and let the consumer re-decide. **Bulk-accepting re-stamps `ratified @<new plugin version>` -
+       it does NOT become `chosen`**; that happens only when the consumer engages with that one key.
+       No newer tell → leave it alone.
+     - **`chosen`** - never touched, whatever any `recommendation-changed` tell says.
 
   **Pass B - plugin-owned guidance sections:**
   1. Read Project Facts `agent-clients`, the consumer's `CLAUDE.md`, and
@@ -139,15 +131,10 @@ repo's contract files - do it in the open.
      it ships with **no `<...>` token** is **plugin-owned** (e.g. the "Agentic process" routing
      paragraph, the precedence paragraphs under *Deliberate deviations from the shared playbook*, the
      "Otherwise, keep working" autonomy rule); a paragraph it marks `<...>` is a **consumer
-     fill-in** the consumer replaces with their own (e.g. Project Facts values, the
-     project-specific-skills list, the invariants, the code-style rules, the deviations register, the
-     "Ask the human when" trigger list). **Plugin-owned and fill-in paragraphs interleave inside the
-     same section** - `## Agentic process` holds the routing paragraph (plugin-owned) *and* a `<...>`
-     skills list; `## Ask the human when` holds a `<...>` trigger list *and* the autonomy rule
-     (plugin-owned); `## Deliberate deviations from the shared playbook` holds the precedence
-     paragraphs (plugin-owned) *and* a `<...>` register prompt. So propagate a bracket-free paragraph
-     **even when it sits in a section that also has a fill-in**, and never touch the fill-in
-     paragraphs. **One qualification to the bracket heuristic:** the `<...>` list under
+     fill-in** (e.g. Project Facts values, the project-specific-skills list, the invariants, the
+     code-style rules, the deviations register, the "Ask the human when" trigger list). The two
+     interleave inside the same section, so propagate a bracket-free paragraph **even when it sits
+     in a section that also has a fill-in**, and never touch the fill-in paragraphs. **One qualification to the bracket heuristic:** the `<...>` list under
      `## Ask the human when` is a shipped **default gate list**, not an empty prompt (see §2 step 3).
      The consumer's adapted wording is theirs and is never overwritten - but when the skeleton's
      default list gains a *new* gate, **or an existing gate is materially changed**, surface that as a
@@ -198,9 +185,8 @@ repo's contract files - do it in the open.
      classically-protected repo has zero rulesets and would otherwise read as unprotected). **On a
      split topology, read the release branch's protection too** -
      `gh api "repos/{owner}/{repo}/branches/<release-branch>/protection"` plus the rulesets whose
-     `conditions.ref_name.include` covers it. The `branch-protection` skill instantiates one ruleset
-     **per role**, so a pass that reads the integration branch only reports the ref consumers pin as
-     covered when nothing covers it. Then `gh label list --limit 100` against
+     `conditions.ref_name.include` covers it, since rulesets are per role. Then
+     `gh label list --limit 100` against
      `templates/github-labels.ps1`; and the consumer's workflow triggers and step-level gating **if
      its CI is GitHub Actions** - the file read for the CI-trigger audit already shows whether the
      expensive jobs gate their steps by the consumer's protected prefixes, so this is a read you
@@ -214,16 +200,11 @@ repo's contract files - do it in the open.
      fast-path proposals by running the `branch-protection` skill** - re-sync detects the gap, that
      skill owns the offer, so its rules bind here unchanged. For the release branch, a ruleset that
      **exists but allows squash** is as much a gap as an absent one: propose the `release` role's
-     `allowed_merge_methods: ["merge"]`, which is what makes the release ritual's never-squash rule
-     enforceable rather than a habit. And carry that skill's release-branch rule intact - **never
-     propose `required_status_checks` on the release branch.** Unset is its end state, not drift, so
-     its absence is not a gap to close here; a required context that never reports deadlocks the
-     branch consumers pin. If the consumer asks for it, that skill's gate is the only route: a
-     context they have *watched* report on a PR into the release branch (unlike at onboarding, a repo
-     that has promoted before may be able to satisfy that - read it, never assume it). The fast-path
-     re-offer carries the same obligations the `branch-protection` skill states for it (show the
-     diff, never edit a workflow you did not parse successfully, one confirmation buys one file, scope
-     by path not extension) - re-offering at re-sync does not relax them.
+     `allowed_merge_methods: ["merge"]`. And **never propose `required_status_checks` on the release
+     branch** - unset is its end state, not drift; a required context that never reports deadlocks
+     the branch consumers pin. If the consumer asks for it, that skill's gate is the only route (a repo
+     that has promoted may meet it: read it, never assume). The fast-path re-offer carries that
+     skill's obligations unchanged.
   4. Apply nothing without an explicit yes. **When the consumer declines, propose recording it** as a
      one-line entry in their `CLAUDE.md` *Deliberate deviations from the shared playbook* register
      (e.g. `Integration-branch ruleset: declined <date> — <reason>`), and **read that register at the
@@ -352,12 +333,11 @@ Work through the templates, merging each:
    - **The H1 title and the description + stack line** at the top of the file - the skeleton ships
      `# <Project name> — working agreement` as a fill-in too.
    - **Ask the human when** - this one is different. Its `<...>` block is a substantive **default gate
-     list**, not an empty prompt: the autonomy doctrine keys off it, so blanking it empties the gate
-     that makes a long scope grant safe. **Adapt it and drop the brackets - never replace it with
-     `none`.** It is a shipped *starting* default that the consumer then owns: once adapted, the
-     wording is theirs and re-sync never overwrites it - but a gate later added to the shipped
-     default, or an existing one **materially changed** (see Pass B step 2 for the exact test), is
-     still surfaced as a proposal.
+     list**, not an empty prompt: blanking it empties the gate that makes a long scope grant safe.
+     **Adapt it and drop the brackets - never replace it with `none`.** Once adapted the wording is
+     the consumer's and re-sync never overwrites it - but a gate later added to the shipped default,
+     or an existing one **materially changed** (see Pass B step 2 for the exact test), is still
+     surfaced as a proposal.
 
    `none` is a legitimate answer for Invariants, Code style, the deviations register, and the skills
    list; never for *Ask the human when*.
@@ -367,12 +347,11 @@ Work through the templates, merging each:
    keys; only add missing ones. The fragment ships `worktree.baseRef: "fresh"`, which is correct for
    the recommended `default-branch == integration-branch` topology: a worktree then branches from the
    remote default branch - the integration branch, on this topology. **Conditional, not
-   unconditional:** the client resolves "the remote default" via the local `origin/HEAD` symref, a
-   clone-time snapshot that never auto-updates - `ship-work-item` §1's worktree hygiene carries the
-   mechanism, the `git remote set-head origin --auto` re-sync, and the mandatory base-check backstop.
-   A consumer whose `default-branch` differs from its `integration-branch` should set `"head"`
-   instead and follow `ship-work-item` §1's spawn discipline (freshly-synced branch, captured SHA,
-   fail-fast base check) for every isolated spawn.
+   unconditional:** the client resolves that via the local `origin/HEAD` symref, a clone-time
+   snapshot that never auto-updates - `ship-work-item` §1's worktree hygiene carries the mechanism,
+   the re-sync, and the mandatory base-check backstop. A consumer whose `default-branch` differs
+   from its `integration-branch` should set `"head"` instead and follow `ship-work-item` §1's spawn
+   discipline for every isolated spawn.
    **Then land the load-bearing marketplace pin.** The shipped fragment carries only local client
    config (`worktree` base-ref and `autoCompactEnabled: true`, which makes the client's default
    threshold auto-compaction explicit), NOT the marketplace source - a shared template must stay
@@ -467,9 +446,8 @@ its supported path is the plugin's `dispatch-role` skill, not copied `.codex/age
   when*. No `<...>` **fill-in prompt** may survive into the landed `CLAUDE.md`. Two things look like
   prompts and are not: a value whose canonical form *is* a bracketed format string
   (`commit-subject`), and a deliberate `<pending — …>` marker - leave both as they are. And no
-  section may be missing either, **under the skeleton's heading or the repo's own equivalent**: a
-  repo that already had a `CLAUDE.md` never received them from the skeleton, so absence is the
-  likelier failure and a placeholder scan alone would report clean.
+  section may be missing either, **under the skeleton's heading or the repo's own equivalent** (§2
+  step 3: a placeholder scan alone would report clean).
 - **Run one trivial work item end-to-end** through `/fluyt:ship-work-item` (e.g. this very
   onboarding chore) to prove the ritual works against the freshly-filled Project Facts.
 
@@ -480,10 +458,9 @@ ruleset's required status check needs a context CI has already reported at least
 will happily accept a context that never arrives, which deadlocks the branch permanently.
 
 Ask whether the consumer wants protection offered at all. On a yes, **run the `branch-protection`
-skill and follow it end to end** - the whole playbook lives there and nothing of it is restated here:
-the plan/visibility check, ruleset versus classic protection, the per-role ruleset template and its
-filling rules, the never-`required_status_checks`-on-the-release-branch rule, the bypass
-consequence, and the GitHub-Actions trigger audit with its docs-only fast-path offer.
+skill and follow it end to end** - the whole playbook lives there, including the
+never-`required_status_checks`-on-the-release-branch rule, the GitHub-Actions trigger audit and its
+docs-only fast-path offer.
 
 ## 6. Land it
 

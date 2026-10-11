@@ -44,9 +44,8 @@ registering newly added native agents.
 every key that file declares silently takes its default. Nothing warns you, and no output names the
 file that was skipped.
 
-**It does not look like a settings problem**: a setting declared in the repo appears to have no
-effect, and behaviour matches the *documented default*. That reads as a harness defect, so the
-search goes to the wrong place.
+**It does not look like a settings problem**: behaviour matches the *documented default*, which
+reads as a harness defect.
 
 **The check** - compare the directory the session resolves from against the location of the settings
 file you expect to apply, then confirm the key is present in the **loaded** one, not merely in the
@@ -59,18 +58,17 @@ grep -sn '<the key>' <repo>/.claude/settings.json            # present ⇒ decla
 ```
 
 **Use `-s`, and read the OUTPUT - not the exit code.** With no `settings*.json` in the directory the
-glob does not expand and a bare `grep` reports "No such file or directory" - precisely in the state
-you are diagnosing. `-s` suppresses that message, so an absent file reads as an absent key. It does
-**not** normalise the exit status: **2** when nothing matched the glob, **1** for a clean no-match,
-**0** when the key was found - so a check keyed to exit 1 for "not in effect" silently misses the
-no-file case. Read what the command prints.
+glob does not expand and a bare `grep` reports "No such file or directory"; `-s` suppresses that, so
+an absent file reads as an absent key. It does **not** normalise the exit status: **2** when nothing
+matched the glob, **1** for a clean no-match, **0** when the key was found - so a check keyed to
+exit 1 silently misses the no-file case.
 
 There is a **third** layer this two-way comparison does not show: user-level settings
 (`~/.claude/settings.json`, `%USERPROFILE%\.claude\settings.json` on Windows), which requirement 4
 above already treats as its own scope. Check it too before concluding a key is nowhere in effect.
 
 Requirement 2 above matches an install record against the repo being opened, so run both checks from
-the same place: the directory the session actually resolves from, not the one the work is in.
+the directory the session actually resolves from, not the one the work is in.
 
 **Do not diagnose this from downstream behaviour.** Observing a worktree on an unexpected ref is
 *consistent with* several causes and does not discriminate; reading the loaded settings does.
@@ -88,12 +86,11 @@ claude plugin update <plugin>@<marketplace>      # re-point the install record a
                                                  # the client to apply
 ```
 
-Two traps beside them: `claude plugin install` **no-ops** when the plugin already shows installed -
-it is not a refresh command and reports success while changing nothing; and on a
-client whose install cache is **keyed by commit SHA** (`cache/<marketplace>/<plugin>/<sha>/`), an
-in-place cache overwrite leaves the recorded SHA asserting contents it no longer has, where
-`update` mints a new correctly-named directory instead. Prefer `update` wherever it exists; the
-paths below are the fallback.
+Two traps beside them: `claude plugin install` **no-ops** when the plugin already shows installed,
+reporting success while changing nothing; and on a client whose install cache is **keyed by commit
+SHA** (`cache/<marketplace>/<plugin>/<sha>/`), an in-place cache overwrite leaves the recorded SHA
+asserting contents it no longer has, where `update` mints a new correctly-named directory. Prefer
+`update` wherever it exists; the paths below are the fallback.
 
 **One `--scope project` record per session folder: `update` moves only ONE** (measured on Claude
 Code 2.1.296). A `.claude/settings.json` per folder gives each its own record, and `update` from a
@@ -142,19 +139,18 @@ CHANGELOG, and one grep of it names the installed release outright:
 grep '"version"' <installPath>/.codex-plugin/plugin.json
 ```
 
-Use that as the first question you answer: a stale cache does not misbehave, it behaves
-correctly by older rules, so nothing surfaces the gap except the version.
+Use that as the first question you answer: a stale cache behaves correctly by older rules, so
+nothing surfaces the gap except the version.
 
-**Source/cache equality answers a different question - keep both, don't substitute one for the
-other.** Equality is a payload **integrity** check: it proves the cache mirrors the clone, not
-*which release* either of them is - so it will report a healthy install that is six versions
-behind, and says nothing about which ref the clone is tracking, which is the pin itself. Read the
-resolved ref back and compare it to the declared one: check the `<marketplace>` entry's `source`
+**Source/cache equality answers a different question - keep both.** It is a payload **integrity**
+check: it proves the cache mirrors the clone, not *which release* either is, and says nothing about
+which ref the clone tracks, which is the pin itself. Read the resolved ref back and compare it to
+the declared one: check the `<marketplace>` entry's `source`
 object in `plugins/known_marketplaces.json` for a `ref` field that matches Project Facts
 `release-branch` - not absent, and not `integration-branch` - then cross-check the clone directly
 with `git -C plugins/marketplaces/<marketplace> branch --show-current`, since the clone reports
 whichever branch it actually holds regardless of what the JSON claims. Run this check on any
-install; it is a routine diagnostic, not evidence of a specific client defect.
+install; it is routine, not evidence of a client defect.
 
 **Run it again after EVERY marketplace update - an update can silently un-pin you.** A client
 version may rewrite the entry from the pinned `github` shape to a bare `git` + `url` shape,
@@ -162,26 +158,24 @@ version may rewrite the entry from the pinned `github` shape to a bare `git` + `
 checkout of the repository's *default* branch - which for any repo following `adopt-conventions` is
 the **integration** branch. The consumer is then one update away from receiving unreleased work.
 
-**This is invisible to every check except the ref check.** Immediately after a release the release
-and integration branches are content-identical, so `.codex-plugin/plugin.json` reads the correct
-release and a source/cache diff comes back clean. **A correct version is not evidence of a correct
-pin.**
+**This is invisible to every check except the ref check.** Right after a release the release and
+integration branches are content-identical, so the version reads correct and a source/cache diff
+comes back clean. **A correct version is not evidence of a correct pin.**
 
-**`lastUpdated` is a cheap trigger for whether to re-run the ref check below - never a health signal
-for the pin itself.** The marketplace entry's `lastUpdated` field records when the client last
-rewrote the entry. Record its value whenever you repair or verify the pin (the three commands
-below):
+**`lastUpdated` is a cheap trigger for whether to re-run the ref check - never a health signal for
+the pin itself.** The marketplace entry's `lastUpdated` records when the client last rewrote it.
+Record its value whenever you repair or verify the pin (the three commands below), as the baseline
+for deciding whether they are owed again:
 
 ```sh
 grep -o '"lastUpdated"[^,}]*' plugins/known_marketplaces.json
 ```
 
 On a later visit, read it again first. Unmoved means no update ran since - skip the three-command
-check. Moved means one did, and the check is owed. Neither state proves the pin's health; only the
-three commands settle it.
+check. Moved means the check is owed. Only the three commands settle the pin's health.
 
 On a mismatch, repair **both halves** - the JSON alone is not enough - and repair them **in this
-order**, because the order decides what a half-finished repair leaves behind:
+order**:
 
 1. **The clone - do this first.** Its fetch refspec is rewired, not just its checked-out branch, so
    `git checkout <release-branch>` fails outright with *pathspec did not match*. Widen the refspec
@@ -195,16 +189,14 @@ order**, because the order decides what a half-finished repair leaves behind:
    shape, since the broken state has no `ref` field to edit:
    `"source": {"source": "github", "repo": "<owner>/<repo>", "ref": "<release-branch>"}`, plus
    `"autoUpdate": true` if it was dropped. Write UTF-8 **without a BOM** - a strict parser rejects
-   one. Writing the entry first risks the failed-clone-repair state the note below warns about.
+   one.
    **Edit the entry programmatically - parse the file, mutate `source`, re-serialise - rather
    than hand-writing it.** Its `installLocation` values may be Windows paths whose backslashes must
-   be doubled in JSON; a shell heredoc can collapse them and produce invalid JSON the client
-   rejects. Parsing and re-serialising also satisfies the no-BOM requirement by construction.
+   be doubled in JSON; a shell heredoc can collapse them. Re-serialising also guarantees no BOM.
 
 Repairing only the JSON is **worse than leaving it**: the entry then asserts a pin that nothing
-honours, and the reader has no reason to run the clone check again. **That is why the clone goes
-first** - when the clone repair is the half that fails, nothing has been claimed, the entry still
-shows the broken bare-`git` shape, and the next reader's check still fires.
+honours. **That is why the clone goes first** - if the clone repair fails, the entry still shows the
+broken bare-`git` shape and the next reader's check still fires.
 
 Verify with the three commands that settle it. The first two read the clone's real state, so no
 amount of writing the JSON can satisfy them; the third confirms the entry itself carries the pin:
@@ -215,14 +207,10 @@ git -C <clone> config --get-all remote.origin.fetch    # must include refs/heads
 grep -o '"ref"[^,}]*' plugins/known_marketplaces.json  # must be present
 ```
 
-Whichever path got you here - a clean verification or a completed repair - record the entry's
-`lastUpdated` value now as the baseline for deciding whether the three commands above are owed
-again.
-
-Known sharp edge: `/plugin install` can no-op when the plugin already shows installed, and `/plugin
-marketplace update` can report the plugin as not found against the corrected entry - if either
-happens, fall back to a full uninstall then a clean reinstall so the clone is redone against the
-fixed ref. **Read the install records first, though:** `installed_plugins.json` can hold records at
+Known sharp edge: `/plugin marketplace update` can report the plugin as not found against the
+corrected entry (and `/plugin install` no-ops, as above) - if either happens, fall back to a full uninstall and a
+clean reinstall so the clone is redone against the fixed ref. **Read the install records first,
+though:** `installed_plugins.json` can hold records at
 several scopes (user, plus per-project entries for OTHER repos), and an uninstall can take those
 with it - where the pin is intact and only the payload is behind, the `update` path above refreshes
 without touching any of them, which is why it is the primary path.
@@ -232,7 +220,7 @@ repository's DEFAULT branch.** For any repo following `adopt-conventions`, the d
 *integration* branch - so that call returns **unreleased** history, and reading a version out of it
 reports work consumers have not received. Name the ref explicitly (`gh api
 "repos/<owner>/<repo>/commits?sha=<release-branch>"`) whenever you are asking what the released
-version is. Getting this wrong is silent: the answer looks plausible but is ahead of what is pinned.
+version is.
 
 ### The SESSION's own loaded payload can be stale, even when the cache above is fresh
 
@@ -245,31 +233,22 @@ gap. `"autoUpdate": true` (trade-off below) is what makes it reachable: a releas
 *live* orchestrator mid-session. The cache re-points to the new payload and the previous payload
 directory is left behind, marked `.orphaned_at`, rather than deleted. Every subagent spawned
 **after** that moment loads the new payload; the orchestrator itself keeps whatever it loaded at
-session start, - nothing about a running session re-reads the cache. The result is silent, as with a
-stale cache: the orchestrator behaves correctly by older rules, and nothing surfaces the gap except
-the version.
+session start - nothing about a running session re-reads the cache. The result is silent: the
+orchestrator behaves correctly by older rules.
 
 Two cheap, non-conclusive signals:
 
-1. **Name the installed release at ritual start**, reusing the grep above
-   rather than a new mechanism. Its
-   value is not detection - it puts the number **in the transcript**, so a later mismatch against a
-   subagent's self-reported version becomes at least noticeable.
+1. **Name the installed release at ritual start**, reusing the grep above. It puts the number **in
+   the transcript**, so a later mismatch against a subagent's self-reported version is noticeable.
 2. **More than one payload directory under the plugin's cache root**
-   (`cache/<marketplace>/<plugin>/`), with the live one not being the one the session started under,
-   is the observable signature: the `.orphaned_at`-marked sibling is the previous payload.
+   (`cache/<marketplace>/<plugin>/`), with the live one not being the one the session started under:
+   the `.orphaned_at`-marked sibling is the previous payload.
 
-**Both signals are prompts to restart the client - state the remedy plainly.** If a restart is not
-available and a session suspects it is stale, the interim discipline at load-bearing steps is to
-read the **marketplace-source copy** (the plugin's own home repo, working tree) or the
-**freshly-updated cache copy**, read directly as a file rather than recalled from memory - and to
-remember the loaded **skill catalog itself does not refresh this way**: a skill added, renamed, or
+**Both signals are prompts to restart the client.** If a restart is not available and a session
+suspects it is stale, at load-bearing steps read the **marketplace-source copy** (the plugin's own
+home repo, working tree) or the **freshly-updated cache copy** directly as a file, not from memory -
+and remember the loaded **skill catalog itself does not refresh this way**: a skill added, renamed, or
 removed since load stays invisible until restart, whichever file you check.
-
-**This is a third instance of the SESSION being the unit that decides what loads.** Project settings
-resolving from the session root (above) is the first; a shipped hook always writing into the
-*session's* project directory rather than an isolated worktree checkout is the second (the `scrum`
-skill's dispatch-feed `SubagentStop` hook); this is the third.
 
 **`autoUpdate` is a choice with both costs - present them, recommend neither.** `true` is what makes
 the mid-session swap above reachable at all; `false` trades that freshness for stability, turning an
@@ -322,12 +301,11 @@ Codex does not load Claude `agents/*.md` as named custom agents. Verify speciali
 plugin's `dispatch-role` skill in read-only smoke mode. Each smoke report must name the canonical
 role file and end with `Skills consulted: ...`; do not accept an unscoped generic-agent response.
 
-Confirm the same question on Codex regardless of the Claude Code check above: read back `codex
-plugin marketplace list`'s entry for `<marketplace>` and confirm the source it reports still
-resolves to `<release-ref>`, then check that the version segment of the installed cache path
-(`~/.codex/plugins/cache/<marketplace>/<plugin>/<version>/`) and `codex plugin list`'s reported
-version match the `version` in `.codex-plugin/plugin.json` of the marketplace source at
-`<release-ref>`, not unreleased `integration-branch` content. On a mismatch, re-run `codex plugin
+Confirm the pin on Codex too: read back `codex plugin marketplace list`'s entry for `<marketplace>`
+and confirm its source still resolves to `<release-ref>`, then check that the version segment of the
+installed cache path and `codex plugin list`'s reported version match the `version` in
+`.codex-plugin/plugin.json` of the marketplace source at `<release-ref>`, not unreleased
+`integration-branch` content. On a mismatch, re-run `codex plugin
 marketplace add <marketplace-source> --ref <release-ref>` (or correct the configured source
 directly), then reinstall; if the reported version does not move, remove the stale cached entry
 first so the corrected ref has something to install into.

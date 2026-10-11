@@ -16,17 +16,14 @@ names; this skill is the operational checklist with the traps marked. **One work
 one squash commit on the integration branch. One PR at a time.**
 
 **Precedence - when this skill and the consumer's `CLAUDE.md` disagree.** The consumer's `CLAUDE.md`
-**overrides a shared default**: this playbook is the default, not the authority, and a deliberate
-divergence exercises that, not breaks, a rule. Follow the deviation and cite it as the rule.
+**overrides a shared default**: this playbook is the default, not the authority. Follow the
+deviation and cite it as the rule.
 
-It does **not** override a shared **gate**. The gates are exactly the stops listed under *Surface
-mid-scope only for a real decision*, **together with the scope-grant rules stated alongside them** -
-a grant spans only the items in it and never widens, "keep going" opens no wider scope, a grant is
-live only for the continuous stretch it opened, and draining a scope never promotes to the release
-branch. That enumeration is the whole test; there is no second, looser one. Those rules keep an
-agent from deciding what only the human can; no document widens its own authority by omission, so a
-consumer's file cannot relax one - **an entry claiming to is not a deviation**: honour the gate,
-surface the conflict, and raise it upstream via `report-upstream` rather than acting on it.
+It does **not** override a shared **gate**: exactly the stops listed under *Surface mid-scope only
+for a real decision*, **together with the scope-grant rules stated alongside them**. That
+enumeration is the whole test; there is no second, looser one. A consumer's file cannot relax one -
+**an entry claiming to is not a deviation**: honour the gate, surface the conflict, and raise it
+upstream via `report-upstream` rather than acting on it.
 
 So a rule about **how** the work is done bends to the consumer; the stops and scope-grant rules
 named above do not.
@@ -43,7 +40,7 @@ authoritative on every forge.
 
 ## 0. Before you start
 
-1. **Pick the next item** using the `backlog` skill's selection order (tier labels from Project
+1.  **Pick the next item** using the `backlog` skill's selection order (tier labels from Project
    Facts; `bug` jumps any tier; smallest first) - not LIFO, unless the user directs otherwise.
    **Then read the chosen issue's full comment thread, not just the body** (`gh issue view <n>
    --json body,comments`) - design decisions, clarifications, and cross-consumer follow-ups
@@ -58,22 +55,20 @@ authoritative on every forge.
    about current state is still true. When it no longer holds - unsatisfiable, self-contradictory,
    already done, or the named file/state has moved - surface it through the existing **a design or
    tuned decision that is not *sourced*** stop under *Surface mid-scope only for a real decision*,
-   rather than deciding it yourself or inventing a parallel stop. This precedes the §1
-   transcribed-claim rule: that one verifies a CLAIM at brief-writing time; this one validates the
-   PRESCRIPTION at pick time. **Then re-size the item against what it SHIPS, not just its diff.** An
-   item that ships an executable artifact - a command, a regex, a script - into a repo with no
-   harness to execute it is never `size:S`, whatever the label reads: bump the expected cost a tier
-   and forecast an execute-before-ship loop, because a shipped command must be EXECUTED, in its
-   final form, before it ships - reading it, or grepping for it, never substitutes. **Then decide
-   parallelisability HERE, at the pick - not after the merge, where it is too late to act on.** Only
-   when the authorization you already hold covers **more than this one item** (a granted tier, a
-   named set, "work the backlog" - see *Continue autonomously across a scope*) do you compare the
-   next one or two items' `Files:` sets in that scope against this one's; disjoint → consider
-   *Parallel work* now. It is **not** licence to widen a scope - under a single-item authorization,
-   stay serial and do not go looking for a second item. **And when the signal is absent - no
-   `Files:` line on the issue, no file list in a triage comment - stay serial.** Never substitute a
-   guess: titles and labels do not establish disjointness, and two items that turn out to share a
-   file cost more than the serialization saved.
+   rather than deciding it yourself or inventing a parallel stop. **Then re-size the item against
+   what it SHIPS, not just its diff.** An item that ships an executable artifact - a command, a
+   regex, a script - into a repo with no harness to execute it is never `size:S`, whatever the label
+   reads: bump the expected cost a tier and forecast an execute-before-ship loop, because a shipped
+   command must be EXECUTED, in its final form, before it ships - reading it, or grepping for it,
+   never substitutes. **Then decide parallelisability HERE, at the pick - not after the merge, where
+   it is too late to act on.** Only when the authorization you already hold covers **more than this
+   one item** (a granted tier, a named set, "work the backlog" - see *Continue autonomously across a
+   scope*) do you compare the next one or two items' `Files:` sets in that scope against this one's;
+   disjoint → consider *Parallel work* now. It is **not** licence to widen a scope - under a
+   single-item authorization, stay serial and do not go looking for a second item. **And when the
+   signal is absent - no `Files:` line on the issue, no file list in a triage comment - stay
+   serial.** Never substitute a guess: titles and labels do not establish disjointness, and two
+   items that turn out to share a file cost more than the serialization saved.
 2. **Sync and branch off the integration branch:**
    ```
    git checkout <integration-branch> && git pull
@@ -101,9 +96,8 @@ authoritative on every forge.
   delegating the typing never delegates that judgment. **Challenge what comes back against the spec
   AND the idea behind it**, and keep challenging until it meets both: the letter of an acceptance
   list is satisfiable by work that misses the point it was written for, and a slice that ticks every
-  box while defeating the reason the box exists is not done. Patching it yourself instead is the
-  tempting shortcut and the expensive one - it destroys the signal that your brief was the thing at
-  fault, and puts you back in the implementer seat the `delegation` default just moved you out of.
+  box while defeating the reason the box exists is not done. Patching it yourself destroys the
+  signal that your brief was at fault, and puts you back in the implementer seat.
   When what comes back needs a correction or challenge **on the slice it just did**, resume the
   delegate rather than re-briefing a fresh spawn - the `agent-liveness` skill's *When it returned -
   resume rather than re-dispatch* section owns the rule and its bounds, including the fallback when
@@ -113,83 +107,69 @@ authoritative on every forge.
   because **the human has to be able to reach the orchestrator mid-turn**: one that is itself
   editing cannot be steered until it finishes - a concern distinct from co-edit collision safety
   (`worktree-isolation`'s job, below); `agent-liveness`, *Dispatch detached, and never watch*, owns
-  the reachability rule. It is a Project Facts key because **a recommendation the consumer never
-  reads is not reachable.** Project Facts is read at the top of every ritual, so a value there is
-  seen and can be overridden deliberately - anything meant to set an agent's default behaviour
-  belongs in a key. A repo onboarded before the key existed therefore delegates on its next item (no
-  key reads as `default`); write `delegation: on-demand` to keep the previous inline behaviour. On
+  the reachability rule. On
   `delegation: on-demand` you implement in the shared checkout and spawn the `developer` only for
   genuine parallelism or a large self-contained chunk. Even on `default`, **a change too small to be
-  worth a dispatch may go inline** - and the test is concrete, not "use judgment". All three must
+  worth a dispatch may go inline** - the test is concrete. All three must
   hold: **(a) one file**; **(b) no new logic, no more than a handful of changed lines** - a typo, a
   wording fix, a denylist token, a literal value, a single guard; **(c) no new or updated test
   needed.** Any of the three fails → dispatch. When you cannot tell, dispatch: a needless dispatch
   costs one turn, a needless inline sprawl costs the whole reason the default exists.
-- **A delegate's report is a secondary source about its own work - verify its load-bearing claims
-  against the tree before you act on them.** Reading the returned diff (above) is not this check:
-  the diff is a primary output, while the report's *claims* about it - a measured figure, a green
-  test count, "every site is updated", an assertion about a file the diff never touches - are a
-  summary written by the one party that is not a neutral witness to the work. Before any of them
-  carries weight in your version call, your CHANGELOG entry, or the next brief, re-derive it from
-  the primary output: re-run the deterministic probe yourself, read the diff, grep for the residue
-  the report calls zero.
+-  **A delegate's report is a secondary source about its own work - verify its load-bearing claims
+  against the tree before you act on them.** The diff is a primary output; the report's *claims*
+  about it - a measured figure, a green test count, "every site is updated", an assertion about a
+  file the diff never touches - come from the one party that is not a neutral witness. Before any of
+  them carries weight in your version call, your CHANGELOG entry, or the next brief, re-derive it
+  from the primary output: re-run the deterministic probe yourself, read the diff, grep for the
+  residue the report calls zero.
 - **Delegation is not deference: a reviewer's report gets exactly the same treatment.** Verification
   is delegated too - preflight runs as a subagent, and an adversarial pass often does - so its
   verdict reaches you as a report like any other, and the rule above applies unchanged to a PASS as
   well as to a fix list. Spot-check it: re-verify one finding against the tree, and confirm a rule
-  the report cites says what the report says it says. A PASS that skipped a check it claims to run
-  and a FAIL that misread the diff fail you in opposite directions, and both read identically on the
-  page.
-- **A pre-ruled version class travels with the spawn brief.** When the picked issue pre-rules the
+  the report cites says what the report says it says.
+-  **A pre-ruled version class travels with the spawn brief.** When the picked issue pre-rules the
   version class, the spawn brief restates that ruling and names the behaviour axis it rests on -
-  cite the `versioning-and-changelog` skill for the axis rather than restate its test (this skill's
-  own *cites the component, not its content* rule, below). The delegate does not silently
-  re-classify: a disagreement goes in its report-back as a note for you to adjudicate, never into a
-  changed class -
-  the failure mode this guards against is a delegate reading a shipped-skill instruction addition as
-  wording-only PATCH. No ruling on the issue ⇒ nothing changes: the normal class selection at
-  CHANGELOG time (§2) applies.
-- **A specific factual claim copied from the issue into the spec you write, or into any text you
+  cite the `versioning-and-changelog` skill for the axis rather than restate its test. The delegate
+  does not silently re-classify: a disagreement goes in its report-back as a note for you to
+  adjudicate, never into a changed class - the failure mode this guards against is a delegate
+  reading a shipped-skill instruction addition as wording-only PATCH. No ruling on the issue ⇒
+  nothing changes: the normal class selection at CHANGELOG time (§2) applies.
+-  **A specific factual claim copied from the issue into the spec you write, or into any text you
   ship in a component, needs the same verification the `versioning-and-changelog` skill's
-  primary-source rule already requires before a CHANGELOG entry - done here instead, because both
-  are earlier crossings and the claim is already an instruction, or a shipped fact, by the time it
-  reaches either.** Don't count on the delegate to catch it: an obedient delegate won't question a
-  brief, so verify where you transcribe the claim, not downstream. A claim that cannot be exercised -
-  no doc, no command, no reproducible check - is declined or attributed as unverified, never
-  shipped as fact.
+  primary-source rule already requires before a CHANGELOG entry - done here instead, because the
+  claim is already an instruction, or a shipped fact, by the time it reaches either.** Don't count
+  on the delegate to catch it: an obedient delegate won't question a brief, so verify where you
+  transcribe the claim, not downstream. A claim that cannot be exercised - no doc, no command, no
+  reproducible check - is declined or attributed as unverified, never shipped as fact.
 - **A fact that lives in a record is PASTED from a fresh read of that record, never recalled** -
   the paste-the-SHA rule (worktree hygiene, below), generalised to prose. When a spawn brief, a
   CHANGELOG entry, or issue text states a value, a polarity, or an attribution that a record holds -
   an issue body, a spec, a decisions entry, the CHANGELOG - open the record and transcribe from it
   in the same breath; recalled values drift. This is the crossing BEFORE the
-  transcribed-claim bullet above: that one verifies a copied claim's truth; this one stops the
-  transcription itself from being invented.
+  transcribed-claim bullet above, which verifies a copied claim's truth.
 - **Shipped text needing a sibling component's specifics cites the component, not its content.**
   When a skill, agent, or doc needs another component's steps, contract, or values - another skill's
   procedure, an agent's contract, a doc's tuned values - name/route to that component and state only
   what THIS text needs from it; restating the sibling's specifics is invisible drift-debt the moment
-  the sibling changes and this file doesn't. The discriminating tell: if your text goes stale when
-  the sibling changes but your file doesn't, you restated it; if it still reads true, you cited it.
-  The `handover` skill's "Cite, don't copy" is this same rule's pre-existing, artifact-specific
-  instance.
-- **Every role spawn's brief carries the resolved plugin skills path** - `$CLAUDE_PLUGIN_ROOT` when
+  the sibling changes and this file doesn't. The tell: text that goes stale when the sibling
+  changes restates it; text that still reads true cites it.
+-  **Every role spawn's brief carries the resolved plugin skills path** - `$CLAUDE_PLUGIN_ROOT` when
   set, else your client's resolved install-cache path - or the sections that role needs pasted in
   directly: in a consumer repo the plugin lives in the install cache, not the working tree, and no
-  subagent has a Skill tool. You know that path at spawn time, and its absence is what sends an
-  agent hunting for it. Same family, same rule: hand it the **complete** record, never a silently
-  condensed one - a snapshot, a comment thread, a prior report. A condensed record produces phantom
-  findings: a delegate analyzing an abridged record reports defects in what the abridgement dropped,
-  not in the work. Where condensing is unavoidable, say so in the brief and name what you dropped,
-  so the delegate can weight its conclusions accordingly. A read-only role (no `gh`, no Bash) gets
-  its records saved to files - **write the file before the dispatch call returns**: a write racing
-  the agent's first read leaves the agent reading an absent record as an empty one and reporting
-  confidently on nothing.
+  subagent has a Skill tool. Same family, same rule: hand it the **complete** record, never a
+  silently condensed one - a snapshot, a comment thread, a prior report. A condensed record produces
+  phantom findings: a delegate analyzing an abridged record reports defects in what the abridgement
+  dropped, not in the work. Where condensing is unavoidable, say so in the brief and name what you
+  dropped, so the delegate can weight its conclusions accordingly. A read-only role (no `gh`, no
+  Bash) gets its records saved to files - **write the file before the dispatch call returns**: a
+  write racing the agent's first read leaves the agent reading an absent record as an empty one and
+  reporting confidently on nothing.
 
 ### Dispatch in the background
 
 - **Dispatch in the BACKGROUND - that is the default, and it includes preflight.** Spawn a subagent
   detached rather than blocking on it: a blocking spawn holds you unreachable for its whole run,
-  which is the reason already stated above. **A backgrounded preflight obliges a draft PR** (§4).
+  **A backgrounded preflight obliges a draft PR** (§4).
   The full rule - the trade it makes, and what to do on a client that cannot dispatch detached -
   lives in the `agent-liveness` skill, which owns this concern.
 
@@ -203,13 +183,12 @@ authoritative on every forge.
 
 ### Delegation and worktree isolation
 
-- **`delegation` and `worktree-isolation` are orthogonal - never read one as the other.**
+-  **`delegation` and `worktree-isolation` are orthogonal - never read one as the other.**
   `delegation` answers *who implements*; `worktree-isolation` answers *in which working copy* - set
   that one to `default` when the maintainer may co-edit the same working copy you commit into, so a
   `git checkout` under your feet can't land a commit on the wrong branch. The worktree key is
-  deliberately not the who-implements switch: a co-edit-safety setting must not silently reverse the
-  implementer model. The §3 commit-guard is the always-on floor in all four combinations, and all
-  four are supported:
+  deliberately not the who-implements switch. The §3 commit-guard is the always-on floor in all four
+  combinations, and all four are supported:
   - **`delegation: default` + `worktree-isolation: on-demand`** (both defaults) - spawn the
     `developer` **non-isolated**: it implements in the shared checkout, you commit. The common path -
     and the one that puts **two actors in one working copy**, so see *While a non-isolated agent
@@ -226,8 +205,8 @@ authoritative on every forge.
     `on-demand` then means only that you keep the non-product edits (CHANGELOG, docs, config) in the
     shared checkout - which you were doing anyway.
 - **While a non-isolated agent is live, `HEAD` is FROZEN and you stage only paths it cannot touch.**
-  This is addressed to **you, the orchestrator, as the mover**: the §3 commit-guard protects the
-  **committer**, while this rule stops you moving it.
+  Addressed to **you, the orchestrator, as the mover**; the §3 commit-guard protects the
+  **committer**.
   - **Freeze `HEAD`.** No `checkout`, `switch`, `reset`, or `stash` from the moment you spawn a
     non-isolated agent until it has reported. Moving `HEAD` under a live agent ⇒ its next commit
     lands on whatever branch you just switched to.
@@ -241,11 +220,9 @@ authoritative on every forge.
   - **The time background dispatch frees is not working-tree time** - **take it on GitHub-only or
     read-only work**, as §4's *While waiting, use the time* spells out.
   - **A `test-writer` or reviewer pointed at ANOTHER working copy is exempt** - the test is *which
-    working copy it touches*, not how it was spawned. *Parallel work* step 3 spawns a `test-writer`
-    "non-isolated" yet pins it to `git -C <worktree>` and absolute paths under that worktree; a
-    worktree keeps its own `HEAD` ref, so nothing you do to the shared checkout's `HEAD` can reach
-    it. Read "non-isolated" here as **shares your working copy**, which is the only sense that
-    creates the hazard.
+    working copy it touches*, not how it was spawned (*Parallel work* step 3's "non-isolated"
+    `test-writer` is pinned to a worktree, which keeps its own `HEAD`). Read "non-isolated" here as
+    **shares your working copy**.
   - **`worktree-isolation: default` closes this class structurally**: the agent gets its own working
     copy, so there is no shared `HEAD` to move. Reasoning about path disjointness often ⇒ the
     signal to flip the key rather than keep applying this rule by hand.
@@ -254,8 +231,7 @@ authoritative on every forge.
   - **Before the FIRST isolated spawn of a session, confirm the session root is the repo root.** A
     session rooted one directory above the repo never loads `<repo>/.claude/settings.json`, so
     **whichever `worktree.baseRef` the repo configures is inert** - an isolated agent then silently
-    branches from the far-behind release branch, regardless of the configured value. The
-    session-root check matters on every topology below, not only the one that sets `head`. Diagnose
+    branches from the far-behind release branch, regardless of the configured value. Diagnose
     with the *Project settings resolve from the SESSION ROOT* check in `install-refresh-plugin`.
     Workaround for a mis-rooted session: plain `git worktree add` under the scratchpad, with
     **non-isolated** agents pointed at that path in their prompt.
@@ -264,22 +240,20 @@ authoritative on every forge.
     edits. An uncommitted grant ⇒ the agent runs with the OLD capabilities.
   - **Which `baseRef` to configure depends on whether `default-branch` IS the `integration-branch`**
     (Project Facts) - the two topologies need opposite settings.
-    - **`default-branch == integration-branch`** (the topology this playbook recommends, because it
+    -  **`default-branch == integration-branch`** (the topology this playbook recommends, because it
       makes `Closes #N` auto-fire): prefer `worktree.baseRef: "fresh"` (leaving the key unset
       behaves identically). A worktree then branches from the remote **default** branch - which on
       this topology IS the integration branch - **but the client resolves "the remote default" via
       the local `origin/HEAD` symref, a clone-time snapshot that never auto-updates.** A repo whose
-      GitHub default later moved still has the symref pointing at the old branch, and `fresh` then
-      provisions off that stale target (e.g. a worktree based on a far-behind release branch; the
-      fail-fast base check below catches it). So run `git remote set-head origin --auto` in the same
-      breath as the pre-spawn `git fetch` - one command that re-syncs the symref - and treat `fresh`
-      as prevention **conditional on that symref being current**, with the base check as the
-      mandatory backstop, not as an unconditional by-construction guarantee. **Caveat that survives
-      regardless:** `fresh` branches from the **remote** tip, so an isolated agent spawned this way
-      cannot build on unmerged local work or a local feature branch - an orchestrator wanting that
-      must resume an agent in its existing worktree, or set `head` deliberately for that one spawn,
-      rather than spawn a fresh isolated one. Push everything the isolated agent needs to `origin`
-      before spawning.
+      GitHub default later moved keeps a symref at the old branch, and `fresh` then provisions off
+      that stale target (the fail-fast base check below catches it). So run `git remote set-head
+      origin --auto` in the same breath as the pre-spawn `git fetch` - one command that re-syncs the
+      symref - and treat `fresh` as prevention **conditional on that symref being current**, with
+      the base check as the mandatory backstop. **Caveat that survives regardless:** `fresh`
+      branches from the **remote** tip, so an isolated agent spawned this way cannot build on
+      unmerged local work or a local feature branch - an orchestrator wanting that must resume an
+      agent in its existing worktree or set `head` for that one spawn. Push everything the isolated
+      agent needs to `origin` before spawning.
     - **`default-branch != integration-branch`:** `fresh` would land the agent on the default
       branch, which is NOT the integration branch - set `worktree.baseRef: "head"` instead. A
       worktree then branches from your current local HEAD, so be on the freshly-synced integration
@@ -297,22 +271,14 @@ authoritative on every forge.
     report which side is wrong - a pasted-in expectation that was never a real commit, or a worktree
     that genuinely branched off something else - then STOP either way." The discrepancy branch adds
     diagnosis; it never licenses proceeding - STOP stays the default action on any mismatch. Timing
-    matters: HEAD moves the instant the agent commits, so a check run after a first commit either
-    misreads its own work as drift or, run even later, passes trivially - the equality only means
-    what this rule claims before the agent has touched anything. Existence alone only catches a base
-    branched off the far-behind release branch: a feature branch cut from the synced integration
-    branch contains every file an existence check could name, so it can't tell "based on the
-    integration branch" from "based on a feature branch that happens to include it," nor catch the
-    integration branch moving on after the SHA was captured. The identity half closes that gap -
-    with exact equality, not `git merge-base --is-ancestor <expected> HEAD`. That looks like the
-    more robust refactor but is actively wrong here: a feature branch cut from the integration
-    branch IS a descendant of it, so `--is-ancestor` PASSES for precisely the drift case this check
-    exists to catch - a check that would pass for a wrong base is a GAP, not a cover. And it
-    compares commits, not branch names, because of where the ritual already puts you, not because
-    git blanket-forbids the name: this ritual's own opening `git checkout <integration-branch>` and
-    this bullet's re-sync put the orchestrator ON the intended base when it spawns, so git can't
-    check that same branch out again for the new worktree and mints it a fresh name instead - `git
-    branch --show-current` has nothing correct to match against.
+    matters: HEAD moves the instant the agent commits, so a later check misreads its own work as
+    drift or passes trivially. Existence alone only catches a base branched off the far-behind
+    release branch; the identity half also catches a feature-branch base and an integration branch
+    that moved after capture - with exact equality, never `git merge-base --is-ancestor <expected>
+    HEAD`: a feature branch cut from the integration branch IS a descendant of it, so
+    `--is-ancestor` PASSES for precisely the drift this check exists to catch. Compare commits, not
+    branch names: the orchestrator is ON the intended base when it spawns, so git mints the new
+    worktree a fresh name and `git branch --show-current` has nothing correct to match against.
   - **After an isolated agent hands back, the harness may have moved the session's working directory
     into that lane's worktree** - use absolute paths or `git -C`, and re-check `pwd`, before the
     next git command.
@@ -336,39 +302,36 @@ authoritative on every forge.
   visual states (via its `capture-cmd`) → review them → record the declared `evidence-marker`
   attestation in this item's CHANGELOG entry / PR body - the `fluyt:preflight-reviewer` FAILs a
   rendering change that lacks it. No `visual-verification` key → nothing to do here.
-- **Claim-scoped correction: dispatch by the claim, not by the site list.** When a correction
+-  **Claim-scoped correction: dispatch by the claim, not by the site list.** When a correction
   targets a **claim** - "this statement is false, fix it wherever it appears" - what you were handed
   is a **lower bound, not a boundary**: find and correct every instance of the claim, treating named
-  sites as non-exhaustive examples. This authorises exhausting one named claim and nothing else -
-  not licence to widen scope on any other kind of item. Close the sweep with a grep for the claim's
-  distinguishing phrasing, checking its **concepts, not one literal wording**, and report every
-  surviving hit with a one-line justification for why it is not an instance - this is what turns "I
-  fixed what I found" into "nothing is left." When the claim under correction is a tuned value,
-  triage each survivor into one of two buckets: a **current-tense claim built on the old value** ("X
-  never fires", "no Y has ever happened") that the new value now falsifies - fix the prose, never
-  the value; a paragraph **quoting the old value as the reasoning a later decision corrected** -
-  that quotation IS the decision record and must survive verbatim. Find-and-replace on the old
-  literal is the wrong tool here: applied blind, it destroys the second bucket, overwriting the very
-  record of what changed and why. **Derive those search terms from the claim, never from the wording
-  you just corrected.** Write the claim down as a proposition, enumerate the ways it could be
-  *said*, and search for those - including forms sharing no keyword with the text you edited. The
-  tell that you have it backwards: **a pattern containing a word you just deleted is searching for
-  your own fix, not for the claim.** What routinely survives a keyword sweep is a **definite
-  article** carrying an exclusivity word's work ("*the* scan a release boundary triggers" asserts
-  what "the *only* trigger" did), a synonym, a passive restatement, and a sentence asserting the
-  claim's *consequence* instead of the claim. **The closing grep applies on the inline path too**:
-  it attaches to *the correction*, not to *the dispatch*. Nor does the next bullet point the
-  opposite way: **several genuinely independent fixes** still land **one at a time**; **one claim
-  appearing at many sites** is a single defect, corrected as **one sweep** and closed with the grep
-  above - splitting it site-by-site is how a corrected claim survives at every site nobody
-  revisited.
+  sites as non-exhaustive examples. This authorises exhausting one named claim, not widening scope
+  on any other item. Close the sweep with a grep for the claim's distinguishing phrasing, checking
+  its **concepts, not one literal wording**, and report every surviving hit with a one-line
+  justification for why it is not an instance - this is what turns "I fixed what I found" into
+  "nothing is left." When the claim under correction is a tuned value, triage each survivor into one
+  of two buckets: a **current-tense claim built on the old value** ("X never fires", "no Y has ever
+  happened") that the new value now falsifies - fix the prose, never the value; a paragraph
+  **quoting the old value as the reasoning a later decision corrected** - that quotation IS the
+  decision record and must survive verbatim. Blind find-and-replace on the old literal destroys the
+  second bucket. **Derive those search terms from the claim, never from the wording you just
+  corrected.** Write the claim down as a proposition, enumerate the ways it could be *said*, and
+  search for those - including forms sharing no keyword with the text you edited. The tell that you
+  have it backwards: **a pattern containing a word you just deleted is searching for your own fix,
+  not for the claim.** What routinely survives a keyword sweep is a **definite article** carrying an
+  exclusivity word's work ("*the* scan a release boundary triggers" asserts what "the *only*
+  trigger" did), a synonym, a passive restatement, and a sentence asserting the claim's
+  *consequence* instead of the claim. **The closing grep applies on the inline path too**: it
+  attaches to *the correction*, not to *the dispatch*. The next bullet does not point the other way:
+  **independent fixes** land **one at a time**; **one claim at many sites** is a single defect,
+  corrected as **one sweep** and closed with the grep above - splitting it site-by-site is how a
+  corrected claim survives at every site nobody revisited.
 - **Multi-fix items: one at a time, easiest-first, verify between each.** When a single work item is
   several *independent* small fixes (e.g. a batch of in-code `// TODO:`s), land them one at a time -
   easiest first unless directed otherwise - running `build-cmd` / `test-cmd` (and `run-cmd` if set;
   skip whichever is `none`) **between each**, not batched into one untested sweep. Then a
-  regression is attributable to exactly one change. This is the in-branch counterpart to the
-  `backlog` skill's smallest-first *issue* selection.
-- **Adversarial coverage pass (optional - for oracle strength).** After the suite is green and
+  regression is attributable to exactly one change.
+-  **Adversarial coverage pass (optional - for oracle strength).** After the suite is green and
   before preflight, decide RUN vs SKIP. **RUN** when a wrong answer would be *silent*: not announced
   by a crash, a red test, or visible output, and consumed downstream. Math / geometry / formula /
   resolver logic is one example of a silent-answer slice, not the gate. **RUN** also when the slice
@@ -379,39 +342,34 @@ authoritative on every forge.
   declares. This second RUN disjunct fires even when the wrong answer would be loud - a crashing
   property test still can't tell you which mutant survived. **SKIP** only when both hold: a wrong
   answer would surface loudly (crash / red test / visible output), and the slice makes no
-  by-construction invariant claim - so either RUN disjunct true routes RUN, both false SKIP. When
-  you SKIP, optionally substitute one cheap mutation-floor check (flip a guard `>`→`>=`, confirm a
-  test dies). This differs from `preflight-reviewer`'s Step 7: Step 7 reads the diff against the
-  declared invariants; this pass reads the tests' oracle. That is what it probes - **oracle
-  strength**: would the tests actually fail if the implementation were wrong? - which neither the
-  green suite nor preflight (it re-runs the same suite) covers. Run it however you review: a careful
-  adversarial read of the diff + tests, or a workflow if you have one . When a `test-writer`
-  handback for this slice is available - its **Invariant → discriminating test** map, which arrives
-  in report text, not a file, so you need it in context or pasted somewhere reachable - start from
-  that map and attack its claims instead of re-deriving them from a blank diff: strictly cheaper,
-  and it probes a stated claim rather than a self-invented one. A map row without a captured kill is
-  the same **prediction** the paragraph below defines, so it is executed, never trusted - run the
-  guard rows' named mutations first. Absent that (no `test-writer` was spawned, or `test-dir: none` -
-  the common case), re-derive the map from the diff and tests exactly as before; the degradation
-  is unconditional, not a dependency on an artifact that often won't exist. Pair it with the
-  doctrine that a "by-construction" property test needs a companion **discriminating oracle** test
-  (an independently-computed, known-answer expected value). **Every verdict cites the captured
-  output it rests on, and inference is labeled as inference.** Each verdict names the command run
-  and the captured result it rests on; an attribution reasoned from reading rather than measured is
-  marked as inferred; and a verdict with no captured evidence is a **prediction**, which the report
-  must label as one and the adjudicator must weigh as one. When the pass runs delegated, this
-  requirement travels **in the spawn brief**, not only here - a doctrine line binds nobody who runs
-  the pass from a condensed brief.
-- **Project Facts `adversarial-coverage` decides whether the pass above is optional or required -
+  by-construction invariant claim. When you SKIP, optionally substitute one cheap mutation-floor
+  check (flip a guard `>`→`>=`, confirm a test dies). It probes **oracle strength** - would the
+  tests actually fail if the implementation were wrong? - which neither the green suite nor
+  preflight (it re-runs the same suite) covers. Run it however you review: a careful adversarial
+  read of the diff + tests, or a workflow if you have one . When a `test-writer` handback for this
+  slice is available - its **Invariant → discriminating test** map, which arrives in report text,
+  not a file, so you need it in context or pasted somewhere reachable - start from that map and
+  attack its claims instead of re-deriving them from a blank diff: strictly cheaper, and it probes a
+  stated claim rather than a self-invented one. A map row without a captured kill is the same
+  **prediction** the paragraph below defines, so it is executed, never trusted - run the guard rows'
+  named mutations first. Absent that (no `test-writer` was spawned, or `test-dir: none` - the common
+  case), re-derive the map from the diff and tests exactly as before; the degradation is
+  unconditional, not a dependency on an artifact that often won't exist. **Every verdict cites the
+  captured output it rests on, and inference is labeled as inference.** Each verdict names the
+  command run and the captured result it rests on; an attribution reasoned from reading rather than
+  measured is marked as inferred; and a verdict with no captured evidence is a **prediction**, which
+  the report must label as one and the adjudicator must weigh as one. When the pass runs delegated,
+  this requirement travels **in the spawn brief**, not only here - a doctrine line binds nobody who
+  runs the pass from a condensed brief.
+-  **Project Facts `adversarial-coverage` decides whether the pass above is optional or required -
   read it before you decide RUN vs SKIP.** Absent, or set to `on-demand` (the shipped default, and
   what an absent key reads as): the pass above stays optional, its own RUN/SKIP criteria deciding.
   Set to `default`: for a product-code slice that **touches a declared invariant** - the consumer
   CLAUDE.md's normative invariants section, not bare "product code" - the pass RUNS, and a SKIP
-  needs a **stated reason recorded in the PR body and the CHANGELOG entry** (a checkable marker, not
-  "the handback", which is no defined artifact in this ritual). **This is self-reported, not a gate -
-  say so plainly when you cite it:** a missing adversarial read leaves no signal in the diff, so
-  nothing downstream - not `preflight-reviewer`, not CI - can detect its absence; call it "enforced"
-  and you'd be misdescribing what can actually be checked.
+  needs a **stated reason recorded in the PR body and the CHANGELOG entry**. **This is
+  self-reported, not a gate - say so plainly when you cite it:** a missing adversarial read leaves
+  no signal in the diff, so nothing downstream - not `preflight-reviewer`, not CI - can detect its
+  absence.
 - **Knowledge capture (optional).** If you hit a durable environment or toolchain trap while
   implementing - a sandbox quirk, a shell gotcha, a build wrinkle that will bite the next person -
   append it to the matching **project-local skill** *in this same PR*, so the knowledge lands where
@@ -461,16 +419,13 @@ source* bullet (re-measure before citing). This line points; it does not restate
 
 ## 3. Commit, push, PR
 
-- **Stage specific paths - never `git add -A` blindly, and confirm the branch first.** The user's
+-  **Stage specific paths - never `git add -A` blindly, and confirm the branch first.** The user's
   local working tree often carries unrelated WIP (uncommitted assets, local experiments), and when
   the maintainer co-edits the same checkout a `git checkout` can move HEAD under you - a staged
   commit then lands on the wrong branch. So **before every `git add` / `git commit`, re-check that
   `git branch --show-current` is the branch you intend and that `git status` shows only this item's
-  files** - abort or redirect if HEAD moved; stage explicit paths, never `git add -A`. (Worktree
-  isolation - Project Facts `worktree-isolation: default`, §1 - prevents the collision structurally;
-  this guard is the always-on floor for the shared-checkout case.) **This guard protects the
-  committer from a `HEAD` that already moved; it does not stop whoever moved it** - that is §1's
-  *While a non-isolated agent is live*. Both are needed.
+  files** - abort or redirect if HEAD moved; stage explicit paths, never `git add -A`. It does not
+  stop whoever moved `HEAD` - §1's *While a non-isolated agent is live* does; both are needed.
 - **Commit identity:** the maintainer's git identity only - **omit any co-author trailer** if
   Project Facts `co-author-trailers: forbidden`.
 - **Pre-flight gate (multi-file / product-code items):** after committing, spawn the read-only
@@ -488,40 +443,35 @@ source* bullet (re-measure before citing). This line points; it does not restate
   ```
   Drop `--draft` only when no review is outstanding - the gate was skipped, or it already reported.
 - **Capture the PR number from `gh pr create`'s own output - never derive or guess it.** PRs share
-  the issue number sequence, so a guessed number targets a wrong-or-missing object (`gh pr merge
-  <guess>` fails with "Could not resolve to a PullRequest", or worse, resolves to some *other* PR).
+  the issue number sequence, so a guessed number targets a wrong-or-missing object (a guessed
+  number can even resolve to some *other* PR).
   Every later step (checks-watch, merge, ready) uses only the number/URL that `create` printed.
-- **PR title = the squash commit subject** in the Project Facts `commit-subject` format (canonical:
+-  **PR title = the squash commit subject** in the Project Facts `commit-subject` format (canonical:
   `<type-or-id>: <summary> (vX.Y.Z)`); the length cap is in `versioning-and-changelog`,
   *Version-stamped commit subjects*. **Put `Closes #<issue>` (or the "no issue - <why>" note) in the
   commit MESSAGE BODY** - a line below the subject - so `gh pr create --fill` carries it into the PR
   body and the merge auto-closes the issue. The subject's bare `#<issue>` only *links*; it does
-  **not** close. (Explicit PR body instead of `--fill` → put `Closes #<issue>` there; either way the
-  closing keyword must reach the PR body.) **The commit body is only a non-obvious why plus that
-  closing line (or the no-issue note)** - never restate the CHANGELOG entry or the diff; when the
-  subject says it all, it is just that line. **The PR body is that commit body plus the CHANGELOG
-  version and the gate result** (the `test-cmd` verdict, and whether preflight ran), plus anything
-  another rule requires there; the read-back below can add the version and gate lines with `gh pr
-  edit --body-file`. The CHANGELOG stays the one place the change is described.
+  **not** close. (An explicit PR body must carry it too.) **The commit body is only a non-obvious
+  why plus that closing line (or the no-issue note)** - never restate the CHANGELOG entry or the
+  diff; when the subject says it all, it is just that line. **The PR body is that commit body plus
+  the CHANGELOG version and the gate result** (the `test-cmd` verdict, and whether preflight ran),
+  plus anything another rule requires there; the read-back below can add the version and gate lines
+  with `gh pr edit --body-file`. The CHANGELOG stays the one place the change is described.
 - **`--fill`'s title/body split depends on commit count - read the created PR back before trusting
-  it.** On a single-commit branch, `--fill` takes the PR title from that commit's subject and the
-  body from its message body - the `Closes #<issue>` line included, exactly as the bullet above
-  assumes. With two or more commits - this ritual's most common shape, implementation + CHANGELOG +
-  preflight-fix commits - `gh pr create --fill` instead titles the PR with the **raw branch name**
-  and fills the body with **commit subjects only, bulleted**: no bodies reach it, so `Closes
-  #<issue>` never lands in the PR body, and under `squash_merge_commit_title: COMMIT_OR_PR_TITLE`
-  (§4) that branch-name title becomes the squash commit subject. `--fill-first` fails on a different
-  axis: it takes title and body from the FIRST commit specifically , so a first commit with no
-  message body leaves the PR body empty. So don't bet the workflow on which `gh` flag or commit
-  count you happen to have - **immediately after `gh pr create`, read the created PR's actual title
+  it.** On a single-commit branch, `--fill` takes the title from the commit subject and the body
+  from its message body - the `Closes #<issue>` line included, as above. With two or more commits
+  - this ritual's most common shape - it titles the PR with the **raw branch name** and fills the
+  body with **bulleted commit subjects only**, so `Closes #<issue>` never lands and, under
+  `squash_merge_commit_title: COMMIT_OR_PR_TITLE` (§4), the branch name becomes the squash subject.
+  `--fill-first` takes both from the FIRST commit, so a bodyless first commit leaves the PR body
+  empty. So **immediately after `gh pr create`, read the created PR's actual title
   and body back (`gh pr view <n> --json title,body`) and correct them with `gh pr edit <n> --title …
   --body-file …` before doing anything else.** Run it on every PR this ritual opens, single-commit
   or not.
-- **Multi-paragraph `gh` bodies go in a temp file - never inline `--body "…"`.** `--fill` (above)
-  takes the PR body from the commit and is fine for that; but any time you pass an explicit body to
-  `gh pr create` / `gh issue create` / `gh issue comment` / `gh pr comment`, write it to a temp file
-  and use `--body-file <file>`. Inline `--body` quotes badly and breaks differently across shells
-  (PowerShell vs POSIX).
+-  **Multi-paragraph `gh` bodies go in a temp file - never inline `--body "…"`.** Whenever you pass
+  an explicit body to `gh pr create` / `gh issue create` / `gh issue comment` / `gh pr comment`,
+  write it to a temp file and use `--body-file <file>`. Inline `--body` quotes badly and breaks
+  differently across shells (PowerShell vs POSIX).
 
 ## 4. Merge and clean up
 
@@ -536,37 +486,33 @@ source* bullet (re-measure before citing). This line points; it does not restate
   close. This is a **bounded check, not a wait** - it does not contradict *Do not watch a background
   agent* (§1); you run one command and move on. **Every piece of that pattern is load-bearing -
   never simplify it; before changing or tightening it, read `closing-keyword-grep.md` in this
-  skill's directory and re-run its full fixture list.** **Why before rather than after:** the
-  post-merge verify in *After the merge lands* is a **backstop for a close that did not happen**,
-  and it cannot undo a close that should not have. A PR that skips build+test on a `paths-filter`
-  can merge in **~30 seconds** - no time to correct a body. **A draft PR already covers the reviewed
-  path** (fire-and-forget cannot squash a draft), so this guards the PR with no review: a trivial
-  docs-only PR opened non-draft and armed immediately. **Do NOT use `closingIssuesReferences` for
-  this.** It populates **asynchronously** and reads empty for up to a minute after `gh pr create`
-  even when the body plainly carries `Closes #N` - and the close actually fires off the squash
-  commit message, a different signal. The body grep is synchronous and authoritative.
-- **Arm auto-merge (squash), fire-and-forget - then read the armed state back:** `gh pr merge <n>
-  --squash --auto` → `gh pr view <n> --json autoMergeRequest`; `null` ⇒ the arm did not take (a
-  consumer-side workflow can silently override or absorb it) → arm again explicitly or fall back to
-  a plain squash merge once CI is green. An already-`MERGED` state read is also a
-  valid answer - an armed PR whose checks were green can land within seconds.
+  skill's directory and re-run its full fixture list.** **Why before:** the post-merge verify only
+  backstops a close that did not happen; it cannot undo one that should not have, and a PR that
+  skips build+test on a `paths-filter` can merge in **~30 seconds**. **A draft PR already covers the
+  reviewed path** (fire-and-forget cannot squash a draft), so this guards the PR with no review: a
+  trivial docs-only PR opened non-draft and armed immediately. **Do NOT use
+  `closingIssuesReferences` for this.** It populates **asynchronously** and reads empty for up to a
+  minute after `gh pr create` even when the body plainly carries `Closes #N` - and the close
+  fires off the squash commit message, a different signal. The body grep is synchronous and
+  authoritative.
+-  **Arm auto-merge (squash), fire-and-forget - then read the armed state back:** `gh pr merge <n>
+  --squash --auto` → `gh pr view <n> --json autoMergeRequest`; `null` ⇒ the arm did not take → arm
+  again explicitly or fall back to a plain squash merge once CI is green. An already-`MERGED` state
+  read is also a valid answer - an armed PR whose checks were green can land within seconds.
   **"Green" means a completed, non-skipped, successful run on the head SHA, whatever the check
-  summary shows** - a skipped job reads as passing - **and a cancelled run is never green:
-  re-run it.**
-  **An armed PR is not stuck just because it has not merged yet.** GitHub fires the merge
-  server-side after the last required check goes green - normally within seconds, but it can
-  take up to ~2 minutes. **Do not hand-merge an ARMED PR until at least 3
-  minutes after its last required check went green**, and then only if `gh pr view <n> --json
-  state,mergeStateStatus,autoMergeRequest` still reads `OPEN`, `CLEAN` and a non-null
+  summary shows** - a skipped job reads as passing - **and a cancelled run is never green: re-run
+  it.** **An armed PR is not stuck just because it has not merged yet.** The merge after the
+  last required check goes green takes seconds, up to ~2 minutes. **Do not hand-merge an ARMED PR
+  until at least 3 minutes after its last required check went green**, and then only if `gh pr view
+  <n> --json state,mergeStateStatus,autoMergeRequest` still reads `OPEN`, `CLEAN` and a non-null
   `autoMergeRequest`. Repeated multi-minute stalls on one repo are a GitHub Support case, not a
-  settings change.
-  The readback is a bounded check, not a watch: one command, then **do not watch it** - *Do not
-  watch a background agent* (§1) applied here. Check `gh pr view <n> --json state` at the top of the
-  next turn that needs it - and **if arming is the last act of your turn with nothing else queued,
-  no such turn is coming**: before ending it, start the one bounded wait `agent-liveness`
-  distinguishes from watching, whose exit is the **trigger** for *After the merge lands* (POSIX
-  `sh`; size both placeholders to your CI, with `<max-polls>` × `<poll-seconds>` covering at least
-  the CI run plus that ~2-minute window):
+  settings change. Read it back once, then **do not watch it** (*Do not watch a
+  background agent*, §1). Check `gh pr view <n> --json state` at the top of the next turn that needs
+  it - and **if arming is the last act of your turn with nothing else queued, no such turn is
+  coming**: before ending it, start the one bounded wait `agent-liveness` distinguishes from
+  watching, whose exit is the **trigger** for *After the merge lands* (POSIX `sh`; size both
+  placeholders to your CI, with `<max-polls>` × `<poll-seconds>` covering at least the CI run plus
+  that ~2-minute window):
   ```sh
   i=0; until gh pr view <n> --json state --jq .state | grep -qxE 'MERGED|CLOSED' ||
     [ "$i" -ge <max-polls> ]; do i=$((i+1)); sleep <poll-seconds>; done
@@ -594,26 +540,23 @@ source* bullet (re-measure before citing). This line points; it does not restate
   against the tree before pushing, not just re-read it**: a correction is written under the same
   conditions that produced the error. **Exercise the claim**, don't re-read it - re-measure a count,
   re-run a quoted command, exercise a tool-behaviour claim against a case that would fail if it were
-  false (code gets this from the build and the suite; prose has no such gate). This is the
+  false. This is the
   committer's own bounded check before push, not a second review or a re-spawn. Then re-read the PR
   title and body against the branch's **final** state and edit them (`gh pr edit <n> --title …
   --body-file …`) if either has gone stale, and only then `gh pr ready` and arm auto-merge. Do not
   close and reopen the PR, and do not mark it ready intending to fix afterwards - a ready PR with
   auto-merge armed can land between those two acts. **Why this matters most here:** under
-  `squash_merge_commit_title: COMMIT_OR_PR_TITLE`, a single-commit branch takes its commit's subject
-  as the squash title, but a corrected branch - two or more commits - takes it from the PR title
-  written before the findings existed. **This is not the only exposure - see §3's `--fill`
-  read-back:** that catches a title born wrong at `gh pr create` time; this re-read catches one gone
-  stale after the findings commit. Run both, not either. **Read the setting, don't assume it:** `gh
-  api repos/{owner}/{repo} --jq .squash_merge_commit_title` - a consumer may run `PR_TITLE` instead,
-  which changes the exposure; don't assert any particular repo's value. Check the body too -
-  `--fill` seeds it from the commit message (§3), so a stale body is where a wrong closing keyword
-  would persist; either way, the closing keyword must still reach the PR body.
+  `squash_merge_commit_title: COMMIT_OR_PR_TITLE`, a corrected branch (two or more commits) takes
+  the squash subject from the PR title written before the findings existed. §3's `--fill` read-back
+  catches a title born wrong; this re-read catches one gone stale - run both. **Read the setting,
+  don't assume it:** `gh api repos/{owner}/{repo} --jq .squash_merge_commit_title` - a consumer may
+  run `PR_TITLE` instead, which changes the exposure. Check the body too: a stale body is where a
+  wrong closing keyword would persist, and it must still reach the PR body.
 - **Auto-merge has prerequisites - know the fallback.** `--auto` only works if the repo has
   **auto-merge enabled** (`gh api repos/{owner}/{repo} -X PATCH -f allow_auto_merge=true` - a
   one-time repo setting); without it, `gh pr merge --auto` errors ("Auto merge is not allowed for
-  this repository") - and a **just-created repo always starts there** (`gh repo create` defaults
-  `allow_auto_merge: false`), so expect exactly this on a new repo's first armed PR. Separately, a
+  this repository") - which a **just-created repo always starts with** (`gh repo create` defaults
+  `allow_auto_merge: false`). Separately, a
   self-merge classifier in the harness may refuse to arm auto-merge on an unprotected branch.
   **Fallback:** don't fight either - once CI is green, do a plain squash merge (`gh pr merge <n>
   --squash`). This is for when **nothing is armed**; an armed PR follows the 3-minute rule in the
@@ -623,14 +566,12 @@ source* bullet (re-measure before citing). This line points; it does not restate
   reviews), `--auto` is still the right call - it **waits** for the required approvals, then merges,
   rather than erroring. Don't block on it: request the review → hand the PR off → check `gh pr view
   <n> --json state,reviewDecision` at the top of a later turn (*Do not watch a background agent*,
-  §1, again - an approval wait is a wait, not something to watch). This is the two-person-team
-  shape; a solo repo (`pr-approvals: none`, the default) never hits the wait and merges as soon as
-  CI is green.
-- **While waiting, use the time - but NOT in the working tree if a non-isolated agent is live in
-  it.** This bullet is licence to do *other work*, never licence to move `HEAD`; §1's *While a
-  non-isolated agent is live* rule holds for the whole time an agent is running. When one is live,
-  keep the wait to **GitHub-only or read-only** work - triage, issue comments, reading code. When
-  none is, the tree is yours. Good uses either way: shape a pending idea into a spec via
+  §1, again - an approval wait is a wait, not something to watch). A solo repo
+  (`pr-approvals: none`, the default) never hits the wait.
+-  **While waiting, use the time - but NOT in the working tree if a non-isolated agent is live in
+  it.** This bullet never licenses moving `HEAD` (§1's *While a non-isolated agent is live*). When
+  one is live, keep the wait to **GitHub-only or read-only** work - triage, issue comments, reading
+  code. When none is, the tree is yours. Good uses either way: shape a pending idea into a spec via
   `fluyt:product-owner`, or prep the next item's questions. (The PO relays its spec in its report
   and writes only research/design reports under `docs/`, so it can't collide with the in-flight PR.)
   Pass the PO the open-issue snapshot in its spawn prompt - it has no `gh` and shapes blind without
@@ -643,50 +584,41 @@ source* bullet (re-measure before citing). This line points; it does not restate
      observed-state gate the branch deletion in step 6 already applies. A watcher's or the post-arm
      wait's clean exit, a timeout, or a green CI run is not that observation, and a manual close
      issued on one of those closes an unmerged item.
-  2. **Unblock the dependents.** The `backlog` selection order skips a `blocked` issue
-     unconditionally, and that same skill has you add the label alongside the native blocked-by
-     relation - so a blocker closing leaves its dependents carrying a label nothing removes, and
-     **permanently unpickable**. Clear it here, on the same bounded-walk terms the
-     contradicted-sibling write-back below states: the walk is
-     `gh issue list --state open --label blocked` - bounded to the label, **never a full-backlog
-     sweep**. For each hit, read its blockers off the relation with
-     `gh issue view <m> --json blockedBy,url`: each node carries that blocker's `number`, `state`
-     and `url`, so three counts decide it -
-     `--jq '.blockedBy.nodes | length'` (total),
-     `--jq '[.blockedBy.nodes[] | select(.state == "OPEN")] | length'` (still open) and
-     `--jq '.url as $u | ($u | sub("[0-9]+$"; "")) as $r |
-     [.blockedBy.nodes[] | select(.url | startswith($r) | not)] | length'`
-     (foreign - a blocker in another repo; the node has no repository field, only its `url`).
-     **Remove the label only when the relation list is NON-EMPTY and every blocker is closed**
-     (`total > 0` and `open == 0`) -
-     `gh issue edit <m> --remove-label blocked` - since an item with two blockers, one of them
-     still open, must stay skipped. **A foreign blocker closing means the fix merged upstream, not
-     that your pin carries it:** it counts as satisfied only when `foreign < total` (a same-repo
+  2.  **Unblock the dependents.** A blocker closing leaves its dependents carrying a `blocked` label
+     that `backlog` skips unconditionally and nothing removes - **permanently unpickable**. Clear it
+     here, on the same bounded-walk terms the contradicted-sibling write-back below states: the walk
+     is `gh issue list --state open --label blocked` - bounded to the label, **never a full-backlog
+     sweep**. For each hit, read its blockers off the relation with `gh issue view <m> --json
+     blockedBy,url`: each node carries that blocker's `number`, `state` and `url`, so three counts
+     decide it - `--jq '.blockedBy.nodes | length'` (total), `--jq '[.blockedBy.nodes[] |
+     select(.state == "OPEN")] | length'` (still open) and `--jq '.url as $u | ($u | sub("[0-9]+$";
+     "")) as $r | [.blockedBy.nodes[] | select(.url | startswith($r) | not)] | length'` (foreign - a
+     blocker in another repo; the node has no repository field, only its `url`). **Remove the label
+     only when the relation list is NON-EMPTY and every blocker is closed** (`total > 0` and `open
+     == 0`) - `gh issue edit <m> --remove-label blocked` - since an item with two blockers, one of
+     them still open, must stay skipped. **A foreign blocker closing means the fix merged upstream,
+     not that your pin carries it:** it counts as satisfied only when `foreign < total` (a same-repo
      blocker - the pin-bump issue - is also on the list and closed); otherwise surface "#<m>'s
      blocker <repo>#<n> closed upstream - record the pin-bump issue as a relation, or clear the
-     label once your pin carries it" and move on. The total-count half is load-bearing and
-     invisible in the jq: an issue with **zero** relations produces an empty list whose open-count
-     is 0, which passes an all-closed test **vacuously** - and label-without-relations is a real
-     state (an item blocked on external evidence, a decision, an upstream release), so without the
-     gate this step silently frees exactly the items whose blocker cannot close. On
-     `total == 0`, don't silently hold either - that is the permanently-unpickable disease this
-     step exists to cure, relocated - **surface it**: report "#<m> carries `blocked` with no
-     blocked-by relations - record the blocker as a relation, or clear the label by hand", and
-     move on. (Doctrinally a non-issue block belongs in `not-ready-labels`, not bare `blocked` -
-     see the `backlog` skill - but this step must stay correct for the state as found, not the
-     state as prescribed.) **Leave the native relation alone:** it is the record of why the item
-     was ever blocked, and only the label is the operational signal - a relation still reading
-     "blocked by (closed)" is correct history, not staleness.
+     label once your pin carries it" and move on. The total-count half is load-bearing and invisible
+     in the jq: **zero** relations give an empty list whose open-count is 0, which passes an
+     all-closed test **vacuously**, and label-without-relations is a real state (blocked on external
+     evidence, a decision, an upstream release) - without the gate this step frees exactly the items
+     whose blocker cannot close. On `total == 0`, don't silently hold either - **surface it**:
+     report "#<m> carries `blocked` with no blocked-by relations - record the blocker as a relation,
+     or clear the label by hand", and move on. (A non-issue block belongs in `not-ready-labels` per
+     `backlog`, but this step must stay correct for the state as found.) **Leave the native relation
+     alone:** it is the record of why the item was ever blocked, and only the label is the
+     operational signal - a relation still reading "blocked by (closed)" is correct history, not
+     staleness.
   3. **If the item was a slice of a `tracking` epic, tick its box now that the issue is
      closed** - fetch the epic body (`gh issue view <epic> --json body`) → flip its `- [ ] #<n>`
      line to `- [x] #<n>` → write it back (`gh issue edit <epic> --body-file <file>`). This
      is roadmap upkeep, not a tracker edit - see the `backlog` skill.
   4. **When this item's landed decision contradicts a sibling issue's stated approach, write it back -
-     don't leave the rot for that sibling's own next pick to re-derive.** That sibling's
-     prescription rotted the instant this decision landed, and §0.1's pick-time re-validation
-     catches it only when the sibling is next picked. This step does not replace that inbound
-     backstop, and the two must not drift - one fires at pick time on the issue being *read*, this
-     one at merge time on the issue being *written back to*. **Bound the walk to the relation graph
+     don't leave the rot for that sibling's own next pick to re-derive.** §0.1's pick-time
+     re-validation catches the rot only when the sibling is next picked; this merge-time step does
+     not replace that backstop. **Bound the walk to the relation graph
      already on record - never a full-backlog sweep:** (a) if this item was a slice of a `tracking`
      epic, its sibling boxes (step 3, above); (b) any issue this item's `Lineage:` / `Depends on:`
      records name, wherever they were written - the issue body, a triage comment, a decision comment
