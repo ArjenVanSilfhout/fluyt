@@ -88,7 +88,7 @@ Each line but 13 names its owner — read it before acting on a hard case.
 5. **Delegation is not deference** — a reviewer's verdict is a report like any other, so spot-check
    it in both directions. → `ship-work-item` §1, the delegation-is-not-deference bullet.
 6. **An isolated lane is briefed to commit as it goes, on its own branch.** Scoped by Project Facts
-   `worktree-isolation`: a NON-isolated delegate does not commit at all — you do.
+   `worktree-isolation`: a delegate sharing your working copy does not commit — you do.
    → `ship-work-item` §1, *Delegation and worktree isolation*; the `developer` role contract.
 7. **While a non-isolated agent is live, `HEAD` is frozen** and you stage only paths it cannot
    touch — compared, never assumed. → `ship-work-item` §1, *While a non-isolated agent is live*.
