@@ -134,16 +134,17 @@ repo's contract files - do it in the open.
      fill-in** (e.g. Project Facts values, the project-specific-skills list, the invariants, the
      code-style rules, the deviations register, the "Ask the human when" trigger list). The two
      interleave inside the same section, so propagate a bracket-free paragraph **even when it sits
-     in a section that also has a fill-in**, and never touch the fill-in paragraphs. **One qualification to the bracket heuristic:** the `<...>` list under
-     `## Ask the human when` is a shipped **default gate list**, not an empty prompt (see §2 step 3).
-     The consumer's adapted wording is theirs and is never overwritten - but when the skeleton's
-     default list gains a *new* gate, **or an existing gate is materially changed**, surface that as a
-     proposal, exactly as for a plugin-owned paragraph. **Test for "materially changed": the trigger
-     condition now fires on different situations.** A semantic trigger-condition change surfaces; a
-     stylistic reword that leaves the trigger unchanged does not. Either way the proposal shows the
-     semantic change for the consumer to adapt into their own wording - it never overwrites what the
-     consumer already wrote. Otherwise a gate added or tightened upstream would reach new adopters
-     only, while every already-onboarded repo keeps the old trigger forever.
+     in a section that also has a fill-in**, and never touch the fill-in paragraphs. **One
+     qualification to the bracket heuristic:** the `<...>` list under `## Ask the human when` is a
+     shipped **default gate list**, not an empty prompt (see §2 step 3). The consumer's adapted
+     wording is theirs and is never overwritten - but when the skeleton's default list gains a *new*
+     gate, **or an existing gate is materially changed**, surface that as a proposal, exactly as for
+     a plugin-owned paragraph. **Test for "materially changed": the trigger condition now fires on
+     different situations.** A semantic trigger-condition change surfaces; a stylistic reword that
+     leaves the trigger unchanged does not. Either way the proposal shows the semantic change for
+     the consumer to adapt into their own wording - it never overwrites what the consumer already
+     wrote. Otherwise a gate added or tightened upstream would reach new adopters only, while every
+     already-onboarded repo keeps the old trigger forever.
   3. For each plugin-owned paragraph, check whether the consumer's `CLAUDE.md` carries it and whether
      it still matches the current skeleton. Propose adding a missing one, or show a diff for a stale
      one - **confirm-first, never automatic** (as throughout this skill). If the consumer has
@@ -202,8 +203,8 @@ repo's contract files - do it in the open.
      **exists but allows squash** is as much a gap as an absent one: propose the `release` role's
      `allowed_merge_methods: ["merge"]`. And **never propose `required_status_checks` on the release
      branch** - unset is its end state, not drift; a required context that never reports deadlocks
-     the branch consumers pin. If the consumer asks for it, that skill's gate is the only route (a repo
-     that has promoted may meet it: read it, never assume). The fast-path re-offer carries that
+     the branch consumers pin. If the consumer asks for it, that skill's gate is the only route (a
+     repo that has promoted may meet it: read it, never assume). The fast-path re-offer carries that
      skill's obligations unchanged.
   4. Apply nothing without an explicit yes. **When the consumer declines, propose recording it** as a
      one-line entry in their `CLAUDE.md` *Deliberate deviations from the shared playbook* register

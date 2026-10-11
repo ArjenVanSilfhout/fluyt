@@ -40,7 +40,7 @@ authoritative on every forge.
 
 ## 0. Before you start
 
-1.  **Pick the next item** using the `backlog` skill's selection order (tier labels from Project
+1. **Pick the next item** using the `backlog` skill's selection order (tier labels from Project
    Facts; `bug` jumps any tier; smallest first) - not LIFO, unless the user directs otherwise.
    **Then read the chosen issue's full comment thread, not just the body** (`gh issue view <n>
    --json body,comments`) - design decisions, clarifications, and cross-consumer follow-ups
@@ -115,7 +115,7 @@ authoritative on every forge.
   wording fix, a denylist token, a literal value, a single guard; **(c) no new or updated test
   needed.** Any of the three fails → dispatch. When you cannot tell, dispatch: a needless dispatch
   costs one turn, a needless inline sprawl costs the whole reason the default exists.
--  **A delegate's report is a secondary source about its own work - verify its load-bearing claims
+- **A delegate's report is a secondary source about its own work - verify its load-bearing claims
   against the tree before you act on them.** The diff is a primary output; the report's *claims*
   about it - a measured figure, a green test count, "every site is updated", an assertion about a
   file the diff never touches - come from the one party that is not a neutral witness. Before any of
@@ -127,14 +127,14 @@ authoritative on every forge.
   verdict reaches you as a report like any other, and the rule above applies unchanged to a PASS as
   well as to a fix list. Spot-check it: re-verify one finding against the tree, and confirm a rule
   the report cites says what the report says it says.
--  **A pre-ruled version class travels with the spawn brief.** When the picked issue pre-rules the
+- **A pre-ruled version class travels with the spawn brief.** When the picked issue pre-rules the
   version class, the spawn brief restates that ruling and names the behaviour axis it rests on -
   cite the `versioning-and-changelog` skill for the axis rather than restate its test. The delegate
   does not silently re-classify: a disagreement goes in its report-back as a note for you to
   adjudicate, never into a changed class - the failure mode this guards against is a delegate
   reading a shipped-skill instruction addition as wording-only PATCH. No ruling on the issue ⇒
   nothing changes: the normal class selection at CHANGELOG time (§2) applies.
--  **A specific factual claim copied from the issue into the spec you write, or into any text you
+- **A specific factual claim copied from the issue into the spec you write, or into any text you
   ship in a component, needs the same verification the `versioning-and-changelog` skill's
   primary-source rule already requires before a CHANGELOG entry - done here instead, because the
   claim is already an instruction, or a shipped fact, by the time it reaches either.** Don't count
@@ -153,7 +153,7 @@ authoritative on every forge.
   what THIS text needs from it; restating the sibling's specifics is invisible drift-debt the moment
   the sibling changes and this file doesn't. The tell: text that goes stale when the sibling
   changes restates it; text that still reads true cites it.
--  **Every role spawn's brief carries the resolved plugin skills path** - `$CLAUDE_PLUGIN_ROOT` when
+- **Every role spawn's brief carries the resolved plugin skills path** - `$CLAUDE_PLUGIN_ROOT` when
   set, else your client's resolved install-cache path - or the sections that role needs pasted in
   directly: in a consumer repo the plugin lives in the install cache, not the working tree, and no
   subagent has a Skill tool. Same family, same rule: hand it the **complete** record, never a
@@ -183,7 +183,7 @@ authoritative on every forge.
 
 ### Delegation and worktree isolation
 
--  **`delegation` and `worktree-isolation` are orthogonal - never read one as the other.**
+- **`delegation` and `worktree-isolation` are orthogonal - never read one as the other.**
   `delegation` answers *who implements*; `worktree-isolation` answers *in which working copy* - set
   that one to `default` when the maintainer may co-edit the same working copy you commit into, so a
   `git checkout` under your feet can't land a commit on the wrong branch. The worktree key is
@@ -240,7 +240,7 @@ authoritative on every forge.
     edits. An uncommitted grant ⇒ the agent runs with the OLD capabilities.
   - **Which `baseRef` to configure depends on whether `default-branch` IS the `integration-branch`**
     (Project Facts) - the two topologies need opposite settings.
-    -  **`default-branch == integration-branch`** (the topology this playbook recommends, because it
+    - **`default-branch == integration-branch`** (the topology this playbook recommends, because it
       makes `Closes #N` auto-fire): prefer `worktree.baseRef: "fresh"` (leaving the key unset
       behaves identically). A worktree then branches from the remote **default** branch - which on
       this topology IS the integration branch - **but the client resolves "the remote default" via
@@ -302,7 +302,7 @@ authoritative on every forge.
   visual states (via its `capture-cmd`) → review them → record the declared `evidence-marker`
   attestation in this item's CHANGELOG entry / PR body - the `fluyt:preflight-reviewer` FAILs a
   rendering change that lacks it. No `visual-verification` key → nothing to do here.
--  **Claim-scoped correction: dispatch by the claim, not by the site list.** When a correction
+- **Claim-scoped correction: dispatch by the claim, not by the site list.** When a correction
   targets a **claim** - "this statement is false, fix it wherever it appears" - what you were handed
   is a **lower bound, not a boundary**: find and correct every instance of the claim, treating named
   sites as non-exhaustive examples. This authorises exhausting one named claim, not widening scope
@@ -331,7 +331,7 @@ authoritative on every forge.
   easiest first unless directed otherwise - running `build-cmd` / `test-cmd` (and `run-cmd` if set;
   skip whichever is `none`) **between each**, not batched into one untested sweep. Then a
   regression is attributable to exactly one change.
--  **Adversarial coverage pass (optional - for oracle strength).** After the suite is green and
+- **Adversarial coverage pass (optional - for oracle strength).** After the suite is green and
   before preflight, decide RUN vs SKIP. **RUN** when a wrong answer would be *silent*: not announced
   by a crash, a red test, or visible output, and consumed downstream. Math / geometry / formula /
   resolver logic is one example of a silent-answer slice, not the gate. **RUN** also when the slice
@@ -361,7 +361,7 @@ authoritative on every forge.
   the report must label as one and the adjudicator must weigh as one. When the pass runs delegated,
   this requirement travels **in the spawn brief**, not only here - a doctrine line binds nobody who
   runs the pass from a condensed brief.
--  **Project Facts `adversarial-coverage` decides whether the pass above is optional or required -
+- **Project Facts `adversarial-coverage` decides whether the pass above is optional or required -
   read it before you decide RUN vs SKIP.** Absent, or set to `on-demand` (the shipped default, and
   what an absent key reads as): the pass above stays optional, its own RUN/SKIP criteria deciding.
   Set to `default`: for a product-code slice that **touches a declared invariant** - the consumer
@@ -419,7 +419,7 @@ source* bullet (re-measure before citing). This line points; it does not restate
 
 ## 3. Commit, push, PR
 
--  **Stage specific paths - never `git add -A` blindly, and confirm the branch first.** The user's
+- **Stage specific paths - never `git add -A` blindly, and confirm the branch first.** The user's
   local working tree often carries unrelated WIP (uncommitted assets, local experiments), and when
   the maintainer co-edits the same checkout a `git checkout` can move HEAD under you - a staged
   commit then lands on the wrong branch. So **before every `git add` / `git commit`, re-check that
@@ -446,7 +446,7 @@ source* bullet (re-measure before citing). This line points; it does not restate
   the issue number sequence, so a guessed number targets a wrong-or-missing object (a guessed
   number can even resolve to some *other* PR).
   Every later step (checks-watch, merge, ready) uses only the number/URL that `create` printed.
--  **PR title = the squash commit subject** in the Project Facts `commit-subject` format (canonical:
+- **PR title = the squash commit subject** in the Project Facts `commit-subject` format (canonical:
   `<type-or-id>: <summary> (vX.Y.Z)`); the length cap is in `versioning-and-changelog`,
   *Version-stamped commit subjects*. **Put `Closes #<issue>` (or the "no issue - <why>" note) in the
   commit MESSAGE BODY** - a line below the subject - so `gh pr create --fill` carries it into the PR
@@ -468,7 +468,7 @@ source* bullet (re-measure before citing). This line points; it does not restate
   and body back (`gh pr view <n> --json title,body`) and correct them with `gh pr edit <n> --title …
   --body-file …` before doing anything else.** Run it on every PR this ritual opens, single-commit
   or not.
--  **Multi-paragraph `gh` bodies go in a temp file - never inline `--body "…"`.** Whenever you pass
+- **Multi-paragraph `gh` bodies go in a temp file - never inline `--body "…"`.** Whenever you pass
   an explicit body to `gh pr create` / `gh issue create` / `gh issue comment` / `gh pr comment`,
   write it to a temp file and use `--body-file <file>`. Inline `--body` quotes badly and breaks
   differently across shells (PowerShell vs POSIX).
@@ -495,7 +495,7 @@ source* bullet (re-measure before citing). This line points; it does not restate
   minute after `gh pr create` even when the body plainly carries `Closes #N` - and the close
   fires off the squash commit message, a different signal. The body grep is synchronous and
   authoritative.
--  **Arm auto-merge (squash), fire-and-forget - then read the armed state back:** `gh pr merge <n>
+- **Arm auto-merge (squash), fire-and-forget - then read the armed state back:** `gh pr merge <n>
   --squash --auto` → `gh pr view <n> --json autoMergeRequest`; `null` ⇒ the arm did not take → arm
   again explicitly or fall back to a plain squash merge once CI is green. An already-`MERGED` state
   read is also a valid answer - an armed PR whose checks were green can land within seconds.
@@ -568,7 +568,7 @@ source* bullet (re-measure before citing). This line points; it does not restate
   <n> --json state,reviewDecision` at the top of a later turn (*Do not watch a background agent*,
   §1, again - an approval wait is a wait, not something to watch). A solo repo
   (`pr-approvals: none`, the default) never hits the wait.
--  **While waiting, use the time - but NOT in the working tree if a non-isolated agent is live in
+- **While waiting, use the time - but NOT in the working tree if a non-isolated agent is live in
   it.** This bullet never licenses moving `HEAD` (§1's *While a non-isolated agent is live*). When
   one is live, keep the wait to **GitHub-only or read-only** work - triage, issue comments, reading
   code. When none is, the tree is yours. Good uses either way: shape a pending idea into a spec via
@@ -584,7 +584,7 @@ source* bullet (re-measure before citing). This line points; it does not restate
      observed-state gate the branch deletion in step 6 already applies. A watcher's or the post-arm
      wait's clean exit, a timeout, or a green CI run is not that observation, and a manual close
      issued on one of those closes an unmerged item.
-  2.  **Unblock the dependents.** A blocker closing leaves its dependents carrying a `blocked` label
+  2. **Unblock the dependents.** A blocker closing leaves its dependents carrying a `blocked` label
      that `backlog` skips unconditionally and nothing removes - **permanently unpickable**. Clear it
      here, on the same bounded-walk terms the contradicted-sibling write-back below states: the walk
      is `gh issue list --state open --label blocked` - bounded to the label, **never a full-backlog

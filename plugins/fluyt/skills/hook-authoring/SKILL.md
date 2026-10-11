@@ -21,8 +21,8 @@ The trust boundary after the four failure modes is binding on any hook other peo
 ### 1. A hook that writes must own its output file
 
 A machine-appended file and a human-authored file must never share a path. A shared filename makes a
-feed unrotatable, untrustable (a reader cannot tell which lines are which), undiffable, and can produce two same-named files - one
-per session root - with only one git-ignored.
+feed unrotatable, untrustable (a reader cannot tell which lines are which), undiffable, and can
+produce two same-named files - one per session root - with only one git-ignored.
 
 The shipped hook writes its own `docs/process/dispatch.local.md`, separate from the hand-written
 friction log at `docs/process/retro-log.local.md`. Generalise: before a hook writes anything, give
@@ -64,18 +64,18 @@ be "absent" needs a control case that must come back "present" - otherwise a che
 reports absent and a check that never ran look identical.
 
 What that control looks like for a hook, and the trap that makes it necessary, on Windows hosts.
-First: **a hook script must contain no doubled backslash.** In a shell-to-runtime argv hand-off (`bash`
-invoking `node`, or any equivalent), `\\` collapses to a single `\` before the runtime sees it, so a
-pattern assembled from *strings* carrying `\\` arrives malformed, its construction throws, and the
-hook's own fail-open `catch` swallows the throw - leaving a hook that allows everything, wearing
-exactly the disguise this failure mode is about. Pattern **literals** with single backslashes
-survive the hand-off intact; where a backslash is genuinely needed inside a string, build it from
-its character code rather than typing it. A POSIX-only consumer may never hit this collapse - but
-the control it implies is platform-independent, and is the half that matters: **the control is
-executing the saved command string through the production path.** Reading the hook, grepping it, or
-running its script straight through the runtime all report green on a hook that is dead in
-production. Load the command from the settings/manifest file **on disk** - never a pasted copy of
-it - run it the way the client runs it, with a case that must come back *blocked*.
+First: **a hook script must contain no doubled backslash.** In a shell-to-runtime argv hand-off
+(`bash` invoking `node`, or any equivalent), `\\` collapses to a single `\` before the runtime sees
+it, so a pattern assembled from *strings* carrying `\\` arrives malformed, its construction throws,
+and the hook's own fail-open `catch` swallows the throw - leaving a hook that allows everything,
+wearing exactly the disguise this failure mode is about. Pattern **literals** with single
+backslashes survive the hand-off intact; where a backslash is genuinely needed inside a string,
+build it from its character code rather than typing it. A POSIX-only consumer may never hit this
+collapse - but the control it implies is platform-independent, and is the half that matters: **the
+control is executing the saved command string through the production path.** Reading the hook,
+grepping it, or running its script straight through the runtime all report green on a hook that is
+dead in production. Load the command from the settings/manifest file **on disk** - never a pasted
+copy of it - run it the way the client runs it, with a case that must come back *blocked*.
 
 The same collapse defeats the **verification**: a one-liner check invoked through the same
 hand-off, itself containing `\\`, silently tests a different pattern than the one on the page. So
@@ -106,8 +106,8 @@ the installer's machine, so these rules bind it.
 2. **No runtime instruction fetch.** A hook never downloads text, instructions or scripts and feeds
    them to the model or executes them; **everything it does is in the shipped `hooks.json`**.
 3. **A network or credential call is allowed only when triggered by a tool call that already does
-   the same kind of thing**, scoped to it, fail-open, and bounded by a timeout. Precedent: the plugin
-   README's *Hooks* section.
+   the same kind of thing**, scoped to it, fail-open, and bounded by a timeout. Precedent: the
+   plugin README's *Hooks* section.
 4. **Every shipped hook is disclosed** in the plugin README's hooks section: event, trigger, what it
    reads and writes, whether it blocks, and whether it uses the network or credentials. A hook added
    without that is incomplete work.

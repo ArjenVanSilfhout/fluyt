@@ -22,6 +22,7 @@ Current version: **1.7.2**
 
 **17 shipped skill files:** a second size cut, about 26 KB in total, with wording-only cuts landing
 at least 2% under the new budgets. Budgets are lowered per the user's call in three tiers:
+
 - **15%:** `orchestrator`, `scrum`, `report-upstream`, `dispatch-role`, `backlog`, `handover`, and
   the `ship-work-item` reference files `parallel-work`, `known-failure-modes` and `portability`.
 - **9%:** `ship-work-item`, `closing-keyword-grep`, `release`, `install-refresh-plugin`, `hub`,

@@ -7,6 +7,7 @@ Short entries, newest first. Format: date · decision · why · reversibility.
 **2026-10-11 · Second budget cut, tiered by how cheaply each file trims · reversible.**
 The user's calls in the session chat, after a read-only per-skill review of what a 15% cut would
 cost:
+
 - "lower the budget by 15% on skills where it's easy to achieve it", then "also" `backlog` and the
   handover skill;
 - "lower closing-keyword-grep, install-refresh-plugin, ship-work-item, release, hub, hook-authoring,

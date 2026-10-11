@@ -51,9 +51,9 @@ No other role name is valid. Claude Code dispatches the native `fluyt:<role>` ag
    **every dispatch**, the fail-fast base check as `ship-work-item` defines it (existence AND commit
    identity) with the expected base SHA stated in the prompt; the subagent has nothing to assert
    against otherwise. The prompt must name the role explicitly. **If the mapped Codex subagent has
-   no shell, it cannot run `git rev-parse`; state the SHA anyway, and its role file already tells it to
-   mark the identity half NOT RUN and say so.** Read a NOT-RUN identity half in the handback as the
-   honest result it is, not a passed check.
+   no shell, it cannot run `git rev-parse`; state the SHA anyway, and its role file already tells it
+   to mark the identity half NOT RUN and say so.** Read a NOT-RUN identity half in the handback as
+   the honest result it is, not a passed check.
 6. Check the returned report against the canonical output contract. Every substantive report must end
    with `Skills consulted: ...`; a missing line is a failed dispatch, corrected before the result
    is used.

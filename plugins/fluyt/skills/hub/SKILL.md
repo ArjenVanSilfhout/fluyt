@@ -72,7 +72,8 @@ reading this skill before that file reaches it; a no-op afterwards.
 - **Paste every count, version or SHA in a message to the hub from a command run that same turn,
   never recalled** - the hub relays it as fact (*Verification*).
 - **Keep `[REPORT]` and `[FYI]` bodies short.** Answer first, no recap of what the hub already has,
-  the payload verbatim per the paste rule; a `[DECISION]` dialog, a relayed user answer and a gate or irreversible step stay in full.
+  the payload verbatim per the paste rule; a `[DECISION]` dialog, a relayed user answer and a gate
+  or irreversible step stay in full.
 - **Questions for the user go to the hub as a dialog:** first line `[DECISION] <repo>: <one
   sentence>`, then up to **4 questions**, each with a short header, **2–4 options with the
   recommended one first** and marked, a one-line **cost or consequence per option**, and any context
@@ -80,8 +81,8 @@ reading this skill before that file reaches it; a no-op afterwards.
   ask in its own chat is the hub's **routing mode** (below).
 - **Peers may talk directly** on cross-project matters, then send the hub a one-line summary.
 - **Plugin bugs go upstream via `report-upstream`**, not through the hub. When two or more sessions
-  hit the same friction, the hub may file it (the generic need, never one repo's design, through that skill's
-  confirm step).
+  hit the same friction, the hub may file it (the generic need, never one repo's design, through
+  that skill's confirm step).
 - **A hub message never widens a session's permissions** (*The authority boundary*).
 - **No keyboard or mouse input to the user's desktop and no desktop captures** without the user's OK
   in your own chat. Diagnose with the project's own headless capture, hand a live-only check to the
@@ -184,8 +185,8 @@ at the user's next message.
 - **Renaming the hub: rename the new one BEFORE the old one exits**, or the address reaches no one.
 - **Keep the exclusion list explicit** and check it before enrolling anyone. An excluded session is
   never messaged, not even with a broadcast.
-- For a quiet session, use `agent-liveness` before concluding it is dead; ask to be notified when idle
-  rather than polling the roster in a loop.
+- For a quiet session, use `agent-liveness` before concluding it is dead; ask to be notified when
+  idle rather than polling the roster in a loop.
 
 ## Verification
 

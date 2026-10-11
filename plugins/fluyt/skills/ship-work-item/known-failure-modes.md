@@ -6,18 +6,18 @@ and *Section* references point into that `SKILL.md`.
 - **Silently-unclosed issues** - `Closes #N` can fail to auto-close (it depends on the default
   branch, and can no-op even when wired right); hence the mandatory post-merge verify +
   manual-close fallback.
-- **Version drift** - "multi-file ⇒ MINOR" applied naively makes the version wobble; hence the tooling-is-PATCH tie-breaker (see
-  `versioning-and-changelog`).
+- **Version drift** - "multi-file ⇒ MINOR" applied naively makes the version wobble; hence the
+  tooling-is-PATCH tie-breaker (see `versioning-and-changelog`).
 - **Orphaned polls** - background auto-merge watch loops die on session teardown ("no completion
   record"); hence fire-and-forget.
 - **A PR closed unmerged by its own cleanup** - deleting a work branch while its PR is still open
   closes that PR instead of merging it and takes both refs with it; hence the observed-`MERGED`
   gate on §4's cleanup step.
 - **Stale or drifted worktree agents** - an isolated agent can load ancient code (its base was the
-  release branch, far behind) or a pre-change agent definition (committed too late), and a base check
-  that only confirms file existence cannot tell the integration branch from a feature branch that
-  happens to contain the same files; hence §1's worktree-agent hygiene, including the commit-identity
-  base check.
+  release branch, far behind) or a pre-change agent definition (committed too late), and a base
+  check that only confirms file existence cannot tell the integration branch from a feature branch
+  that happens to contain the same files; hence §1's worktree-agent hygiene, including the
+  commit-identity base check.
 - **A shared checkout with only one of its two actors guarded** - §3's commit-guard protects the
   *committer*, and nothing addresses the *mover*: a `git checkout` or a commit on merely-disjoint
   paths can collide with a live non-isolated `developer`; hence §1's *While a non-isolated agent is

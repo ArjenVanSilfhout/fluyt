@@ -116,21 +116,21 @@ step runs as written, **including step 4's re-alignment**; a hotfix skips its CH
                                         # <release-branch> ref is stale until you fetch
    git push origin origin/<release-branch>:refs/heads/<integration-branch>
    ```
-   **Push the *fetched* tip, never a stale local ref** - local `<release-branch>` still points at the
-   *previous* release until `fetch`, and pushing it regresses the integration branch. Push
-   `origin/<release-branch>` or the merge commit's SHA. Optionally gate it first:
-   `git merge-base --is-ancestor origin/<integration-branch> origin/<release-branch>` must exit 0 -
-   that is the fast-forward guarantee.
+   **Push the *fetched* tip, never a stale local ref** - local `<release-branch>` still points at
+   the *previous* release until `fetch`, and pushing it regresses the integration branch. Push
+   `origin/<release-branch>` or the merge commit's SHA. Optionally gate it first: `git merge-base
+   --is-ancestor origin/<integration-branch> origin/<release-branch>` must exit 0 - that is the
+   fast-forward guarantee.
 
    This non-force push **recreates** the branch if it was deleted, or **fast-forwards** it if it
-   survived. If it is rejected as non-fast-forward, the integration branch has commits not yet on the
-   release branch - merge the release branch into it rather than force-pushing.
+   survived. If it is rejected as non-fast-forward, the integration branch has commits not yet on
+   the release branch - merge the release branch into it rather than force-pushing.
 
-   **Better: prevent the deletion** - disable *Automatically delete head branches* (`adopt-conventions`
-   §2's *Repo merge settings* step offers it; per-PR cleanup still works via
+   **Better: prevent the deletion** - disable *Automatically delete head branches*
+   (`adopt-conventions` §2's *Repo merge settings* step offers it; per-PR cleanup still works via
    `gh pr merge --delete-branch`) or protect the integration branch (GitHub never auto-deletes a
-   protected branch; the `branch-protection` skill). Either way, **never leave the integration branch gone** - the next
-   work item branches off it.
+   protected branch; the `branch-protection` skill). Either way, **never leave the integration
+   branch gone** - the next work item branches off it.
 
    **If the integration branch is PR-protected and you are not a bypass actor, that push is rejected
    outright** - a zero-bypass `pull_request` rule binds the maintainer too, which is the point of it.
@@ -144,19 +144,20 @@ step runs as written, **including step 4's re-alignment**; a hotfix skips its CH
      **before** opening it.
    - **A required status check will not have reported yet**, and with zero bypass actors there is no
      way to force the merge - so arm auto-merge rather than merging immediately.
-   - **The required check must actually run on this PR.** The back-sync is empty by construction, and
-     a `paths:` / `paths-ignore:`-filtered workflow is *skipped* on it, leaving a required check
+   - **The required check must actually run on this PR.** The back-sync is empty by construction,
+     and a `paths:` / `paths-ignore:`-filtered workflow is *skipped* on it, leaving a required check
      **Pending forever** (`branch-protection` explains). The context named in the integration
      branch's `required_status_checks` must report unconditionally.
    - **A consumer's own automation or workflow may auto-arm this PR with its own method**, winning
-     the race against the arm command below - the PR can read back armed-SQUASH though the command asked for
-     `--merge`. Before opening the PR, check for any workflow or automation that auto-arms merge on PRs into the
-     integration branch, and either exclude the release branch's head from it or expect to override
-     the arm (readback below).
+     the race against the arm command below - the PR can read back armed-SQUASH though the command
+     asked for `--merge`. Before opening the PR, check for any workflow or automation that auto-arms
+     merge on PRs into the integration branch, and either exclude the release branch's head from it
+     or expect to override the arm (readback below).
 
    Write the body to a temp file per the promotion step's `--body-file` note above: this delta is a
-   single merge commit and `--fill` reads only non-merge commits, so it fails with `could not compute
-   title or body defaults: could not find any commits between …` - not a sign the promotion failed.
+   single merge commit and `--fill` reads only non-merge commits, so it fails with `could not
+   compute title or body defaults: could not find any commits between …` - not a sign the promotion
+   failed.
    ```sh
    gh pr create --base <integration-branch> --head <release-branch> --title "Back-sync vX.Y.Z" \
      --body-file <file>
@@ -181,18 +182,18 @@ step runs as written, **including step 4's re-alignment**; a hotfix skips its CH
    empty-diff check below still starts from your own read of the PR's state.
 
    (If the repo has not enabled auto-merge: never watch the check run - `agent-liveness` owns that
-   rule. Run a **bounded check** - `gh pr checks <n>`, no `--watch` - at the top of the next turn that
-   needs the result, and once it reports green, `gh pr merge <n> --merge`. If no next turn is coming,
-   report "back-sync checks pending; merge to do" to whoever coordinates the lane instead.
+   rule. Run a **bounded check** - `gh pr checks <n>`, no `--watch` - at the top of the next turn
+   that needs the result, and once it reports green, `gh pr merge <n> --merge`. If no next turn is
+   coming, report "back-sync checks pending; merge to do" to whoever coordinates the lane instead.
    `adopt-conventions` §2's *Repo merge settings* step offers `allow_auto_merge`.)
 
    **Squashing a back-sync is the one thing that breaks this**: the integration branch *diverges*
-   from the release branch, and the next promotion conflicts or silently reverts. The **integration**
-   branch's ruleset must therefore allow the merge method as well as squash
+   from the release branch, and the next promotion conflicts or silently reverts. The
+   **integration** branch's ruleset must therefore allow the merge method as well as squash
    (`branch-protection` gives it `["squash", "merge"]`; the release branch is merge only).
 
-   **Expect the PR to read "1 commit, 0 files changed"** - the promotion merge commit already carries
-   the integration branch's exact tree. That is proof it worked; don't abandon it.
+   **Expect the PR to read "1 commit, 0 files changed"** - the promotion merge commit already
+   carries the integration branch's exact tree. That is proof it worked; don't abandon it.
 
    After a PR back-sync the two branches are **content-identical but not SHA-identical**: the
    integration branch carries one extra merge commit. That is correct and expected - verify with
@@ -267,10 +268,10 @@ below assumes the two branches differ.
    the push is the step that makes it real; a local-only back-merge leaves the fix exactly where the
    rule says it must not stay. **Never leave a hotfix only on the release branch.** If the integration
    branch is PR-protected with no bypass, open a back-sync PR instead and **merge it with a merge
-   commit**, observing *The ritual* step 4's four preconditions (the required check must report even though
-   this PR is not empty). Nothing follows this arm, so the
-   bounded wait in that step's "all that is left of your turn" paragraph applies. A squashed
-   back-merge loses the merge base, so the next promotion conflicts or reverts the fix.
+   commit**, observing *The ritual* step 4's four preconditions (the required check must report even
+   though this PR is not empty). Nothing follows this arm, so the bounded wait in that step's "all
+   that is left of your turn" paragraph applies. A squashed back-merge loses the merge base, so the
+   next promotion conflicts or reverts the fix.
 
 ## Note for marketplace-style repos
 

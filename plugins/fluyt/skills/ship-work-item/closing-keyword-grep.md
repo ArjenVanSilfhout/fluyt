@@ -19,8 +19,8 @@ that `SKILL.md`.
 - **`gh-[0-9]+`** - `GH-123` is a documented closing form and carries no `#` at all, so every
   `#`-anchored pattern is blind to it.
 - **the `https?://…/issues/N` alternative** - a full issue URL closes just as well as the short form.
-- **`\b`** before the keyword - without it, `disclosed #123` and `prefix #123` both fire. A check that
-  cries wolf stops being read.
+- **`\b`** before the keyword - without it, `disclosed #123` and `prefix #123` both fire. A check
+  that cries wolf stops being read.
 - **`[[:space:]:(]*`** as the separator - absorbs `Closes: #N`, `Fixes:#N` with no space at all, and
   `Fixes(#N)`. A `[[:space:]]+` that demands whitespace misses the last two.
 

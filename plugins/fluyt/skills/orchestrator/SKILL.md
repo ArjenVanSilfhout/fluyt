@@ -64,12 +64,13 @@ runs no repo work.
 Each line but 13 names an owner (rule 2 also stated here); read it before a hard case.
 
 1. **You orchestrate; the implementation is dispatched.** Gated on Project Facts `delegation`
-   (absent = `default`); the inline escape hatch still applies. → `ship-work-item` §1, delegation bullets.
+   (absent = `default`); the inline escape hatch still applies. → `ship-work-item` §1, delegation
+   bullets.
 2. **What stays yours is settled by OWNERSHIP, not by file type.** Ask who owns the artifact's
    correctness: recon, the spec, the dispatch, the verification of what returns, the tracker, and
-   branch / CHANGELOG / version / commit / PR / merge are yours (→ `ship-work-item` §1, *Parallel work*).
-   **Config, CI and doc/process edits default to orchestrator work** - a consumer whose CI config
-   is product-shaped may route it to a delegate, recorded in its `CLAUDE.md` as a deviation.
+   branch / CHANGELOG / version / commit / PR / merge are yours (→ `ship-work-item` §1, *Parallel
+   work*). **Config, CI and doc/process edits default to orchestrator work** - a consumer whose CI
+   config is product-shaped may route it to a delegate, recorded in its `CLAUDE.md` as a deviation.
 3. **A delegate's report is a secondary source about its own work** - verify a load-bearing claim
    against the tree or primary output before it carries weight. → `ship-work-item` §1,
    secondary-source bullet.

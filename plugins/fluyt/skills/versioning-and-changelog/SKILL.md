@@ -95,9 +95,10 @@ ships as a MINOR. Once a project cuts **1.0** a third class turns on:
   behaviour-neutral fix.
 
 What counts as "breaking" is **project-specific** - the MINOR rule's axis, escalated to "consumers
-must change to keep working" - and the consumer's `version-rules` may spell it out (for a plugin/library whose product IS its shipped components: removing or renaming a shipped
-component, or an incompatible change to a Project Facts key's contract). A project still at `0.y`
-can ignore this section until it plans its 1.0.
+must change to keep working" - and the consumer's `version-rules` may spell it out (for a
+plugin/library whose product IS its shipped components: removing or renaming a shipped component, or
+an incompatible change to a Project Facts key's contract). A project still at `0.y` can ignore this
+section until it plans its 1.0.
 
 ## Version-stamped commit subjects
 

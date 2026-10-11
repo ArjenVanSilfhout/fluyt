@@ -53,7 +53,8 @@ Never cherry-pick below the top of this order:
    discussion or spans multiple commits. **When a split is not 1:1** (one box becomes several
    issues), rewrite that box in the epic body at split time as **one box per filed issue**
    (`- [ ] #18`, `- [ ] #19`, …); thereafter the epic tracks issue *closure* - tick a box when its
-   issue closes. Editing an epic's checklist this way is roadmap upkeep, not the *Completion* tracker edit.
+   issue closes. Editing an epic's checklist this way is roadmap upkeep, not the *Completion*
+   tracker edit.
 
 ## Filing a new issue (`gh issue create`)
 
@@ -74,9 +75,9 @@ gh issue create --title "<title>" --body-file body.md --label "<must>,size:S"
 - **Routing labels (only if Project Facts `agent-routing: labels`).** Apply one **`agent:<type>`**
   (default `agent:developer`) and, where the item's complexity warrants overriding the implementer's
   default model, one **`model:<tier>`** (`model:opus` / `model:sonnet` / `model:haiku`, `model:fable`
-  where provisioned). `ship-work-item` (*Model selection*) owns what `model:*` and `agent:*` do at spawn.
-  Values are model aliases + the plugin's agent names. Skip entirely when `agent-routing: none` (the
-  default).
+  where provisioned). `ship-work-item` (*Model selection*) owns what `model:*` and `agent:*` do at
+  spawn. Values are model aliases + the plugin's agent names. Skip entirely when
+  `agent-routing: none` (the default).
 
 ## Re-tiering, relations, decisions, completion - all via `gh`
 
@@ -88,18 +89,19 @@ gh issue create --title "<title>" --body-file body.md --label "<must>,size:S"
   a repo Project Facts `pinned-deps` names, also record the consumer's own pin-bump issue as a
   blocker relation** - the upstream close does not unblock, the bump does. **The label rides WITH a
   relation, never alone:** a block with no issue to point at (external evidence, a decision, an
-  upstream release) goes in a `not-ready-labels` label instead; the unblock step can only surface such an item,
-  never free it. Build any
-  legacy-id → number map ONCE from a `gh issue list --json` snapshot; never loop
-  `gh issue list --search` (the search index lags bulk creation - an empty result means index lag,
-  NOT a missing issue - and it rate-limits at ~30/min).
+  upstream release) goes in a `not-ready-labels` label instead; the unblock step can only surface
+  such an item, never free it. Build any legacy-id → number map ONCE from a `gh issue list --json`
+  snapshot; never loop `gh issue list --search` (the search index lags bulk creation - an empty
+  result means index lag, NOT a missing issue - and it rate-limits at ~30/min).
 - **Relate (lineage):** before filing or triaging an item, search closed AND open items for the same
   component and adjacent vocabulary, and record any hit as one of three named relations, as
-  a **prose `Lineage:` line** (in the filed issue's body, or wherever the tracker records a decision).
-  The three are not interchangeable - lumping them together as "related" loses the signal:
+  a **prose `Lineage:` line** (in the filed issue's body, or wherever the tracker records a
+  decision). The three are not interchangeable - lumping them together as "related" loses the
+  signal:
   - **duplicates / competes-with** (an open item) - reconcile before either is worked, or two changes
-    end up fighting over one file. This is the one relation that must be visible from **both** sides: *if the tracker supports a
-    native duplicate link or label, use it as well* - an affordance, never a requirement.
+    end up fighting over one file. This is the one relation that must be visible from **both**
+    sides: *if the tracker supports a native duplicate link or label, use it as well* - an
+    affordance, never a requirement.
   - **reverses / reopens** (a closed decision) - the dangerous one, because it reads like an ordinary
     feature request. Never tier it silently: route it to the maintainer as a `question`, because a
     prior decision possibly needing revisiting is not an agent's call.
@@ -125,9 +127,9 @@ issue comment.
 an unsorted pile, **except** a `question` issue or an untriaged `from-consumer` issue, which are
 sanctioned tier-less states (awaiting a decision / maintainer triage), not drift. **When Project
 Facts `agent-routing: labels`,** also flag a workable issue (tiered, not `question` / untriaged)
-that carries no `agent:*` label - a soft gap, not a hard drift like a missing tier. Agents without `gh` (e.g. `product-owner`, `scrum-master`,
-`tech-debt-reviewer`) can't run this - the orchestrator hands them this JSON snapshot in the spawn
-prompt.
+that carries no `agent:*` label - a soft gap, not a hard drift like a missing tier. Agents without
+`gh` (e.g. `product-owner`, `scrum-master`, `tech-debt-reviewer`) can't run this - the orchestrator
+hands them this JSON snapshot in the spawn prompt.
 
 **Pinned-dependency freshness (only when Project Facts declares `pinned-deps`).** For each declared
 `<path> @ <owner/repo>` entry, compare the checked-out pin against the upstream's latest release -

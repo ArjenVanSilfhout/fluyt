@@ -64,8 +64,8 @@ under whatever heading fits; skip the rest and say so rather than leave a silent
   hand-over assembled from recollection is the failure the exercise exists to catch.
 - **Cite, don't copy.** Point at `CLAUDE.md`, the decisions file, the CHANGELOG, or an issue rather
   than restating their content - a copy drifts the moment its source changes.
-- **Refresh it, never append.** Each edition **replaces** the last in full; an appended trail leaves a
-  successor guessing which paragraph is still true. **Between full editions, amend in place:**
+- **Refresh it, never append.** Each edition **replaces** the last in full; an appended trail leaves
+  a successor guessing which paragraph is still true. **Between full editions, amend in place:**
   replace each affected section or bullet whole, and keep a SINGLE "last amended `<UTC>` - what
   changed" line in the stamp, replaced each time, never accumulated. A full edition is due at a
   reset or seam, or once amendments pile up.
@@ -105,7 +105,8 @@ consider offering to set one up.
 ## Committing it - only for a tracked hand-over
 
 **Ignored (the default): nothing to commit**, at a seam or mid-item - the file is local, so write it
-and stop. The rest of this section is the **tracked opt-in**, except constraint 4, which holds for both.
+and stop. The rest of this section is the **tracked opt-in**, except constraint 4, which holds for
+both.
 
 **Tell them apart before writing:**
 

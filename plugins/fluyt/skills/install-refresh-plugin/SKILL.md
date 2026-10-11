@@ -208,12 +208,12 @@ grep -o '"ref"[^,}]*' plugins/known_marketplaces.json  # must be present
 ```
 
 Known sharp edge: `/plugin marketplace update` can report the plugin as not found against the
-corrected entry (and `/plugin install` no-ops, as above) - if either happens, fall back to a full uninstall and a
-clean reinstall so the clone is redone against the fixed ref. **Read the install records first,
-though:** `installed_plugins.json` can hold records at
-several scopes (user, plus per-project entries for OTHER repos), and an uninstall can take those
-with it - where the pin is intact and only the payload is behind, the `update` path above refreshes
-without touching any of them, which is why it is the primary path.
+corrected entry (and `/plugin install` no-ops, as above) - if either happens, fall back to a full
+uninstall and a clean reinstall so the clone is redone against the fixed ref. **Read the install
+records first, though:** `installed_plugins.json` can hold records at several scopes (user, plus
+per-project entries for OTHER repos), and an uninstall can take those with it - where the pin is
+intact and only the payload is behind, the `update` path above refreshes without touching any of
+them, which is why it is the primary path.
 
 **Naming the ref matters on the remote side too: `gh api repos/<owner>/<repo>/commits` resolves the
 repository's DEFAULT branch.** For any repo following `adopt-conventions`, the default branch is the
@@ -247,8 +247,8 @@ Two cheap, non-conclusive signals:
 **Both signals are prompts to restart the client.** If a restart is not available and a session
 suspects it is stale, at load-bearing steps read the **marketplace-source copy** (the plugin's own
 home repo, working tree) or the **freshly-updated cache copy** directly as a file, not from memory -
-and remember the loaded **skill catalog itself does not refresh this way**: a skill added, renamed, or
-removed since load stays invisible until restart, whichever file you check.
+and remember the loaded **skill catalog itself does not refresh this way**: a skill added, renamed,
+or removed since load stays invisible until restart, whichever file you check.
 
 **`autoUpdate` is a choice with both costs - present them, recommend neither.** `true` is what makes
 the mid-session swap above reachable at all; `false` trades that freshness for stability, turning an

@@ -12,9 +12,10 @@ description: >-
 
 You are wearing the **scrum-master hat**. Unlike the `fluyt:scrum-master` *subagent* (a
 read-only deep-analysis arm), YOU - the main agent - run this with the full orchestration view: you
-saw what was built, what you dispatched, what came back, and where things snagged. Surface **how the team + workflow are working** and propose **user-verified** improvements: you
-**propose**; the user disposes. Never change `CLAUDE.md`, agent definitions, settings, or
-workflow files as part of a retrospective without explicit sign-off.
+saw what was built, what you dispatched, what came back, and where things snagged. Surface **how the
+team + workflow are working** and propose **user-verified** improvements: you **propose**; the user
+disposes. Never change `CLAUDE.md`, agent definitions, settings, or workflow files as part of a
+retrospective without explicit sign-off.
 
 ## 1. Gather the evidence
 
@@ -39,13 +40,13 @@ Pull from sources that exist, never invented:
   *cadence tripwire* that something ran, **not** a metric. It still **over-counts**: every Task-tool
   spawn stamps at any nesting depth (delegates' own subagents included), and every *resume* stamps
   again, not just the first completion. Dispatch → findings → fix → resume is the *recommended*
-  review loop, so one reviewer resumed once already stamps twice: the inflation is systematic. Untyped
-  stamps are a third over-count source: an `(untyped)` line is a finish event with no subagent type,
-  and can fire with no Task subagent behind them, so **only typed lines correspond to
-  Task dispatches**. A worktree-isolated spawn's stamp survives worktree cleanup (the hook writes into
-  the *session's* project dir), but a ratio built on this feed still divides mismatched populations
-  (a recon probe counts the same as an implementation dispatch). Stamps carry an explicit
-  offset (e.g. `2025-01-01T18:00:00-0500`); compare by instant, not by assumed zone.
+  review loop, so one reviewer resumed once already stamps twice: the inflation is systematic.
+  Untyped stamps are a third over-count source: an `(untyped)` line is a finish event with no
+  subagent type, and can fire with no Task subagent behind them, so **only typed lines correspond to
+  Task dispatches**. A worktree-isolated spawn's stamp survives worktree cleanup (the hook writes
+  into the *session's* project dir), but a ratio built on this feed still divides mismatched
+  populations (a recon probe counts the same as an implementation dispatch). Stamps carry an
+  explicit offset (e.g. `2025-01-01T18:00:00-0500`); compare by instant, not by assumed zone.
 - **Friction notes** - `docs/process/retro-log.local.md` if present. Separate from the dispatch
   counter, so it is **100% friction signal**: every line is a one-line note a human or an agent
   appended about something that snagged, never a hook stamp - orchestrator-side snags and
@@ -77,8 +78,9 @@ subagent the backlog JSON snapshot in its prompt (it has no `gh`), the resolved 
 and the blocker / friction context it can't see from outside the session.
 
 Look for: what went **well** (keep doing), what caused **friction** (rework, confusion, wasted
-passes), **blockers** agents hit and whether they were surfaced or silently worked around, and whether a small change to a `CLAUDE.md` rule, an agent definition, a tool/permission, or
-the workflow would remove the friction.
+passes), **blockers** agents hit and whether they were surfaced or silently worked around, and
+whether a small change to a `CLAUDE.md` rule, an agent definition, a tool/permission, or the
+workflow would remove the friction.
 
 ## 3. Propose (small, concrete, verifiable)
 

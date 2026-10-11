@@ -39,8 +39,8 @@ consumer uses `gh` here.
 
 ## Prerequisites
 
-- **`gh` must be authenticated**; filing needs only a GitHub account. If `gh` cannot reach `ArjenVanSilfhout/fluyt`, skip to
-  **"No `gh`? Use the web form"** below.
+- **`gh` must be authenticated**; filing needs only a GitHub account. If `gh` cannot reach
+  `ArjenVanSilfhout/fluyt`, skip to **"No `gh`? Use the web form"** below.
 - **Be on the latest plugin first.** Run `/plugin marketplace update fluyt` - the bug may already be
   fixed on current `main`. Note the installed release version (step 2).
 
@@ -67,10 +67,10 @@ Collect:
     triggers it, and any message).
   - *Feature:* the problem it solves, a sketch of the desired behaviour, and **why it belongs in the
     shared plugin** (which other project benefits) rather than as a local skill.
-- **Version note - state the installed release; you can always determine it** (`install-refresh-plugin`,
-  *Which release is installed*):
-  `grep '"version"' <installPath>/.codex-plugin/plugin.json`. Give that version, plus the date and
-  installed commit if known. "On latest `main`" alone cannot be triaged against a release.
+- **Version note - state the installed release; you can always determine it**
+  (`install-refresh-plugin`, *Which release is installed*): `grep '"version"'
+  <installPath>/.codex-plugin/plugin.json`. Give that version, plus the date and installed commit if
+  known. "On latest `main`" alone cannot be triaged against a release.
 
 ## 3. De-dupe (lightly)
 

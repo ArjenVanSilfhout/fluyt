@@ -3,22 +3,22 @@
 The on-demand part of the `ship-work-item` skill, read when its `SKILL.md` points here; its `§N`
 and *Section* references point into that `SKILL.md`.
 
-The default ritual is one item at a time. When several **independent** items have **non-overlapping file
-sets**,
-you can parallelize the *implementation* while keeping *integration* strictly one-PR-at-a-time (the
-§4 rule holds unchanged). Don't reach for this unless the items are genuinely file-disjoint.
+The default ritual is one item at a time. When several **independent** items have **non-overlapping
+file sets**, you can parallelize the *implementation* while keeping *integration* strictly
+one-PR-at-a-time (the §4 rule holds unchanged). Don't reach for this unless the items are genuinely
+file-disjoint.
 
 1. **Pick FILE-DISJOINT items; the orchestrator owns the shared files.** No two items may edit the
    same file. The `changelog` and its `Current version:` bump are shared by every item, so **you
    (the orchestrator) own them** and no spawned agent touches them, which keeps N top-of-file
    CHANGELOG edits conflict-free.
-2. **One `developer` per item, `isolation: worktree`.** Parallel builds then neither share a working tree
-   nor race on build-output directories. Instruct each to: implement ONLY its listed files; get `build-cmd` + `test-cmd` green **per Project Facts (skip
-   whichever is `none`)**; commit on its worktree branch; and **report its worktree path and
-   branch** - the spawn's completion metadata carries the worktree path, with `git worktree list`
-   from the main checkout as the fallback. Have it also print `git branch --show-current` and `git
-   log --oneline -1` so you can map branch → commit. The §1 worktree-agent hygiene applies to every
-   spawn.
+2. **One `developer` per item, `isolation: worktree`.** Parallel builds then neither share a working
+   tree nor race on build-output directories. Instruct each to: implement ONLY its listed files; get
+   `build-cmd` + `test-cmd` green **per Project Facts (skip whichever is `none`)**; commit on its
+   worktree branch; and **report its worktree path and branch** - the spawn's completion metadata
+   carries the worktree path, with `git worktree list` from the main checkout as the fallback. Have
+   it also print `git branch --show-current` and `git log --oneline -1` so you can map branch →
+   commit. The §1 worktree-agent hygiene applies to every spawn.
 3. **Run `test-writer` in that dev's *existing* worktree - not a fresh one.** `isolation: worktree`
    always mints a *new* worktree, so to test exactly what the dev built, spawn `test-writer`
    **non-isolated** (it runs in the main checkout) and point it at the dev's worktree path in its
