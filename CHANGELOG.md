@@ -14,9 +14,18 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.2.1**
+Current version: **1.2.2**
 
 ---
+
+## [1.2.2] — 2026-10-11
+
+**Docs (README):** "Staying current" now gives the full Claude Code update path: marketplace update,
+`claude plugin update fluyt@fluyt` (with `--scope project` for a project-scoped record), and a
+restart; Codex gets its new-task step.
+
+The old text stopped at the marketplace update, which refreshes the clone but not the installed
+payload, as the `install-refresh-plugin` skill already explains. PATCH: documentation only.
 
 ## [1.2.1] — 2026-10-11
 

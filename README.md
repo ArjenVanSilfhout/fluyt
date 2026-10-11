@@ -102,10 +102,13 @@ On Codex: `$fluyt:ship-work-item`.
 
 ### Staying current
 
-Update the plugin (`/plugin marketplace update fluyt` on Claude Code;
-`codex plugin marketplace upgrade fluyt`, then `codex plugin add fluyt@fluyt`,
-on Codex), then run `adopt-conventions` in re-sync mode ("re-sync the conventions"). It proposes
-what changed and applies nothing without your yes.
+**Claude Code**, three steps, each needed: `claude plugin marketplace update fluyt` refreshes the
+marketplace clone; `claude plugin update fluyt@fluyt` re-points the install record at the new
+payload (for a repo with a project-scoped record, run it from that folder with `--scope project`);
+then restart Claude Code, because a running session can keep the payload it loaded. **Codex:**
+`codex plugin marketplace upgrade fluyt`, then `codex plugin add fluyt@fluyt`, then start a new
+task. On either client, then run `adopt-conventions` in re-sync mode ("re-sync the conventions").
+It proposes what changed and applies nothing without your yes.
 
 ## What's inside
 
