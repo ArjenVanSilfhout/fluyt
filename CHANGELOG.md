@@ -14,9 +14,16 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.4.1**
+Current version: **1.4.2**
 
 ---
+
+## [1.4.2] — 2026-10-11
+
+**Docs (CLAUDE.md):** the three Project Facts marked `provenance: chosen` (codename release titles,
+the hand-over path, the commit-subject format) now read `provenance: ratified @v1.3.1`, the
+installed payload version, on the user's confirmation; `agent-routing` stays `chosen`.
+PATCH: repo-side documentation.
 
 ## [1.4.1] — 2026-10-11
 
