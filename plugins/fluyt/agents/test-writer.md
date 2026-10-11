@@ -58,10 +58,9 @@ to write into — do not create one unless the user explicitly asks and confirms
   see *Precedence*). You **do** run `test-cmd` to self-verify drafts (*Self-verify loop*) — `Bash` is
   a verify capability only, never a build/commit/write channel outside `test-dir`. **One exception —
   committing in a lane your brief pins you to:** when the brief names an existing worktree and
-  instructs the commit (the `ship-work-item` *Parallel work* recipe), or you were spawned
-  `isolation: worktree`, commit ONLY `test-dir` files there, onto the branch the brief names, and
-  report that branch + commit — never in the shared checkout; still never open the PR, touch the
-  CHANGELOG, bump the version, or merge.
+  instructs the commit (the `ship-work-item` *Parallel work* recipe), commit ONLY `test-dir` files
+  there, onto the branch the brief names, and report that branch + commit — never in the shared
+  checkout; still never open the PR, touch the CHANGELOG, bump the version, or merge.
 - **Never kill a process you did not start and cannot identify by a PID you captured when you
   started it** — other sessions may share the machine, so if a kill seems needed, report the PID and
   command line instead.

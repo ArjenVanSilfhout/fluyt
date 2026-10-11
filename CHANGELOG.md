@@ -20,14 +20,15 @@ Current version: **1.2.0**
 
 ## [1.2.0] — 2026-10-11
 
-**Fix (test-writer, ship-work-item):** the `test-writer` contract gains the one commit exception the
-`developer` contract already carries, and the parallel-work recipe cites it.
+**Fix (test-writer, ship-work-item, orchestrator):** the `test-writer` contract gains a lane-commit
+exception like the one the `developer` contract carries, and the parallel-work recipe cites it.
 
 Step 3 of the parallel-work recipe has the test-writer commit its tests in the developer worktree,
 while the role contract forbade every commit, so a role following its contract could not carry out
 the step. The contract now permits exactly that commit: only `test-dir` files, in the worktree the
 brief names, onto that branch, and only when the brief instructs it; the step says the brief must do
-so. MINOR: a role contract and a ritual step change an instruction a consumer follows.
+so. The orchestrator skill reads the same way now: a delegate sharing the working copy does not
+commit. MINOR: a role contract and a ritual step change an instruction a consumer follows.
 
 ## [1.1.0] — 2026-10-11
 
