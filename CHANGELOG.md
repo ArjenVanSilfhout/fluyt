@@ -14,9 +14,44 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.6.0**
+Current version: **1.7.2**
 
 ---
+
+## [1.7.2] — 2026-10-11
+
+**17 shipped skill files:** a second size cut, about 26 KB in total, with wording-only cuts landing
+at least 2% under the new budgets. Budgets are lowered per the user's call in three tiers:
+
+- **15%:** `orchestrator`, `scrum`, `report-upstream`, `dispatch-role`, `backlog`, `handover`, and
+  the `ship-work-item` reference files `parallel-work`, `known-failure-modes` and `portability`.
+- **9%:** `ship-work-item`, `closing-keyword-grep`, `release`, `install-refresh-plugin`, `hub`,
+  `hook-authoring` and `versioning-and-changelog`.
+- **6%:** `adopt-conventions`.
+
+Most cuts replace an explanation with a pointer to the skill that owns it. `orchestrator`'s chain
+diagram is redrawn in ASCII. An adversarial review of every removed span found fifteen small
+losses of logic (a dropped qualifier, warning or scope), and each was restored. PATCH: no instruction
+a consumer follows changes.
+
+## [1.7.1] — 2026-10-11
+
+**Fix (ship-work-item, orchestrator, scrum):** four doc errors found in a size review.
+`ship-work-item` dropped its own arrow legend, left over after 1.6.0 moved the legend into the
+instruction-file skeletons. `portability.md` no longer calls every trap a scoped conditional,
+since its last two rules apply on every OS. `orchestrator`'s description, lead-in and rules
+heading now agree that rules 2 and 13 are its own. `scrum` no longer cites a `report-upstream`
+warning that does not exist. PATCH: no instruction a consumer follows changes.
+
+## [1.7.0] — 2026-10-11
+
+**release (*The ritual* step 3):** GitHub Release notes are now a short summary of everything since
+the previous release, instead of pasted CHANGELOG sections. The summary opens with one line naming
+the previous release, groups short bullets by area with one line per change describing its effect
+on the reader, and closes with a pointer to the CHANGELOG version range. *Afterwards* now points to
+that summary. Repo-side, `scripts/publish-release.ps1` no longer builds notes: it requires
+`-NotesFile` and refuses to publish without a readable, non-empty one. MINOR: a shipped skill
+changes an output a consumer produces.
 
 ## [1.6.0] — 2026-10-11
 

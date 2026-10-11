@@ -23,9 +23,8 @@ A key that merely **gates an optional feature** (e.g. `release-milestones`, `rel
 different: when it is absent - including because the consumer's Project Facts block predates the key
 being added to the template - treat it as its **documented default**, not a STOP. For
 `release-milestones` the default is `no` (skip the milestone step); for `release-tags` the default is
-`yes` (tag the release); for `release-publish` the default is `none` (skip the publish step) - so an
-early adopter silently gets the safe default for each instead of an error. STOP-and-ask is for the
-required keys above, not for an unset feature gate.
+`yes` (tag the release); for `release-publish` the default is `none` (skip the publish step).
+STOP-and-ask is for the required keys above, not for an unset feature gate.
 
 **The one rule that matters:** the release PR merges with a regular **MERGE COMMIT, never squash** -
 squashing collapses the whole release into one commit and loses the per-item history that the
@@ -53,19 +52,14 @@ always squash.)
 
 **Milestone completeness is not one of these preconditions.** A promotion carries whatever has landed
 on the integration branch; an open **planning** milestone (the `backlog` skill's `milestones` key)
-with unfinished items or an unanswered question inside it does not gate the cut. Promoting and
-closing a milestone are separate acts - treating the silence as a gate holds the cut open
-indefinitely, costing consumers time on older behaviour for a reason unrelated to them. A
-**release** milestone (`release-milestones: yes`) cannot block a cut either - see *The ritual*
-step 5, which creates *and* closes it at the cut, so it cannot be incomplete beforehand. If a
-consumer genuinely wants a cut gated on something beyond the four preconditions above, that belongs
-in their own `CLAUDE.md` as a stated rule, not inferred from this skill's silence.
+with unfinished items or an unanswered question inside it does not gate the cut, and neither does a
+**release** milestone (*The ritual* step 5 creates *and* closes it at the cut). A consumer that
+wants a cut gated on something beyond the four preconditions above states it in its own `CLAUDE.md`.
 
 **Optional - offer a pre-release tech-debt / doc-drift scan.** A release is a natural checkpoint for
 drift accumulated across the shipped items: *offer* - not gate - a run of `fluyt:tech-debt-reviewer`
 (with its doc-drift lens - skills/`CLAUDE.md` that contradict the code) over the release range
-before promoting. The `backlog` skill's hygiene pass carries the same offer, so declining here is
-not the last chance; take it when the cut is substantial and skip freely for a small or docs-only
+before promoting. Take it when the cut is substantial and skip freely for a small or docs-only
 one. **If you run it, hand it the open-issue snapshot** in the spawn prompt - `tech-debt-reviewer`
 has no `gh` and reviews blind without it.
 
@@ -103,11 +97,13 @@ step runs as written, **including step 4's re-alignment**; a hotfix skips its CH
    git push origin vX.Y.Z
    ```
    **Publish a GitHub Release - only when `github-releases: yes`** (default `no`; it implies
-   `release-tags: yes`, since a Release needs a tag). Draw the notes from the CHANGELOG sections that
-   are **new in this release** (a release bundles several `## [X.Y.Z]` entries since the last one) -
-   write them to a temp file, then:
+   `release-tags: yes`, since a Release needs a tag). Write a **summary** of everything since the
+   previous release, never CHANGELOG sections pasted: one opening line naming the previous release;
+   short bullets grouped by area (whatever areas this release touched); one line per change, giving
+   its effect on the reader, not the mechanism; a closing pointer to the CHANGELOG version range for
+   full detail. Write it to a temp file, then:
    ```sh
-   gh release create vX.Y.Z --title "vX.Y.Z" --notes-file <changelog-excerpt>
+   gh release create vX.Y.Z --title "vX.Y.Z" --notes-file <notes-file>
    ```
    The tag and Release are **human-facing markers**; consumers still pin the branch tip.
 4. **Restore the integration branch - GitHub may have just auto-deleted it.** If the repo has
@@ -120,26 +116,21 @@ step runs as written, **including step 4's re-alignment**; a hotfix skips its CH
                                         # <release-branch> ref is stale until you fetch
    git push origin origin/<release-branch>:refs/heads/<integration-branch>
    ```
-   **Push the *fetched* tip, never a stale local ref** - step 2 merges on GitHub, so local
-   `<release-branch>` still points at the *previous* release until `fetch`; pushing the stale SHA
-   regresses the integration branch (git's non-fast-forward check catches it, but don't lean on it).
-   Push `origin/<release-branch>` (the fetched remote-tracking ref) or the merge commit's SHA.
-   Optionally gate it first:
-   `git merge-base --is-ancestor origin/<integration-branch> origin/<release-branch>` must exit 0 -
-   that is the fast-forward guarantee.
+   **Push the *fetched* tip, never a stale local ref** - local `<release-branch>` still points at
+   the *previous* release until `fetch`, and pushing it regresses the integration branch. Push
+   `origin/<release-branch>` or the merge commit's SHA. Optionally gate it first: `git merge-base
+   --is-ancestor origin/<integration-branch> origin/<release-branch>` must exit 0 - that is the
+   fast-forward guarantee.
 
-   This non-force push **recreates** the branch if it was deleted, or **fast-forwards** it to the
-   release tip if it survived (the integration branch is an ancestor of the merge commit just made,
-   so the fast-forward is safe). If the push is rejected as non-fast-forward, the integration branch
-   has commits not yet on the release branch - merge the release branch into it rather than
-   force-pushing.
+   This non-force push **recreates** the branch if it was deleted, or **fast-forwards** it if it
+   survived. If it is rejected as non-fast-forward, the integration branch has commits not yet on
+   the release branch - merge the release branch into it rather than force-pushing.
 
-   **Better: prevent the deletion for this branch shape** - either disable *Automatically delete head
-   branches* for the repo (per-PR cleanup still works via `gh pr merge --delete-branch`), or protect
-   the integration branch (GitHub never auto-deletes a protected branch). `adopt-conventions` offers
-   the first under §2's *Repo merge settings* step; the second is the `branch-protection` skill,
-   which its §5 routes to. Either way, **never leave the integration branch gone** - the next work
-   item branches off it.
+   **Better: prevent the deletion** - disable *Automatically delete head branches*
+   (`adopt-conventions` §2's *Repo merge settings* step offers it; per-PR cleanup still works via
+   `gh pr merge --delete-branch`) or protect the integration branch (GitHub never auto-deletes a
+   protected branch; the `branch-protection` skill). Either way, **never leave the integration
+   branch gone** - the next work item branches off it.
 
    **If the integration branch is PR-protected and you are not a bypass actor, that push is rejected
    outright** - a zero-bypass `pull_request` rule binds the maintainer too, which is the point of it.
@@ -147,28 +138,26 @@ step runs as written, **including step 4's re-alignment**; a hotfix skips its CH
    permanently if skipped:
 
    - **The back-sync PR's head is the RELEASE branch.** With *Automatically delete head branches*
-     enabled, GitHub deletes a merged PR's head unless it is the default branch or protected - so
-     merging this PR **deletes the branch your consumers pin**. Confirm
+     enabled, merging this PR **deletes the branch your consumers pin**. Confirm
      `gh api repos/{owner}/{repo} --jq .delete_branch_on_merge` is `false`, or give the release branch
-     its own ruleset carrying `deletion` (the `branch-protection` skill offers exactly that shape as
-     its `release` role), **before** opening it.
+     its own ruleset carrying `deletion` (the `branch-protection` skill's `release` role),
+     **before** opening it.
    - **A required status check will not have reported yet**, and with zero bypass actors there is no
      way to force the merge - so arm auto-merge rather than merging immediately.
-   - **The required check must actually run on this PR.** The back-sync is empty by construction (see
-     below), and a workflow filtered with `paths:` / `paths-ignore:` is *skipped* on a zero-change PR
-     while GitHub holds a skipped-but-required check as **Pending forever** - which deadlocks the PR
-     with no recovery short of disabling the ruleset. The context named in the integration branch's
-     `required_status_checks` must be one that reports unconditionally.
-   - **A consumer's own automation or workflow may auto-arm this PR with its own method**, racing the
-     arm command below and winning it - the PR can read back armed-SQUASH even though the command that
-     ran asked for `--merge`. Before opening the back-sync PR, check for any workflow that auto-arms
-     merge on PRs into the integration branch, and either exclude the release branch's head from it or
-     expect to override the arm - see the readback immediately after the arm command below.
+   - **The required check must actually run on this PR.** The back-sync is empty by construction,
+     and a `paths:` / `paths-ignore:`-filtered workflow is *skipped* on it, leaving a required check
+     **Pending forever** (`branch-protection` explains). The context named in the integration
+     branch's `required_status_checks` must report unconditionally.
+   - **A consumer's own automation or workflow may auto-arm this PR with its own method**, winning
+     the race against the arm command below - the PR can read back armed-SQUASH though the command
+     asked for `--merge`. Before opening the PR, check for any workflow or automation that auto-arms
+     merge on PRs into the integration branch, and either exclude the release branch's head from it
+     or expect to override the arm (readback below).
 
-   Write the body to a temp file per the promotion step's `--body-file` note above: **this delta is
-   by construction a single merge commit**, and `--fill` reads only non-merge commits, so it fails
-   with `could not compute title or body defaults: could not find any commits between …` - that
-   error is not a sign the promotion failed.
+   Write the body to a temp file per the promotion step's `--body-file` note above: this delta is a
+   single merge commit and `--fill` reads only non-merge commits, so it fails with `could not
+   compute title or body defaults: could not find any commits between …` - not a sign the promotion
+   failed.
    ```sh
    gh pr create --base <integration-branch> --head <release-branch> --title "Back-sync vX.Y.Z" \
      --body-file <file>
@@ -193,22 +182,18 @@ step runs as written, **including step 4's re-alignment**; a hotfix skips its CH
    empty-diff check below still starts from your own read of the PR's state.
 
    (If the repo has not enabled auto-merge: never watch the check run - `agent-liveness` owns that
-   rule (dispatch-detached / never-watch). A CI run is minutes, not one command - that's a wait, not
-   a check. Instead, run a **bounded check** - `gh pr checks <n>`, no `--watch` - at the top of the
-   next turn that needs the result, and once it reports green, `gh pr merge <n> --merge`. If no next
-   turn is coming, report "back-sync checks pending; merge to do" to whoever coordinates the lane
-   instead. `adopt-conventions` §2's *Repo merge settings* step offers `allow_auto_merge`.)
+   rule. Run a **bounded check** - `gh pr checks <n>`, no `--watch` - at the top of the next turn
+   that needs the result, and once it reports green, `gh pr merge <n> --merge`. If no next turn is
+   coming, report "back-sync checks pending; merge to do" to whoever coordinates the lane instead.
+   `adopt-conventions` §2's *Repo merge settings* step offers `allow_auto_merge`.)
 
-   **Squashing a back-sync is the one thing that breaks this.** It replaces the release history with a
-   single new commit, so the integration branch *diverges* from the release branch instead of
-   re-aligning with it, and the next promotion either conflicts or silently reverts. The
-   **integration** branch's ruleset must therefore allow the merge method as well as squash - the
-   protection offer in the `branch-protection` skill gives that branch `["squash", "merge"]` for
-   exactly this reason (the release branch is the opposite: merge only).
+   **Squashing a back-sync is the one thing that breaks this**: the integration branch *diverges*
+   from the release branch, and the next promotion conflicts or silently reverts. The
+   **integration** branch's ruleset must therefore allow the merge method as well as squash
+   (`branch-protection` gives it `["squash", "merge"]`; the release branch is merge only).
 
-   **Expect the PR to read "1 commit, 0 files changed."** The promotion merge commit already carries
-   the integration branch's exact tree, so there is nothing to diff - proof it worked, not a sign it
-   failed. Don't abandon it.
+   **Expect the PR to read "1 commit, 0 files changed"** - the promotion merge commit already
+   carries the integration branch's exact tree. That is proof it worked; don't abandon it.
 
    After a PR back-sync the two branches are **content-identical but not SHA-identical**: the
    integration branch carries one extra merge commit. That is correct and expected - verify with
@@ -218,25 +203,20 @@ step runs as written, **including step 4's re-alignment**; a hotfix skips its CH
    git merge-base --is-ancestor origin/<release-branch> origin/<integration-branch>   # exit 0
    git diff --quiet origin/<release-branch> origin/<integration-branch>               # exit 0
    ```
-5. **Record the release milestone** - only if Project Facts `release-milestones: yes` (an absent key
-   counts as `no` - see the default rule in Pre-flight; do not STOP for it). Group the
-   items that shipped in this release under a GitHub Milestone named for the release version, so the
-   release has a durable "what shipped in vX.Y.Z" record. This key is **orthogonal** to the `backlog`
-   skill's `milestones` key: `milestones` governs *planning* milestones (open, used to select work);
-   `release-milestones` governs *release-version* milestones (created and closed at release). A
-   project can use either, both, or neither - but **both is awkward**: never assign an issue already
-   in a live planning milestone to the release milestone too, which leaves release milestones
-   partial whenever both schemes are used, so prefer one unless you deliberately want that.
+5. **Record the release milestone** - only if Project Facts `release-milestones: yes` (absent counts
+   as `no`, per the default rule above). Group the items that shipped in this release under a GitHub
+   Milestone named for the release version, so the release has a durable "what shipped in vX.Y.Z"
+   record. This key is **orthogonal** to the `backlog`
+   skill's `milestones` key (*planning* milestones, open, used to select work); `release-milestones`
+   governs *release-version* milestones (created and closed at release). **Never assign an issue
+   already in a live planning milestone to the release milestone too.**
 
    **First derive the shipped-issue set, and guard on it.** List the `#N` this release closed - from
    this release's CHANGELOG section(s) (their `Closes #N` lines) or from
    `git log <previous-release>..<release-branch> --oneline` subjects. **If that set is empty, skip
-   this step entirely - create no milestone.** A cut that closed zero issues (a tooling-only / "no
-   issue" release) gets none; an empty `vX.Y.Z` milestone reads as "a release with nothing in it".
-   Only when the set is **non-empty**, create → populate → close in one pass (a
-   track-main repo has no open planning milestone to work within):
+   this step entirely - create no milestone.** Only when it is **non-empty**, create → populate →
+   close in one pass:
    ```sh
-   # Only if the shipped-issue set derived above is non-empty:
    # 1. Ensure the milestone exists (ignore "already_exists"):
    gh api "repos/<owner>/<repo>/milestones" -f title="vX.Y.Z" -f description="Release vX.Y.Z" \
      --jq '.number' 2>/dev/null || \
@@ -246,8 +226,8 @@ step runs as written, **including step 4's re-alignment**; a hotfix skips its CH
    gh api -X PATCH "repos/<owner>/<repo>/milestones/<milestone-number>" -f state=closed
    ```
 
-6. **Run the publish step - only if Project Facts `release-publish` is set** (not `none`; an absent
-   key counts as `none`, exactly like the other optional gates in Pre-flight). After the promotion,
+6. **Run the publish step - only if Project Facts `release-publish` is set** (not `none`; absent
+   counts as `none`, per the default rule above). After the promotion,
    tag, and milestone, perform the declared publish - the documented command or manual step - that
    pushes the release to wherever consumers actually consume it: a package registry, a store, a
    deploy target. A **git-only** release (a marketplace repo whose consumers pin the branch tip)
@@ -260,8 +240,7 @@ step runs as written, **including step 4's re-alignment**; a hotfix skips its CH
 
 Nothing in the CHANGELOG changes at release time, and there is no tracker to sync - the backlog
 issues were closed per work item as they merged (and, if `release-milestones: yes`, grouped under the
-release-version milestone in step 5). If the user wants release notes, derive them from the CHANGELOG
-entries between the two releases.
+release-version milestone in step 5). Release notes are step 3's summary.
 
 ## Hotfix (out-of-band release)
 
@@ -278,14 +257,10 @@ below assumes the two branches differ.
 2. Fix and verify (build / test per Project Facts); bump the CHANGELOG (a PATCH - see `version-rules`).
 3. Open a PR **into the release branch**, **confirm the cut with the user** (for a marketplace repo
    this is a live publish to consumers; Pre-flight 4's unratified-call check applies here too), and
-   **merge it with a merge commit** -
-   `gh pr merge <n> --merge`, never squash, exactly as *The ritual* step 2. The never-squash rule
-   belongs to a split topology's **release branch**, not to the promotion PR alone: every PR landing
-   on that branch merges the same way, and the default button is still squash. If the consumer took
-   the `release` **role's** ruleset from the `branch-protection` skill (`allowed_merge_methods:
-   ["merge"]`),
-   a squash is rejected at the button - so reaching for it mid-hotfix costs a round trip on the change
-   that is in a hurry. (The `trunk` role is the opposite - `["squash"]` - hence split-topology only.)
+   **merge it with a merge commit** - `gh pr merge <n> --merge`, never squash, as *The ritual*
+   step 2. The never-squash rule belongs to the split topology's **release branch**, not to the
+   promotion PR alone: every PR landing on it merges the same way, and the default button is still
+   squash. The `branch-protection` skill's `release` role ruleset rejects a squash at the button.
 4. If `release-tags: yes` / `github-releases: yes`, tag + publish the Release as in *The ritual* step 3.
 5. **Merge the release branch back down into the integration branch** so the next promotion doesn't
    revert the fix:
@@ -293,16 +268,15 @@ below assumes the two branches differ.
    the push is the step that makes it real; a local-only back-merge leaves the fix exactly where the
    rule says it must not stay. **Never leave a hotfix only on the release branch.** If the integration
    branch is PR-protected with no bypass, open a back-sync PR instead and **merge it with a merge
-   commit**, observing the same four preconditions as *The ritual* step 4 (the PR's head is the
-   release branch, so check `delete_branch_on_merge`; arm auto-merge; the required check must report on
-   it; a consumer workflow may auto-arm over it, so read the armed method back). Nothing follows
-   this arm, so the bounded wait in that step's "all that is left of your turn" paragraph applies. A
-   squashed back-merge loses the merge base, so the next promotion conflicts or reverts the fix.
+   commit**, observing *The ritual* step 4's four preconditions (the required check must report even
+   though this PR is not empty). Nothing follows this arm, so the bounded wait in that step's "all
+   that is left of your turn" paragraph applies. A squashed back-merge loses the merge base, so the
+   next promotion conflicts or reverts the fix.
 
 ## Note for marketplace-style repos
 
 If this repo is itself a plugin marketplace whose consumers pin to the release branch tip, every
-merge onto that branch is a live update to all of them - treat a release as a publish, and lean on
-CI being green on the release branch before promoting. Tags aren't required here - but the repo MAY
-set `release-tags: yes` + `github-releases: yes` for human-facing GitHub Releases (a marker, not the
+merge onto that branch is a live update to all of them - treat a release as a publish, with CI green
+on the release branch before promoting. Tags aren't required here; the repo MAY set
+`release-tags: yes` + `github-releases: yes` for human-facing GitHub Releases (a marker, not the
 pin).

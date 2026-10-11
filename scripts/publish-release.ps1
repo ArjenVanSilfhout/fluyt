@@ -4,8 +4,9 @@
 
 .DESCRIPTION
     The `release` skill's *The ritual* step 3 tags the release merge commit on the release branch
-    (`release-tags: yes`) and publishes a GitHub Release whose notes are the CHANGELOG sections new
-    in that release (`github-releases: yes`, titled `vX.Y.Z "Name"` per Project Facts). A cloud
+    (`release-tags: yes`) and publishes a GitHub Release (`github-releases: yes`, titled
+    `vX.Y.Z "Name"` per Project Facts) whose notes are a short summary the agent or maintainer
+    writes - see -NotesFile below. A cloud
     agent session can promote the release (PR + merge commit on `main`) but is refused both halves
     of step 3 - `git push origin <tag>` and `gh release create` answer HTTP 403 "not permitted for
     this session type". This script is the hand-off: the session
@@ -20,20 +21,25 @@
         <Version>. Read via `git show <commit>:CHANGELOG.md`, never the working tree: `dev` has
         usually moved past the release by now, so the checkout's CHANGELOG is the wrong file;
       - tag `v<Version>` exists neither locally nor on origin;
+      - -NotesFile is given, readable and not blank (checked first, before any network call);
       - `gh auth status` succeeds (skipped under -DryRun).
 
-    The notes are every CHANGELOG section from `## [<Version>]` down to (not including) the section
-    of the newest PRIOR release tag - the highest-semver `vX.Y.Z` tag merged into the release
-    commit - so a release that bundles several work items carries all of their entries. One summary
-    line naming the previous release (and its codename, when `gh` can read it) is prepended.
+    The notes are NEVER generated here: -NotesFile (mandatory) is the summary, passed to
+    `gh release create --notes-file` as written. A release that bundles several work items read, when
+    pasted from the CHANGELOG sections, as one long repetitive log (DECISIONS.md, 2026-10-11: notes
+    read like v1.0.0 - an opening line naming the previous release, short bullets grouped by area,
+    one line per change giving its effect on the reader, a pointer to the CHANGELOG version range).
+    Write it per the `release` skill's *The ritual* step 3. With no usable file the script refuses
+    to publish, and there is deliberately NO fallback to the raw CHANGELOG paste: a silent fallback
+    would reintroduce exactly the log the file exists to replace.
 
     PowerShell 5.1-compatible on purpose (maintainers may run either 5.1 or 7): no ternary, no `??`,
     no PS7-only cmdlets. Native calls are checked by $LASTEXITCODE, never by $? - see the
     `ship-work-item` skill's portability.md on why a redirected native stderr flips $? in 5.1.
 
     Usage (from anywhere - the script resolves the repo root from its own location):
-      pwsh -NoProfile -File scripts/publish-release.ps1 -Version 1.2.3 -Name "Example" -DryRun
-      pwsh -NoProfile -File scripts/publish-release.ps1 -Version 1.2.3 -Name "Example"
+      pwsh -NoProfile -File scripts/publish-release.ps1 -Version 1.2.3 -Name "Example" -NotesFile notes.md -DryRun
+      pwsh -NoProfile -File scripts/publish-release.ps1 -Version 1.2.3 -Name "Example" -NotesFile notes.md
     `powershell -NoProfile -File ...` works the same where execution policy allows. Never add
     `-ExecutionPolicy Bypass` (CLAUDE.md `test-cmd`; a security classifier denies it).
     Exit code 0 = published (or dry run clean); 1 = a precondition or action failed.
@@ -45,6 +51,9 @@ param(
     # readable message and a guaranteed exit 1 instead of a parameter-binding stack.
     [Parameter(Mandatory = $true)][string]$Version,
     [Parameter(Mandatory = $true)][string]$Name,
+    # Mandatory in effect, checked in the body (like -Version) so a missing value gets a readable
+    # refusal and exit 1 instead of an interactive prompt that a non-interactive host would hang on.
+    [string]$NotesFile,
     [string]$Commit,
     [switch]$DryRun
 )
@@ -103,10 +112,13 @@ $semver = '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $savedOutputEncoding = $null
 $exitCode = 0
+# Resolved against the caller's directory BEFORE the Push-Location below moves into the repo root.
+$notesPath = $null
+if ($NotesFile) { $notesPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($NotesFile) }
 Push-Location $repoRoot
 try {
     # git emits UTF-8; 5.1 decodes native stdout with the console's OEM codepage, which would turn
-    # the CHANGELOG's em dashes into mojibake in the published notes. Restored in finally. A host
+    # the CHANGELOG's em dashes into mojibake when it is parsed. Restored in finally. A host
     # with no console can refuse the set - then decoding stays as it was, which is harmless on 7.
     try {
         $savedOutputEncoding = [Console]::OutputEncoding
@@ -122,6 +134,20 @@ try {
     if ($Name.Contains('"')) { Abort "-Name must not contain a double quote (the title wraps it in quotes)." }
     $tag = "v$Version"
     $title = "$tag `"$Name`""
+
+    # Checked before any git/network work: it is the one input only the caller can supply, so a
+    # missing summary should fail in milliseconds, not after a fetch. No fallback - see DESCRIPTION.
+    if (-not $notesPath) {
+        Abort "-NotesFile is required: write the release summary to a file (see the release skill, The ritual step 3) and pass its path. Refusing to publish raw CHANGELOG sections."
+    }
+    if (-not (Test-Path -LiteralPath $notesPath -PathType Leaf)) { Abort "-NotesFile '$NotesFile' does not exist or is not a file." }
+    try {
+        $notesText = [System.IO.File]::ReadAllText($notesPath, (New-Object System.Text.UTF8Encoding $false))
+    } catch {
+        Abort "-NotesFile '$NotesFile' is unreadable: $($_.Exception.Message)"
+    }
+    if (-not $notesText.Trim()) { Abort "-NotesFile '$NotesFile' is empty (or only whitespace); refusing to publish blank release notes." }
+    $notesLines = @($notesText -split "`r?`n").Count
 
     $top = Invoke-Native git @('rev-parse', '--show-toplevel') -Quiet
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $repoRoot 'CHANGELOG.md'))) {
@@ -179,78 +205,19 @@ try {
         if ($LASTEXITCODE -ne 0) { Abort "'gh auth status' failed - run 'gh auth login' first." }
     }
 
-    # Previous release = highest-SEMVER vX.Y.Z tag merged into the release commit. Sorted as
-    # [version], not lexically: lexical order puts v1.9.0 above v1.10.0.
-    $merged = Invoke-Native git @('tag', '--merged', $sha, '--list', 'v*')
-    if ($LASTEXITCODE -ne 0) { Abort "'git tag --merged $sha' failed (exit $LASTEXITCODE)." }
-    $prev = $null
-    $prevVer = $null
-    foreach ($t in @($merged)) {
-        $t = "$t".Trim()
-        if ($t -match '^v((0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))$') {
-            $v = [version]$Matches[1]
-            if ($null -eq $prevVer -or $v -gt $prevVer) { $prevVer = $v; $prev = $Matches[1] }
-        }
-    }
-
-    $end = $lines.Count
-    if ($prev) {
-        $prevRe = '^## \[' + [regex]::Escape($prev) + '\]'
-        $end = -1
-        for ($i = $start + 1; $i -lt $lines.Count; $i++) {
-            if ($lines[$i] -match $prevRe) { $end = $i; break }
-        }
-        if ($end -lt 0) { Abort "previous tag v$prev has no '## [$prev]' heading below '## [$Version]' in CHANGELOG.md at $sha." }
-    }
-    $body = @($lines[$start..($end - 1)])
-    # Drop the trailing blank / `---` separator lines that sit between CHANGELOG sections.
-    $last = $body.Count - 1
-    while ($last -gt 0 -and ($body[$last].Trim() -eq '' -or $body[$last].Trim() -eq '---')) { $last-- }
-    $body = @($body[0..$last])
-    $sectionHeads = @($body | Where-Object { $_ -match '^## \[' })
-    $oldest = [regex]::Match($sectionHeads[-1], '^## \[([^\]]+)\]').Groups[1].Value
-
-    if ($prev) {
-        # REST (`gh api`), not `gh release view`: same data, and it also answers from hosts where
-        # gh's GraphQL path is refused. Any failure just omits the codename, as the line allows.
-        $prevName = $null
-        if ($hasGh) {
-            $prevTitle = Invoke-Native gh @('api', "repos/{owner}/{repo}/releases/tags/v$prev", '--jq', '.name') -Quiet
-            if ($LASTEXITCODE -eq 0 -and $prevTitle) {
-                $nm = [regex]::Match("$prevTitle", '"([^"]+)"')
-                if ($nm.Success) { $prevName = $nm.Groups[1].Value }
-            }
-        }
-        if ($prevName) { $since = "Promotes everything since v$prev `"$prevName`"." }
-        else { $since = "Promotes everything since v$prev." }
-    } else {
-        $since = "First tagged release."
-    }
-    $summary = "$since Entries below are CHANGELOG.md v$oldest through v$Version."
-    $notes = @($summary, '') + $body
-    $notesText = ($notes -join "`n") + "`n"
-
-    $notesFile = Join-Path ([System.IO.Path]::GetTempPath()) "fluyt-release-notes-$tag.md"
-    [System.IO.File]::WriteAllText($notesFile, $notesText, (New-Object System.Text.UTF8Encoding $false))
-
-    if ($prev) { Say "Previous tag:   v$prev" } else { Say "Previous tag:   (none - notes run to the end of CHANGELOG.md)" }
-    Say "Notes file:     $notesFile"
-    Say "Notes span:     $($sectionHeads[0])"
-    Say "            ... $($sectionHeads[-1])"
-    Say "                $($sectionHeads.Count) sections, $($notes.Count) lines"
-    Say "Summary line:   $summary"
+    Say "Notes file:     $notesPath ($notesLines lines)"
 
     $titleArg = ConvertTo-NativeArgument $title
     $tagArgs = @('tag', '-a', $tag, '-m', $tag, $sha)
     $pushArgs = @('push', 'origin', $tag)
-    $ghArgs = @('release', 'create', $tag, '--title', $titleArg, '--notes-file', $notesFile, '--verify-tag', '--latest')
+    $ghArgs = @('release', 'create', $tag, '--title', $titleArg, '--notes-file', $notesPath, '--verify-tag', '--latest')
 
     if ($DryRun) {
         Say ""
         Say "DRY RUN - nothing tagged, pushed or published. Would run:"
         Say "  git tag -a $tag -m `"$tag`" $sha"
         Say "  git push origin $tag"
-        Say "  gh release create $tag --title '$title' --notes-file `"$notesFile`" --verify-tag --latest"
+        Say "  gh release create $tag --title '$title' --notes-file `"$notesPath`" --verify-tag --latest"
     } else {
         Say ""
         Say "Tagging $tag at $sha..."

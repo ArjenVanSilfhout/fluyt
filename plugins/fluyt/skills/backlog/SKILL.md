@@ -24,8 +24,7 @@ Read the `backlog` key in the consumer's Project Facts. It declares:
 
 - the **repo** the issues live on;
 - the **tier-label scheme** - the MoSCoW label names in use (default: plain
-  `must`/`should`/`could`; e.g. `prio:must`/`prio:should`/`prio:could` on some projects - always the
-  project's declared names, never a remembered one);
+  `must`/`should`/`could` - always the project's declared names, never a remembered one);
 - whether the project uses **milestones** (`milestones: yes|no`);
 - any **auxiliary labels** (`size:S/M/L`, `cluster:*`, `single-file`, `blocked`, `tracking`, …);
 - the optional **`not-ready-labels`** key (comma-separated label names; default none) - additional
@@ -39,11 +38,9 @@ label scheme. Below, `<must>` / `<should>` / `<could>` stand for the project's d
 Never cherry-pick below the top of this order:
 
 1. **Skip not-ready issues, before anything else.** An issue carrying `blocked` is NEVER selectable -
-   unconditionally, no configuration: the plugin seeds `blocked` as a list-filter aid, so selection
-   filters on it. Any `not-ready-labels` issue (see above) is excluded too, **unioned with** the
-   `blocked` skip, never in place of it - setting `not-ready-labels` must not silently re-enable
-   picking `blocked` items. Absent key ⇒ only the `blocked` skip applies. Like the `tracking` epics
-   further down, these are filed, not workable. Excluding happens BEFORE tier ordering.
+   unconditionally, no configuration. Any `not-ready-labels` issue (see above) is excluded too,
+   **unioned with** the `blocked` skip, never in place of it - setting `not-ready-labels` must not
+   silently re-enable picking `blocked` items. Absent key ⇒ only the `blocked` skip applies.
 2. **Snapshot the open backlog:** `gh issue list --state open --limit 200 --json number,title,labels,milestone` -
    **always pass `--limit 200`** (the `gh` default caps at 30, silently hiding the tail).
 3. **If the project uses milestones:** the current milestone is the **lowest-numbered milestone that
@@ -56,9 +53,8 @@ Never cherry-pick below the top of this order:
    discussion or spans multiple commits. **When a split is not 1:1** (one box becomes several
    issues), rewrite that box in the epic body at split time as **one box per filed issue**
    (`- [ ] #18`, `- [ ] #19`, …); thereafter the epic tracks issue *closure* - tick a box when its
-   issue closes. Editing an epic's checklist this way is roadmap upkeep, **not** the "never edit a
-   tracker" rule under *Completion* below - that rule forbids hand-marking an issue's *completion* in
-   place of `Closes #N`, not maintaining an epic's structure.
+   issue closes. Editing an epic's checklist this way is roadmap upkeep, not the *Completion*
+   tracker edit.
 
 ## Filing a new issue (`gh issue create`)
 
@@ -79,49 +75,44 @@ gh issue create --title "<title>" --body-file body.md --label "<must>,size:S"
 - **Routing labels (only if Project Facts `agent-routing: labels`).** Apply one **`agent:<type>`**
   (default `agent:developer`) and, where the item's complexity warrants overriding the implementer's
   default model, one **`model:<tier>`** (`model:opus` / `model:sonnet` / `model:haiku`, `model:fable`
-  where provisioned). `ship-work-item` reads `model:*` at spawn time (overriding the frontmatter
-  default); `agent:*` is advisory - a filter/marker, not a dispatcher. Values are model aliases + the
-  plugin's agent names. Skip entirely when `agent-routing: none` (the default).
+  where provisioned). `ship-work-item` (*Model selection*) owns what `model:*` and `agent:*` do at
+  spawn. Values are model aliases + the plugin's agent names. Skip entirely when
+  `agent-routing: none` (the default).
 
 ## Re-tiering, relations, decisions, completion - all via `gh`
 
 - **Re-tier:** `gh issue edit <n> --add-label <should> --remove-label <could>`.
 - **Dependency:** `gh issue edit <blocked> --add-blocked-by <blocker>` - a first-class relation
   GitHub renders on both issues; add a `blocked` label as a list-filter aid. **You do not clear that
-  label by hand:** the `ship-work-item` skill's *After the merge lands* unblock step removes it once
-  every blocker is closed, so the skip above then stops applying. **When the blocker lives in
+  label by hand:** `ship-work-item`'s *After the merge lands* unblock step removes it once every
+  blocker is closed. **When the blocker lives in
   a repo Project Facts `pinned-deps` names, also record the consumer's own pin-bump issue as a
   blocker relation** - the upstream close does not unblock, the bump does. **The label rides WITH a
   relation, never alone:** a block with no issue to point at (external evidence, a decision, an
-  upstream release) goes in a `not-ready-labels` label instead - the unblock step has nothing to
-  observe closing on a bare label, so it can only surface such an item, never free it. Build any
-  legacy-id → number map ONCE from a `gh issue list --json` snapshot; never loop
-  `gh issue list --search` (the search index lags bulk creation - an empty result means index lag,
-  NOT a missing issue - and it rate-limits at ~30/min).
+  upstream release) goes in a `not-ready-labels` label instead; the unblock step can only surface
+  such an item, never free it. Build any legacy-id → number map ONCE from a `gh issue list --json`
+  snapshot; never loop `gh issue list --search` (the search index lags bulk creation - an empty
+  result means index lag, NOT a missing issue - and it rate-limits at ~30/min).
 - **Relate (lineage):** before filing or triaging an item, search closed AND open items for the same
-  component and adjacent vocabulary, and record any hit as one of three named relations. Record it as
-  a **prose `Lineage:` line** (in the filed issue's body, or wherever the tracker records a decision) -
-  this is the floor, because the convention must outlive any one tracker. The three are not
-  interchangeable - lumping them together as "related" loses the signal:
+  component and adjacent vocabulary, and record any hit as one of three named relations, as
+  a **prose `Lineage:` line** (in the filed issue's body, or wherever the tracker records a
+  decision). The three are not interchangeable - lumping them together as "related" loses the
+  signal:
   - **duplicates / competes-with** (an open item) - reconcile before either is worked, or two changes
-    end up fighting over one file. This is the one relation that must be visible from **both** sides,
-    since prose in a single comment is one-sided: *if the tracker supports a native duplicate link or
-    label, use it as well* - an affordance, never a requirement.
+    end up fighting over one file. This is the one relation that must be visible from **both**
+    sides: *if the tracker supports a native duplicate link or label, use it as well* - an
+    affordance, never a requirement.
   - **reverses / reopens** (a closed decision) - the dangerous one, because it reads like an ordinary
     feature request. Never tier it silently: route it to the maintainer as a `question`, because a
-    prior decision possibly needing revisiting is not an agent's call. Prose is the only form that can
-    express this relation at all - no tracker has a "reverses" link.
+    prior decision possibly needing revisiting is not an agent's call.
   - **evolves / continues** (a closed item) - nothing is wrong; recording it makes the *why* legible.
-    A capability that keeps needing "evolves" follow-ups is a signal the original shipped
-    under-finished.
+    Repeated "evolves" follow-ups signal an under-finished original.
 - **Decision:** `gh issue comment <n> --body "DECIDED with the user <date>: ..."`; the durable
   cross-item log lives in the project's decisions file (Project Facts `decisions`) - decisions only,
   never versions or completion status.
 - **Completion:** never edit a tracker - put `Closes #<n>` in the PR body (see the `ship-work-item`
-  skill). **Caveat:** GitHub fires closing keywords ONLY on the repo's **default branch**. If the
-  integration branch IS the default branch, the merge auto-closes the issue; if it is NOT (Project
-  Facts `default-branch != integration-branch`), auto-close will not fire and `ship-work-item`'s
-  post-merge manual-close step applies.
+  skill). Closing keywords fire ONLY on the **default branch**; `ship-work-item` §2 owns the
+  caveat, §4 *After the merge lands* the manual close.
 
 ## Mid-task discoveries
 
@@ -136,10 +127,9 @@ issue comment.
 an unsorted pile, **except** a `question` issue or an untriaged `from-consumer` issue, which are
 sanctioned tier-less states (awaiting a decision / maintainer triage), not drift. **When Project
 Facts `agent-routing: labels`,** also flag a workable issue (tiered, not `question` / untriaged)
-that carries no `agent:*` label - a soft gap that keeps the routing reviewable, not a hard drift
-like a missing tier. Agents without `gh` (e.g. `product-owner`, `scrum-master`,
-`tech-debt-reviewer`) can't run this - the orchestrator hands them this JSON snapshot in the spawn
-prompt.
+that carries no `agent:*` label - a soft gap, not a hard drift like a missing tier. Agents without
+`gh` (e.g. `product-owner`, `scrum-master`, `tech-debt-reviewer`) can't run this - the orchestrator
+hands them this JSON snapshot in the spawn prompt.
 
 **Pinned-dependency freshness (only when Project Facts declares `pinned-deps`).** For each declared
 `<path> @ <owner/repo>` entry, compare the checked-out pin against the upstream's latest release -
@@ -148,38 +138,29 @@ behind, surface the gap in the scan report (current → latest, and how many rel
 file/refresh the consumer's pin-bump issue per this skill's filing conventions - ONE issue tracking
 the bump, updated in place, not one new issue per missed release. The check itself is read-only;
 actually bumping the pin is a normal work item picked by tier, never a hygiene side effect. Absent
-key → skip entirely (the usual optional-gate default).
+key → skip entirely.
 
 **Plugin self-freshness (no declaration needed - every consumer has a marketplace).** On a full
 hygiene pass (not every pick) check the installed plugin is current against its marketplace source.
-**Read the installed version first - it is the primary signal.** The Claude manifest is versionless,
-but `.codex-plugin/plugin.json` ships in the same payload on both clients and its `version` mirrors
-the CHANGELOG, so one grep of the installed cache names the release you are actually running. Then
-compare that against the release the marketplace source carries. As a fallback - and to answer the
-narrower question "is the clone behind its remote?" - compare the marketplace clone's HEAD to its
-remote release ref with `git ls-remote` (read-only - no token, no fetch, no cache mutation); on
-Codex, compare the installed plugin version to the upgraded marketplace snapshot. `ls-remote`
-inspects the **clone**, not the installed **cache**, and never names a release - so a cache that has
-drifted behind an up-to-date clone reads as green. The per-client state locations and refresh
-commands live in the `install-refresh-plugin` skill. If behind, report it with the fix (the client's
-marketplace update, then re-sync conventions) and hand repair to `install-refresh-plugin` when an
-update doesn't reach the installed cache.
+**Read the installed version first - it is the primary signal** (`install-refresh-plugin`,
+*Which release is installed*, owns how). Then compare that against the release the marketplace
+source carries. As a fallback - and to answer the narrower question "is the clone behind its
+remote?" - compare the marketplace clone's HEAD to its remote release ref with `git ls-remote`
+(read-only - no token, no fetch, no cache mutation); on Codex, compare the installed plugin version
+to the upgraded marketplace snapshot. `ls-remote` inspects the **clone**, not the installed
+**cache**, and never names a release - so a cache that has drifted behind an up-to-date clone reads
+as green. The per-client state locations and refresh commands live in `install-refresh-plugin`. If
+behind, report it with the fix (the client's marketplace update, then re-sync conventions) and hand
+repair to `install-refresh-plugin` when an update doesn't reach the installed cache.
 
-**Freshness is not the only thing that rots - check the PIN in the same pass.** An install can be
-perfectly current and still be tracking the wrong branch, because a marketplace update can drop the
-`ref` pin and leave the clone on the repository's *default* branch - the integration branch, for any
-repo following `adopt-conventions`. Read the clone's actual branch (`git -C <clone> branch
---show-current`) and compare it to Project Facts `release-branch`. **The version cannot reveal this**:
-right after a release the two branches are content-identical, so a drifted pin reads as a perfectly
-healthy install. Report a mismatch and hand the repair to `install-refresh-plugin`, which carries the
-two-part fix - the entry *and* the clone's fetch refspec.
+**Check the PIN in the same pass.** A current install can still track the wrong branch, because a
+marketplace update can drop the `ref` pin (`install-refresh-plugin` owns the mechanism). Read the
+clone's actual branch (`git -C <clone> branch --show-current`) and compare it to Project Facts
+`release-branch`. **The version cannot reveal this.** Report a mismatch and hand the repair to
+`install-refresh-plugin`.
 
 **Code-health offer (no declaration needed).** On a full hygiene pass, **offer** to run
 `fluyt:tech-debt-reviewer` - an offer the user accepts or declines, never a gate and never
-automatic. The `release` skill makes the same offer at a cut, but a release is the *hardest* event
-to reach: a repo blocked on an open decision cannot promote, so it cannot get a code-health pass
-either, and that is exactly the repo most likely to be accumulating debt. A second offer on the
-hygiene pass gives the reviewer a trigger that does not depend on a release ever happening. Cadence
-comes from a **full** pass, not every pick, so it costs nothing per work item. `tech-debt-reviewer`
-has no `gh`: hand it the open-issue JSON snapshot in the spawn prompt, as the tier-label scan above
-does, or it reviews blind.
+automatic. The `release` skill makes the same offer at a cut, but a repo blocked from
+releasing never reaches it. Cadence comes from a **full** pass, not every pick. `tech-debt-reviewer`
+has no `gh`: hand it the open-issue JSON snapshot, as above, or it reviews blind.
