@@ -40,6 +40,13 @@
         skill splits out) and every agent file stays within its byte budget in
         scripts/component-size-budget.txt - a ratchet, check [12]
 
+    Scan scope: the two checks that walk the filesystem from the repo root ([9] manifest dirs, [10]
+    markdown pre-flight) skip every path git IGNORES, so a git-ignored local file (a hand-over, a
+    friction log, a scratch clone) cannot turn the local gate RED while CI - whose checkout never
+    contains it - stays green. The checks that read `git ls-files` ([13], [14], [15]) look at exactly
+    what git tracks and are unaffected. If `git check-ignore` itself fails, the walks fall back to
+    scanning everything and print one WARN - never to skipping everything.
+
     Run from the repo root:  pwsh -NoProfile -File scripts/validate-local.ps1
     Exit code 0 = green; 1 = one or more failures.
 #>
@@ -133,6 +140,51 @@ function Test-RepoPathIgnored([string]$repoRelativePath, [string[]]$prefixes) {
         if ($rel.StartsWith($prefix) -or $rel.Contains("/$prefix")) { return $true }
     }
     return $false
+}
+
+# Repo-relative, forward-slash form of a full filesystem path under $RepoRoot: the shape git reports
+# and Test-RepoPathIgnored / Get-GitIgnoredPath take, identical on Windows and on CI's ubuntu pwsh.
+function Get-RepoRelativePath([string]$fullName) {
+    return $fullName.Substring($RepoRoot.Length).TrimStart('\', '/').Replace('\', '/')
+}
+
+# Which of these repo-relative, forward-slash paths does git IGNORE? Returns a case-insensitive set -
+# always a set, never $null (the comma-return: see Get-TokenFileEntry). [9] and [10] walk the
+# filesystem from the repo root, so without this they also judge git-ignored local files (a hand-over,
+# a friction log, a scratch clone) that CI's checkout never contains: the local gate went RED on a
+# wrapped '#N' in an ignored hand-over while CI stayed green, sending the maintainer hunting in the
+# wrong place. `git check-ignore`, in batches of 50 paths as ARGUMENTS (never `--stdin`: PowerShell
+# ends each piped line CRLF on Windows, git keeps the CR as part of the path, nothing ever matches,
+# and a lookup that matches nothing exits 1 = "none ignored" - a silent fail-open with no WARN): a
+# path git TRACKS is never reported (so tracked files behave exactly as before, matching CI's view)
+# and a path under an ignored directory is.
+# FAIL OPEN TO SCANNING, never to skipping: if git is absent, this is not a work tree, or a call
+# dies (exit > 1), WARN once and return the EMPTY set so the caller scans everything - the old
+# behaviour. Reading a failed lookup as "everything ignored" would be a green run in which nothing was
+# checked. The set holds only paths git echoed back, so a path git quotes (core.quotePath is off, which
+# leaves only control characters, quotes and backslashes) is simply absent from it and gets scanned:
+# the safe side. $checkLabel names the caller.
+function Get-GitIgnoredPath([string[]]$repoRelativePaths, [string]$checkLabel) {
+    $ignored = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $batchSize = 50
+    for ($first = 0; $first -lt $repoRelativePaths.Count; $first += $batchSize) {
+        $last = [Math]::Min($first + $batchSize, $repoRelativePaths.Count) - 1
+        $batch = @($repoRelativePaths[$first..$last])
+        $code = -1
+        try {
+            $lookup = @(& git -C $RepoRoot -c core.quotePath=false check-ignore -- $batch 2>$null)
+            $code = $LASTEXITCODE
+        } catch {
+            $code = -1
+        }
+        if ($code -ne 0 -and $code -ne 1) {
+            Warn "$checkLabel git check-ignore failed (exit $code) - scanning git-ignored paths too, which CI would not see"
+            $ignored.Clear()
+            return , $ignored
+        }
+        foreach ($hit in $lookup) { [void]$ignored.Add([string]$hit) }
+    }
+    return , $ignored
 }
 
 # Extract the 'Current version: **X.Y.Z**' line from a CHANGELOG.md-shaped file. Shared by [3] (the
@@ -905,6 +957,10 @@ Write-Output ""
 # harmless: no .claude-plugin/ or .codex-plugin/ directory legitimately lives under either.
 # Maintenance: keep this in sync with the "ignores" array in .markdownlint-cli2.jsonc for the [10]
 # half (that file is the source of truth for what CI lints; a stale copy here fails on files CI skips).
+# Scope of the list: paths git does NOT ignore but CI's lint still skips (the templates/ fragment, the
+# tracked .claude/ files) plus .git/ itself. Paths .gitignore DOES cover are skipped separately, at
+# each call site, by Get-GitIgnoredPath and need no entry here; '.claude/' (which covers the ignored
+# .claude/worktrees/) stays regardless, as the fallback for when that git lookup fails.
 $mdIgnorePrefixes = @(
     'plugins/fluyt/skills/adopt-conventions/templates/',
     'node_modules/',
@@ -922,6 +978,11 @@ $cpDirs = @($cpDirs | Where-Object {
     $rel = $_.FullName.Substring($RepoRoot.Length).TrimStart('\', '/')
     -not (Test-RepoPathIgnored $rel $mdIgnorePrefixes)
 })
+# Then drop git-ignored manifest dirs (header "Scan scope"): the prefix list covers only the harness
+# worktrees, so any other ignored tree holding a manifest dir (a scratch clone, a build output) would
+# be judged as if CI saw it.
+$cpGitIgnored = Get-GitIgnoredPath @($cpDirs | ForEach-Object { Get-RepoRelativePath $_.FullName }) '[9]'
+$cpDirs = @($cpDirs | Where-Object { -not $cpGitIgnored.Contains((Get-RepoRelativePath $_.FullName)) })
 $badComponent = $false
 foreach ($cp in $cpDirs) {
     foreach ($sub in @('skills', 'agents', 'hooks')) {
@@ -964,15 +1025,25 @@ Write-Output "[10] markdownlint pre-flight (narrow rule set)"
 # Fenced blocks and inline code spans are stripped before matching: markdownlint does not lint
 # inside them, and without stripping a shell '#!' line or any snake_case identifier false-positives.
 # $mdIgnorePrefixes (also used by [9]'s manifest-dir scan) is declared above, ahead of [9].
+# SCOPE: the walk starts at the repo root, so it also sees git-IGNORED files (docs/process/*.local.md
+# hand-overs and friction logs, scratch clones). CI's checkout never contains them, so neither does
+# this check: Get-GitIgnoredPath filters them out below, and the closing Pass line counts how many were
+# skipped so a green run still says what it did not read. Tracked files are linted exactly as before.
 # A table delimiter row is pipes/dashes/colons/whitespace only, with >= 1 column separator: matches
 # both the padded house form ('| --- | --- |') and the unpadded MD060 shape ('|---|---|'). Whether a
 # given match is padded or unpadded is decided separately, by pipe-adjacency, below.
 $mdDelimRowPattern = '^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$'
 $mdFiles = Get-ChildItem -Path $RepoRoot -Recurse -File -Filter "*.md" -ErrorAction SilentlyContinue
+# Ask git only about the files the prefix list leaves in play (node_modules/ or .claude/ can hold thousands).
+$mdGitIgnored = Get-GitIgnoredPath @($mdFiles | ForEach-Object { Get-RepoRelativePath $_.FullName } | Where-Object { -not (Test-RepoPathIgnored $_ $mdIgnorePrefixes) }) '[10]'
 $anyMdHit = $false
+$mdLinted = 0
+$mdSkippedIgnored = 0
 foreach ($mf in $mdFiles) {
-    $rel = $mf.FullName.Substring($RepoRoot.Length).TrimStart('\', '/').Replace('\', '/')
+    $rel = Get-RepoRelativePath $mf.FullName
     if (Test-RepoPathIgnored $rel $mdIgnorePrefixes) { continue }
+    if ($mdGitIgnored.Contains($rel)) { $mdSkippedIgnored++; continue }
+    $mdLinted++
 
     # @(...) forces an array even for a one-line file (Get-Content otherwise returns a bare string,
     # which breaks .Count / index access below). -Encoding UTF8: see the [4] skills-loop comment
@@ -1040,7 +1111,7 @@ foreach ($mf in $mdFiles) {
         }
     }
 }
-if (-not $anyMdHit) { Pass "no MD018 / MD049 / MD050 / MD004 / MD060 / MD028 / MD026 hits in linted markdown" }
+if (-not $anyMdHit) { Pass "no MD018 / MD049 / MD050 / MD004 / MD060 / MD028 / MD026 hits in $mdLinted linted markdown file(s) ($mdSkippedIgnored git-ignored skipped)" }
 
 # --- 11. commit identity: no-reply emails + no co-author trailer -
 # Two rules, one check. (1) Every identity git records in this repo's history must

@@ -14,9 +14,20 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.3.0**
+Current version: **1.3.1**
 
 ---
+
+## [1.3.1] — 2026-10-11
+
+**Tooling (gate):** the local gate no longer lints or scans git-ignored paths in its two walks from
+the repo root (checks [9] and [10]); CI never sees those files, so a local-only hand-over or scratch
+copy can no longer turn the gate RED on its own.
+
+The ignored set comes from one batched `git check-ignore` per walk (argv batches, not `--stdin`,
+which drops every match on Windows because of CRLF line endings); if git cannot answer, the walk
+scans everything as before and says so with one WARN, never skipping silently. Tracked files lint
+exactly as before, and the green line now counts what it linted and skipped. PATCH: scripts only.
 
 ## [1.3.0] — 2026-10-11
 
