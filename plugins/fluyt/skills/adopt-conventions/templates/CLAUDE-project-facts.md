@@ -31,14 +31,14 @@
 
          - `delegation`: default <!-- provenance: ratified @vX.Y.Z -->
 
-     The `@vX.Y.Z` on a `ratified` marker is the PLUGIN's version when ratified — read `Current
-     version:` from the plugin payload's CHANGELOG.md (the install cache), NEVER the consumer repo's
-     own CHANGELOG: the `recommendation-changed` annotations below also name plugin versions, so both
-     sides of the comparison must share that axis. This lets a re-sync tell "ratified before the key's
-     recommendation last changed" from "ratified after" without diffing plugin history. `chosen` and
-     `inferred`/unmarked keys carry no version — `chosen` is never re-presented regardless of upstream
-     change, and `inferred` is always freely re-derivable — so neither has anything to compare against
-     or gate.
+     The `@vX.Y.Z` on a `ratified` marker is the PLUGIN's version when ratified — read `version` from
+     the plugin payload's `.codex-plugin/plugin.json` (the install cache; it mirrors the plugin's
+     CHANGELOG), NEVER the consumer repo's own CHANGELOG: the `recommendation-changed` annotations
+     below also name plugin versions, so both sides of the comparison must share that axis. This lets
+     a re-sync tell "ratified before the key's recommendation last changed" from "ratified after"
+     without diffing plugin history. `chosen` and `inferred`/unmarked keys carry no version —
+     `chosen` is never re-presented regardless of upstream change, and `inferred` is always freely
+     re-derivable — so neither has anything to compare against or gate.
 
      Re-presenting a changed recommendation — the cheap "changed upstream" tell. When a later edit to
      THIS template materially changes a key's recommendation or its option set, that same edit adds

@@ -14,9 +14,21 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.0.0**
+Current version: **1.1.0**
 
 ---
+
+## [1.1.0] — 2026-10-11
+
+**Fix (adopt-conventions, install-refresh-plugin):** the three shipped instructions that read the
+plugin version now point at `.codex-plugin/plugin.json` in the installed payload.
+
+The payload ships no CHANGELOG (its root holds `LICENSE`, `README.md`, `agents/`, `hooks/`, `skills/`
+and the two manifests), so the previous reads could not be followed as written: the provenance-marker
+comment in the Project Facts template, the provenance step of `adopt-conventions`, and the Codex pin
+check of `install-refresh-plugin`. The manifest `version` mirrors this CHANGELOG, and
+`install-refresh-plugin` already names it as the readable installed release. MINOR: an instruction a
+consumer follows changed.
 
 ## [1.0.0] — 2026-10-11
 

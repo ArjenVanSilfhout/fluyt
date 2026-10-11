@@ -321,8 +321,8 @@ The same question is worth confirming on Codex, regardless of what the Claude Co
 finds: read back `codex plugin marketplace list`'s entry for `<marketplace>` and confirm the source
 it reports still resolves to `<release-ref>`, then check that the version segment of the installed
 cache path (`~/.codex/plugins/cache/<marketplace>/<plugin>/<version>/`) and `codex plugin list`'s
-reported version correspond to a version recorded in the consumer's CHANGELOG for that ref, not to
-unreleased `integration-branch` content. On a mismatch, re-run
+reported version match the `version` in `.codex-plugin/plugin.json` of the marketplace source at
+`<release-ref>`, not unreleased `integration-branch` content. On a mismatch, re-run
 `codex plugin marketplace add <marketplace-source> --ref <release-ref>` (or correct the configured
 source directly), then reinstall; if the reported version does not move, remove the stale cached
 entry first so the corrected ref has something to install into.

@@ -124,7 +124,7 @@ repo's contract files — do it in the open.
        `<!-- recommendation-changed: vW.Z.Y -->` annotation NEWER than the key's own `@vX.Y.Z` stamp —
        that annotation is the cheap tell; no plugin-history diff needed. When it fires, show the same
        purpose / options / recommendation the interview would and let the consumer re-decide.
-       **Bulk-accepting the re-presentation re-stamps `ratified @<new Current version>` — it does NOT
+       **Bulk-accepting the re-presentation re-stamps `ratified @<new plugin version>` — it does NOT
        become `chosen`** (no silent marker upgrade: the state ratchets to `chosen` only when the
        consumer specifically engages with that one key). No `recommendation-changed` tell newer than
        the key's own stamp → leave it alone, exactly like any other already-filled key.
@@ -282,8 +282,8 @@ Work through the templates, merging each:
    **Stamp provenance as you merge**, per `templates/CLAUDE-project-facts.md`'s "Provenance markers"
    comment (read it — it is the single-sourced vocabulary; don't re-derive it here). Accepting the
    bulk offer stamps every key you actually presented `<!-- provenance: ratified @v<the PLUGIN's
-   Current version at merge time — from the CHANGELOG.md in the plugin payload, never this repo's
-   own> -->`. Anything filled straight from the survey and never shown to
+   version at merge time — the version in the plugin payload's .codex-plugin/plugin.json, never
+   this repo's own CHANGELOG> -->`. Anything filled straight from the survey and never shown to
    the user as part of what you presented is `inferred` — leave it unmarked, which reads identically
    to an explicit `inferred` marker.
 
