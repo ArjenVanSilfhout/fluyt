@@ -118,7 +118,7 @@ and proof steps).
 - `github-releases`: yes — the `release` skill publishes a GitHub Release (tag + CHANGELOG notes) per
   release. See DECISIONS.md, 2026-10-11. **Release titles carry a nautical codename** —
   `vX.Y.Z "Name"`; pick one in-theme at each cut, and do not reuse an earlier one. Recorded here so
-  precedent-copying cannot drop it. <!-- provenance: chosen -->
+  precedent-copying cannot drop it. <!-- provenance: ratified @v1.3.1 -->
 - `release-publish`: none — no package-registry publish, store upload, or deploy beyond the
   git-only release. <!-- provenance: ratified -->
 - `changelog`: `CHANGELOG.md` (root). A version bump here and the
@@ -126,9 +126,9 @@ and proof steps).
   `[3]` reds otherwise; an inline CHANGELOG edit with no delegate checklist is where the mirror is
   easiest to miss.
 - `decisions`: `DECISIONS.md` (root)
-- `handover`: `docs/process/HANDOVER.local.md` <!-- provenance: chosen --> — git-ignored by default
-  (the `.gitignore` `docs/process/*.local.md` glob; gate check `[13]` fails if one is ever tracked),
-  so a hand-over never lands in history.
+- `handover`: `docs/process/HANDOVER.local.md` <!-- provenance: ratified @v1.3.1 --> — git-ignored by
+  default (the `.gitignore` `docs/process/*.local.md` glob; gate check `[13]` fails if one is ever
+  tracked), so a hand-over never lands in history.
 - `version-rules`: MINOR (X.Y.0) = a **shipped component's behaviour changes** — a skill, agent,
   hook, or template gains or changes an instruction, step, or output a consumer follows. PATCH
   (X.Y.Z) = wording / clarification / formatting / typo in a shipped file that changes no instruction
@@ -139,7 +139,7 @@ and proof steps).
   `versioning-and-changelog` skill defines — see DECISIONS.md, 2026-10-11.)
 - `commit-subject`: `<type-or-id>: <summary> (vX.Y.Z)` — version stamped in the subject; at most
   72 characters including the stamp and the squash merge's `(#<PR>)` suffix (the shipped
-  default). <!-- provenance: chosen -->
+  default). <!-- provenance: ratified @v1.3.1 -->
 - `co-author-trailers`: forbidden (maintainer identity only — no Co-Authored-By lines, ever)
 - `pr-approvals`: none — solo maintainer; requiring `1` would deadlock with nobody else to approve.
   <!-- provenance: ratified -->
