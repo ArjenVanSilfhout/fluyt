@@ -57,6 +57,9 @@ Codex dispatches the same canonical role files through `$fluyt:dispatch-role`. E
 substantive report ends with a **"Skills consulted"** line naming what it read; a missing line is
 worth questioning ("none" is legitimate only for a trivial mechanical task).
 
+Notation in fluyt skills and agent files: `⇒` = implies (what follows, or what a system does); `→` =
+then (the next step, or the action you take).
+
 **Project-specific skills** (if any) stay in this repo under the active client's local skill path
 (`.claude/skills/` and/or `.agents/skills/`) - the shared plugin covers PROCESS; stack/domain
 knowledge stays local. List them here so the developer role routes to them: <e.g. codebase-map,

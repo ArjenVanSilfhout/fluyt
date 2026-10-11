@@ -10,8 +10,12 @@ retrospectives, upstream reporting, and convention re-sync. In Codex, explicitly
 `preflight-reviewer`, `tech-debt-reviewer`, `test-writer`, and `scrum-master` role files through
 `$fluyt:dispatch-role`; do not replace them with unscoped generic prompts.
 
+Notation in fluyt skills and agent files: `⇒` = implies (what follows, or what a system does); `→` =
+then (the next step, or the action you take).
+
 Project-specific skills stay in this repo under the active client's local skill path — `.agents/skills/`
 for Codex, `.claude/skills/` for Claude Code. Fluyt supplies process workflows, not stack or
 domain knowledge. This repo's own local skills are `triage-upstream` (maintainer-side triage of inbound
-`from-consumer` issues) and `arrow-notation` (applying the arrow legend to a skill or agent file);
+`from-consumer` issues), `arrow-notation` (applying the arrow legend to a skill or agent file) and
+`trim-to-budget` (cutting a shipped file to its byte budget);
 they currently ship as Claude skills only, so Codex has no local equivalent to route to yet.

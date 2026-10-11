@@ -14,5 +14,8 @@ e.g. `$fluyt:ship-work-item`, `$fluyt:backlog`. Dispatch specialist roles with
 `$fluyt:dispatch-role` and one of `developer`, `product-owner`, `preflight-reviewer`,
 `tech-debt-reviewer`, `test-writer`, or `scrum-master` - never an unscoped generic subagent.
 
+Notation in fluyt skills and agent files: `⇒` = implies (what follows, or what a system does); `→` =
+then (the next step, or the action you take).
+
 Project-specific Codex skills stay under `.agents/skills/`; Fluyt supplies process workflows,
 not stack or domain knowledge.

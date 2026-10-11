@@ -70,6 +70,9 @@ Codex dispatches the same canonical role files through `$fluyt:dispatch-role`. E
 substantive report ends with a **"Skills consulted"** line naming the skill / rule files it read; a
 missing line is worth questioning ("none" is legitimate only for a trivial mechanical task).
 
+Notation in fluyt skills and agent files: `⇒` = implies (what follows, or what a system does); `→` =
+then (the next step, or the action you take).
+
 **Project-specific skills** stay in this repo under `.claude/skills/`: `/triage-upstream`
 (maintainer-side triage of inbound `from-consumer` issues — see Task flow below),
 `/arrow-notation` (applying the `⇒`/`→` legend to a skill or agent file, with the rewording tips
