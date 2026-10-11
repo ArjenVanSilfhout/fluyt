@@ -42,6 +42,15 @@ role reads the consumer's `CLAUDE.md` + Project Facts and the skills it names.
 mechanism, so on Codex the process rules the hooks enforce remain prose-only (the skills stay the
 cross-client authority; a hook is prevention layered in front of them, never their replacement).
 
+**Prerequisite: Node.js 18 or later on `PATH`.** Every hook is a `node -e` one-liner, so without
+it every hook's Node logic is inert (only the `SubagentStop` shell fallback still writes). Each
+checks for `node` before anything else and, when it is missing, still lets the session proceed
+but says so, rather than passing for a considered allow: each `PreToolUse` hook prints a one-line
+`systemMessage` naming itself
+(`fluyt hook skipped: node is not on PATH, so the <hook> did not run`), and `SubagentStop` writes
+its line tagged `(fallback: node not on PATH)` instead of the generic `(fallback)`. Every other
+failure stays exactly as fail-open as that hook's own paragraph below describes.
+
 **Network and credentials, per hook:** two hooks reach the network, both through `gh` on the
 user's existing `gh` login, with a 10 s timeout — the closing-keyword echo (`gh pr view`) and the
 open-PR branch-delete guard (`gh pr list`). The other three (`SubagentStop`, the co-author guard,
@@ -55,7 +64,8 @@ if needed). This is the dispatch-cadence feed the `scrum` skill reads for retros
 separate from `docs/process/retro-log.local.md` (human-appended friction notes) so that file stays
 100% signal. Both files are meant to be **git-ignored** in the consumer (added by
 `adopt-conventions` to `.gitignore`); the hook is fail-soft — it degrades to a
-`(fallback)`-tagged timestamp and never blocks the session if it cannot parse or enrich.
+`(fallback)`-tagged timestamp and never blocks the session if it cannot parse or enrich (tagged
+`(fallback: node not on PATH)` when `node` is missing, per the prerequisite above).
 
 **`PreToolUse` (Bash)** — blocks a `git commit` command carrying a `Co-Authored-By` trailer, but
 **only** when the consumer's `CLAUDE.md` declares `co-author-trailers: forbidden`; any other value,
