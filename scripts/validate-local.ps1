@@ -45,7 +45,7 @@
     friction log, a scratch clone) cannot turn the local gate RED while CI - whose checkout never
     contains it - stays green. The checks that read `git ls-files` ([13], [14], [15]) look at exactly
     what git tracks and are unaffected. If `git check-ignore` itself fails, the walks fall back to
-    scanning everything and print one WARN - never to skipping everything.
+    scanning everything and print one WARN per walk - never to skipping everything.
 
     Run from the repo root:  pwsh -NoProfile -File scripts/validate-local.ps1
     Exit code 0 = green; 1 = one or more failures.
@@ -149,21 +149,21 @@ function Get-RepoRelativePath([string]$fullName) {
 }
 
 # Which of these repo-relative, forward-slash paths does git IGNORE? Returns a case-insensitive set -
-# always a set, never $null (the comma-return: see Get-TokenFileEntry). [9] and [10] walk the
-# filesystem from the repo root, so without this they also judge git-ignored local files (a hand-over,
-# a friction log, a scratch clone) that CI's checkout never contains: the local gate went RED on a
-# wrapped '#N' in an ignored hand-over while CI stayed green, sending the maintainer hunting in the
-# wrong place. `git check-ignore`, in batches of 50 paths as ARGUMENTS (never `--stdin`: PowerShell
-# ends each piped line CRLF on Windows, git keeps the CR as part of the path, nothing ever matches,
-# and a lookup that matches nothing exits 1 = "none ignored" - a silent fail-open with no WARN): a
-# path git TRACKS is never reported (so tracked files behave exactly as before, matching CI's view)
-# and a path under an ignored directory is.
+# always a set, never $null (the comma-return: see Get-TokenFileEntry). Why [9] and [10] need it: see
+# the header's "Scan scope". `git check-ignore` runs in batches of 50 paths as ARGUMENTS, never
+# `--stdin`: PowerShell ends each piped line CRLF on Windows and git keeps the CR in the path, so a
+# filename-anchored match exits 1 with no output (a silent fail-open, no WARN) and an ancestor-
+# directory match exits 0 but echoes the path C-quoted with the CR as \r - neither equals the clean
+# path. A path git TRACKS is never reported (so tracked files behave exactly as before, matching CI's
+# view); a path under an ignored directory is.
 # FAIL OPEN TO SCANNING, never to skipping: if git is absent, this is not a work tree, or a call
-# dies (exit > 1), WARN once and return the EMPTY set so the caller scans everything - the old
-# behaviour. Reading a failed lookup as "everything ignored" would be a green run in which nothing was
-# checked. The set holds only paths git echoed back, so a path git quotes (core.quotePath is off, which
-# leaves only control characters, quotes and backslashes) is simply absent from it and gets scanned:
-# the safe side. $checkLabel names the caller.
+# dies (exit > 1), WARN once (per walk, i.e. per call) and return the EMPTY set so the caller scans
+# everything - the old behaviour. Reading a failed lookup as "everything ignored" would be a green run
+# in which nothing was checked. The set holds only paths git echoed back, so a path git quotes
+# (core.quotePath is off, which leaves only control characters, quotes and backslashes), or a
+# non-ASCII name PowerShell decodes through the OEM code page on Windows (no longer equal to the real
+# path; not live in this ASCII-named repo), is simply absent from it and gets scanned: the safe side.
+# $checkLabel names the caller.
 function Get-GitIgnoredPath([string[]]$repoRelativePaths, [string]$checkLabel) {
     $ignored = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
     $batchSize = 50
@@ -978,9 +978,7 @@ $cpDirs = @($cpDirs | Where-Object {
     $rel = $_.FullName.Substring($RepoRoot.Length).TrimStart('\', '/')
     -not (Test-RepoPathIgnored $rel $mdIgnorePrefixes)
 })
-# Then drop git-ignored manifest dirs (header "Scan scope"): the prefix list covers only the harness
-# worktrees, so any other ignored tree holding a manifest dir (a scratch clone, a build output) would
-# be judged as if CI saw it.
+# Then drop git-ignored manifest dirs (header "Scan scope").
 $cpGitIgnored = Get-GitIgnoredPath @($cpDirs | ForEach-Object { Get-RepoRelativePath $_.FullName }) '[9]'
 $cpDirs = @($cpDirs | Where-Object { -not $cpGitIgnored.Contains((Get-RepoRelativePath $_.FullName)) })
 $badComponent = $false
@@ -1025,10 +1023,9 @@ Write-Output "[10] markdownlint pre-flight (narrow rule set)"
 # Fenced blocks and inline code spans are stripped before matching: markdownlint does not lint
 # inside them, and without stripping a shell '#!' line or any snake_case identifier false-positives.
 # $mdIgnorePrefixes (also used by [9]'s manifest-dir scan) is declared above, ahead of [9].
-# SCOPE: the walk starts at the repo root, so it also sees git-IGNORED files (docs/process/*.local.md
-# hand-overs and friction logs, scratch clones). CI's checkout never contains them, so neither does
-# this check: Get-GitIgnoredPath filters them out below, and the closing Pass line counts how many were
-# skipped so a green run still says what it did not read. Tracked files are linted exactly as before.
+# SCOPE: git-IGNORED files are skipped (header "Scan scope"): Get-GitIgnoredPath filters them out
+# below, and the closing Pass line counts how many were skipped so a green run still says what it did
+# not read. Tracked files are linted exactly as before.
 # A table delimiter row is pipes/dashes/colons/whitespace only, with >= 1 column separator: matches
 # both the padded house form ('| --- | --- |') and the unpadded MD060 shape ('|---|---|'). Whether a
 # given match is padded or unpadded is decided separately, by pipe-adjacency, below.

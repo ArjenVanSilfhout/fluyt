@@ -24,10 +24,11 @@ Current version: **1.3.1**
 the repo root (checks [9] and [10]); CI never sees those files, so a local-only hand-over or scratch
 copy can no longer turn the gate RED on its own.
 
-The ignored set comes from one batched `git check-ignore` per walk (argv batches, not `--stdin`,
-which drops every match on Windows because of CRLF line endings); if git cannot answer, the walk
-scans everything as before and says so with one WARN, never skipping silently. Tracked files lint
-exactly as before, and the green line now counts what it linted and skipped. PATCH: scripts only.
+The ignored set comes from `git check-ignore` run in argv batches per walk (never `--stdin`, which
+from PowerShell on Windows yields no usable match because of CRLF line endings); if git cannot
+answer, the walk scans everything as before and says so with one WARN per walk, never skipping
+silently. Tracked files lint exactly as before, and the green line now counts what it linted and
+skipped. PATCH: scripts only.
 
 ## [1.3.0] — 2026-10-11
 
