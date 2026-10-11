@@ -11,8 +11,9 @@ Local tooling for this repo; none of it ships in the plugin payload.
 ## Denylist pre-push hook
 
 `hooks/pre-push` rejects a push when the tree, a commit (author, committer, message) or an
-annotated tag contains a term from a private list kept outside the repo. The terms are never
-committed. It fails closed: a missing, unreadable or empty terms file blocks the push.
+annotated tag contains a term from a denylist file you keep outside the repo (for example names,
+emails or internal hostnames you never want published). The terms are never committed. The hook is
+optional. It fails closed: a missing, unreadable or empty terms file blocks the push.
 
 Set it up once per clone:
 
@@ -29,5 +30,5 @@ Set `DENYLIST_FILE` to use a different path:
 DENYLIST_FILE=/path/to/terms.txt sh scripts/hooks/pre-push --all
 ```
 
-Run with `--all` (or from a terminal) to scan HEAD plus all reachable history and annotated tags
-as a to-do list of what is left to scrub.
+Run with `--all` (or from a terminal) to scan the full history and tree, e.g. before publishing a
+repo.

@@ -170,10 +170,10 @@ and proof steps).
   PSScriptAnalyzer may not be, so those two CI linters have no local equivalent.
   `scripts/validate-local.ps1` is the dual-package local gate; CI runs authoritative Claude
   validation plus the same Codex structural/version/inventory checks. Note the `claude` CLI buys
-  less than it sounds: `claude plugin validate` checks **manifests only** — it validates manifests only and does not
-  check skill or agent frontmatter — so it is no substitute for the gate's own frontmatter checks.
-  Tool availability varies by machine, so re-run `where.exe <tool>` from a real PowerShell before relying on it (the agent
-  Bash tool can resolve tools the real machine lacks).
+  less than it sounds: `claude plugin validate` checks **manifests only** and does not check skill
+  or agent frontmatter — so it is no substitute for the gate's own frontmatter checks. Tool
+  availability varies by machine, so re-run `where.exe <tool>` from a real PowerShell before
+  relying on it (the agent Bash tool can resolve tools the real machine lacks).
 
 ## Deliberate deviations from the shared playbook
 
@@ -211,8 +211,9 @@ stays where it is rather than being duplicated here.
   agent-client tool name, a new shipped snippet, a new product the plugin must name) — never a
   consumer adopting. A forgotten entry there is a false RED; an enumerate-the-consumers denylist
   would fail the other way, staying green on any consumer it does not list. **Identifying terms**
-  are listed nowhere in the repo: the local opt-in pre-push hook `scripts/hooks/pre-push` reads them from the
-  maintainer's private file, so publishing the check never publishes the terms. There is no
+  are listed nowhere in the repo: the optional local pre-push hook `scripts/hooks/pre-push` blocks a
+  push containing any term from a denylist file you keep outside the repo, so publishing the hook
+  never publishes the terms. There is no
   in-repo denylist, so **nothing is appended when a consumer adopts**. Run the gate before any
   `plugins/` commit.
 - **A citation in a shipped asset must resolve for whoever RECEIVES it, not for whoever wrote it.**

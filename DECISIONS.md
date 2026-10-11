@@ -43,9 +43,9 @@ missing. Check `[7]` flags anything that looks like a project fact (slug-shaped 
 and build-tool names, absolute paths) and subtracts `scripts/plugin-vocabulary-allowlist.txt`, the
 plugin's own vocabulary. The allowlist is maintained when the plugin's vocabulary changes, never
 when a consumer adopts: a forgotten entry is a false red, which is the safe direction. Identifying
-terms are kept out of the repo entirely; the opt-in
-`scripts/hooks/pre-push` reads them from a private file outside the tree, so publishing the check
-never publishes the terms. There is no CI scan for them.
+terms are kept out of the repo entirely; the optional
+`scripts/hooks/pre-push` blocks a push containing any term from a denylist file kept outside the
+tree, so publishing the hook never publishes the terms. There is no CI scan for them.
 
 **2026-10-11 · A citation in a shipped asset must resolve for whoever receives it · reversible.**
 A consumer gets the plugin payload and their own repo, not this tracker or this file. So a bare issue

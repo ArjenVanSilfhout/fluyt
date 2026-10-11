@@ -1,11 +1,9 @@
 #!/bin/sh
-# pre-push: reject identifying tokens before they leave this machine.
-#
-# The list covers identifying tokens: names, emails, paths, machine and project names. The list
-# itself lives outside the repo, in a private file, so publishing the check never publishes the
-# terms.
-# So: NO CI scan, NO Actions secret - only this local check, reading a private file outside the
-# repo, and FAILING CLOSED (exit 1) when that file is missing, unreadable or holds no terms.
+# pre-push: an optional local hook that blocks a push containing any term from a denylist file you
+# keep outside the repo (for example names, emails or internal hostnames you never want published).
+# The terms live only in that file, so publishing this hook never publishes the terms.
+# There is no CI scan and no Actions secret - only this local check, reading the denylist file, and
+# FAILING CLOSED (exit 1) when that file is missing, unreadable or holds no terms.
 #
 # WHAT IT SCANS, for every pushed ref (git feeds `<local ref> <local sha> <remote ref> <remote sha>`
 # lines on stdin; deletions are skipped):
@@ -16,9 +14,8 @@
 # `tag <name>` plus the matched line, all to the terminal only; exit 1 after reporting every hit.
 #
 # MANUAL MODE: run with stdin on a terminal, or pass --all, to scan the HEAD tree plus ALL history
-# reachable from HEAD and every annotated tag. On a repo that still has hits this is the "what is
-# left to scrub" list - run it that way on a fresh clone before enabling the blocking hook (it
-# WILL report existing hits, by design), and enable the hook only once it comes back clean.
+# reachable from HEAD and every annotated tag - e.g. before publishing a repo. It reports existing
+# hits by design; enable the blocking hook once it comes back clean.
 #
 # INSTALL (opt-in per clone):   git config core.hooksPath scripts/hooks
 # PROVISION: create the terms file, one term per line ('#' comments and blank lines ignored), at

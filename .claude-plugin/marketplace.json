@@ -3,7 +3,7 @@
   "name": "fluyt",
   "owner": { "name": "Fluyt contributors" },
   "metadata": {
-    "description": "A client-agnostic agentic-development process for Claude Code: the backlog, ship, review, release, and retro skeleton any project builds on."
+    "description": "A client-agnostic agentic-development process for Claude Code and Codex: the backlog, ship, review, release, and retro skeleton any project builds on."
   },
   "plugins": [
     {

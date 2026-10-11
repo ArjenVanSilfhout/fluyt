@@ -380,8 +380,8 @@ function clState(repo, state) {
 }
 
 // ---- the gh stub the branch-delete guard is scored against ------------------------------------
-// The guard calls `gh` with Node's spawnSync, which resolves .exe/.com only - so the gh.cmd trick
-// section [8] uses for the PowerShell hook is INVISIBLE here (a gh.cmd first on
+// The guard calls `gh` with Node's spawnSync, which resolves .exe/.com only - so a gh.cmd shim
+// is INVISIBLE here (a gh.cmd first on
 // PATH is skipped and the real gh.exe answers instead, which would make every row depend on the
 // network, the local auth, and whatever PRs happen to be open). What Node does resolve is a
 // copy of node.exe named gh(.exe), driven by a NODE_OPTIONS preload that answers from
@@ -1387,171 +1387,6 @@ function runSelfTest(ctx) {
 // ---------------------------------------------------------------------------------------------
 // [8] Main
 // ---------------------------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------------------------
-// [8] SessionStart control - the pin-and-freshness hook
-// ---------------------------------------------------------------------------------------------
-// The pin hook is the settings file's first SessionStart entry, and without this section it
-// would be the only guard here with no standing control - the exact condition [0]'s header calls out,
-// and the condition a pin check that cannot fail is in: it reads green while unable to
-// fail. Same disciplines as the PreToolUse rows: the command string is read FROM THE FILE ON DISK
-// (never pasted), and it is executed the way the client executes a `shell: "powershell"` hook -
-// `powershell -NoProfile -Command <string>` - not through some cleaner path that would hide a
-// quoting death (one event type over).
-//
-// The hook's `gh api` call is stubbed with a gh.cmd on a prepended PATH: PowerShell resolves .cmd
-// via PATHEXT (unlike Node's libuv spawn, which tries only .exe/.com). Stubbing makes all four verdict branches
-// offline-deterministic; the real-network green path needs no control here because every session
-// start exercises it. The four rows are mutually discriminating: one command, four
-// fixture states, four DIFFERENT expected verdicts - a dead hook (throws, empty output) fails all
-// four, and an always-OK hook fails three, so the section cannot read green vacuously.
-//
-// On a host with no `powershell` the section reports SKIPPED, loudly, and does not count as green -
-// but it does not go red either: a host that cannot run powershell never runs the shipped hook
-// either, so there is nothing live to control there. That is a statement about the HOOK's own
-// platform envelope, not a soft-skip of a runnable control.
-
-const SESSION_GUARDS = [
-  {
-    key: "pin-freshness",
-    match: "marketplace pin AND install freshness",
-    label: "pin-freshness hook - pin BROKEN / install STALE / UNVERIFIED / OK-and-fresh",
-  },
-];
-
-function loadSessionGuards(settings) {
-  const entries = [];
-  const ss = (settings.hooks && settings.hooks.SessionStart) || [];
-  ss.forEach((entry, i) => {
-    (entry.hooks || []).forEach((h, k) => {
-      entries.push({ index: "SessionStart[" + i + "].hooks[" + k + "]", hook: h });
-    });
-  });
-  const problems = [];
-  const resolved = {};
-  const claimed = new Set();
-  for (const g of SESSION_GUARDS) {
-    const hits = entries.filter((e) => String(e.hook.statusMessage || "").indexOf(g.match) >= 0);
-    if (hits.length === 0) {
-      problems.push("expected SessionStart guard not present: " + g.key +
-        " (no statusMessage contains \"" + g.match + "\") - a deleted or renamed hook must not read as green");
-      continue;
-    }
-    if (hits.length > 1) {
-      problems.push("ambiguous SessionStart guard identity: " + g.key + " matches " + hits.length + " hooks");
-      continue;
-    }
-    hits.forEach((h) => claimed.add(h.index));
-    resolved[g.key] = Object.assign({}, g, {
-      index: hits[0].index,
-      command: String(hits[0].hook.command || ""),
-    });
-    if (!resolved[g.key].command) problems.push("SessionStart guard " + g.key + " has an empty `command`");
-  }
-  for (const e of entries) {
-    if (!claimed.has(e.index)) {
-      problems.push("uncovered SessionStart hook at " + e.index + ": \"" + e.hook.statusMessage +
-        "\" - add it to SESSION_GUARDS and give it fixture rows");
-    }
-  }
-  return { guards: resolved, problems: problems };
-}
-
-// Build the fake USERPROFILE the hook reads: known_marketplaces.json + a real git clone dir on a
-// real branch (the hook runs `git -C <dir> branch --show-current`) + installed_plugins.json + a
-// version-stamped cache + the gh.cmd stub. Rewritten between rows by the mutators below.
-function buildSessionFixture(root) {
-  const home = path.join(root, "session-home");
-  const pl = path.join(home, ".claude", "plugins");
-  const clone = path.join(pl, "marketplaces", "fluyt");
-  const cache = path.join(home, "cache");
-  const bin = path.join(root, "session-bin");
-  fs.mkdirSync(clone, { recursive: true });
-  fs.mkdirSync(path.join(cache, ".codex-plugin"), { recursive: true });
-  fs.mkdirSync(bin, { recursive: true });
-  git(clone, ["init", "-q", "-b", "main"]);
-  git(clone, IDENT.concat(["commit", "-q", "--allow-empty", "--no-gpg-sign", "-m", "fixture"]));
-  const stubJs = path.join(bin, "ghstub.js");
-  fs.writeFileSync(stubJs, "process.stdout.write(JSON.stringify({version:\"9.9.9\"}));\n");
-  fs.writeFileSync(path.join(bin, "gh.cmd"), "@echo off\r\nnode \"" + stubJs + "\"\r\n");
-  const write = (ref, cacheVersion) => {
-    fs.writeFileSync(path.join(pl, "known_marketplaces.json"), JSON.stringify({
-      "fluyt": { source: { source: "git", url: "fixture", ref: ref }, lastUpdated: "2025-01-01T00:00:00Z" },
-    }));
-    fs.writeFileSync(path.join(pl, "installed_plugins.json"), JSON.stringify({
-      version: 2,
-      plugins: { "fluyt@fluyt": [{ scope: "user", installPath: cache }] },
-    }));
-    const pj = path.join(cache, ".codex-plugin", "plugin.json");
-    if (cacheVersion === null) {
-      if (fs.existsSync(pj)) fs.unlinkSync(pj);
-    } else {
-      fs.writeFileSync(pj, JSON.stringify({ version: cacheVersion }));
-    }
-  };
-  return { home: home, bin: bin, write: write };
-}
-
-function runSessionMatrix(settings) {
-  say("[8] SessionStart control - the pin-freshness hook, four verdict branches");
-  const loaded = loadSessionGuards(settings);
-  for (const p of loaded.problems) fail(p);
-  const result = { guardProblems: loaded.problems.length, failures: [], rows: 0, skipped: false };
-  const guard = loaded.guards["pin-freshness"];
-  if (!guard) return result; // the problem lines above already carry the verdict
-
-  const psProbe = cp.spawnSync("powershell", ["-NoProfile", "-Command", "exit 0"], { encoding: "utf8" });
-  if (psProbe.error) {
-    warn("SKIPPED - no `powershell` on this host. The shipped hook cannot run here either");
-    warn("      (its entry declares shell: powershell), so there is nothing live to control; this");
-    warn("      is the hook's platform envelope, not an unexercised control on a runnable guard.");
-    result.skipped = true;
-    return result;
-  }
-
-  const fx = buildSessionFixture(fs.mkdtempSync(path.join(os.tmpdir(), "guard-matrix-ss-")));
-  const env = Object.assign({}, process.env, {
-    USERPROFILE: fx.home,
-    PATH: fx.bin + path.delimiter + process.env.PATH,
-  });
-  // Row table: fixture state -> the one verdict substring that must appear, plus the three that
-  // must NOT (the discrimination is the point - "STALE" appearing in an OK row is a real failure).
-  const VERDICTS = ["OK and fresh", "STALE", "BROKEN", "UNVERIFIED"];
-  const rows = [
-    { id: "ss-fresh", setup: () => fx.write("main", "9.9.9"), expect: "OK and fresh",
-      note: "cache 9.9.9 == stubbed main tip 9.9.9; fails if the equality branch is dead" },
-    { id: "ss-stale", setup: () => fx.write("main", "0.0.1"), expect: "STALE",
-      note: "cache 0.0.1 vs stubbed 9.9.9 - the stale-install gap itself; fails if staleness is not compared" },
-    { id: "ss-broken", setup: () => fx.write("dev", "9.9.9"), expect: "BROKEN",
-      note: "ref=dev - branch 1; fails if the ref read is dead" },
-    { id: "ss-unverified", setup: () => fx.write("main", null), expect: "UNVERIFIED",
-      note: "cache plugin.json missing - a failed read must never read as fresh " },
-  ];
-  for (const row of rows) {
-    result.rows++;
-    row.setup();
-    const r = cp.spawnSync("powershell", ["-NoProfile", "-Command", guard.command],
-      { encoding: "utf8", env: env, timeout: 30000 });
-    let msg = "";
-    try { msg = String(JSON.parse((r.stdout || "").trim()).systemMessage || ""); } catch (e) { msg = ""; }
-    const hit = VERDICTS.filter((v) => msg.indexOf(v) >= 0);
-    const ok = hit.length === 1 && hit[0] === row.expect;
-    if (ok) {
-      say("  PASS " + row.id + " -> " + row.expect);
-    } else {
-      fail(row.id + " expected verdict \"" + row.expect + "\" but observed " +
-        (msg ? "[" + (hit.join(", ") || "no known verdict") + "] in: " + msg.slice(0, 120) : "no parsable output") +
-        " - " + row.note);
-      result.failures.push({ id: row.id });
-    }
-  }
-  try { fs.rmSync(path.dirname(fx.home), { recursive: true, force: true, maxRetries: 5 }); } catch (e) {
-    warn("could not remove session fixture: " + e.message);
-  }
-  say("");
-  return result;
-}
-
 function main() {
   if (OPT.help) { usage(); return EXIT_GREEN; }
   const unknown = FLAGS.filter((f) => KNOWN_FLAGS.indexOf(f) < 0 && f.indexOf(HOOKS_FLAG) !== 0);
@@ -1585,11 +1420,6 @@ function main() {
 
     let result = { guardProblems: 0, failures: [], rows: 0 };
     if (!OPT.selfTestOnly) result = runMatrix(ctx);
-    let ss = { guardProblems: 0, failures: [], rows: 0, skipped: false };
-    if (!OPT.selfTestOnly && !OPT.nodeDirect) ss = runSessionMatrix(loadGuards(PATHS).settings);
-    result.guardProblems += ss.guardProblems;
-    result.failures = result.failures.concat(ss.failures);
-    result.rows += ss.rows;
     const proved = runSelfTest(ctx);
 
     say("");
@@ -1624,8 +1454,7 @@ function main() {
       const others = GUARDS.filter((g) => eventOf(g) !== "PreToolUse").map((g) => eventOf(g) + " " + g.key);
       say("RESULT: GREEN - " + result.rows + "/" + result.rows + " rows as expected across " +
         (bySource("settings") + bySource("plugin")) + " PreToolUse guards (" + bySource("settings") +
-        " repo-local + " + bySource("plugin") + " shipped)" + (others.length ? " + " + others.join(", ") : "") + (ss.skipped ? " (SessionStart control SKIPPED - no powershell)" :
-        (ss.rows ? " + the SessionStart control (" + ss.rows + " rows)" : "")) +
+        " repo-local + " + bySource("plugin") + " shipped)" + (others.length ? " + " + others.join(", ") : "") +
         ", and the self-test proved the runner can report FAIL.");
     }
     if (OPT.nodeDirect) {

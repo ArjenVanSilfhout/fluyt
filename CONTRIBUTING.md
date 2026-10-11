@@ -34,7 +34,7 @@ weeks. A few hours a month go to outside contributions.
 - Branch off `dev` (the integration and default branch) and open the PR against `dev`. `main` is
   the release branch; changes reach it only through a release.
 - Run the local gate before opening the PR: `pwsh -NoProfile -File scripts/validate-local.ps1`.
-  It needs PowerShell 7; Windows PowerShell 5.1 refuses to run it. CI is authoritative.
+  Windows PowerShell 5.1 refuses to run it only because of its execution policy. CI is authoritative.
 - Read the "Invariants" section of `CLAUDE.md` before touching anything under `plugins/`. In
   particular:
   - **No project-specific facts under `plugins/`** (project, framework or repo names, paths, build

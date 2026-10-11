@@ -3,7 +3,8 @@
     Local static validator for the Fluyt Claude Code + Codex plugin marketplace.
 
 .DESCRIPTION
-    This PowerShell 5.1-compatible script is the local gate before pushing. CI runs authoritative
+    This script is the local gate before pushing. It parses under Windows PowerShell 5.1 and 7, but
+    the documented invocation is pwsh (5.1 refuses to run it only because of execution policy). CI runs authoritative
     Claude validation plus this dual-package gate; this catches the same classes of mistake early.
 
     On the toolchain this assumes: Node, npm and the `claude` CLI are expected locally;
@@ -29,7 +30,7 @@
         slug-shaped identifiers, framework/runtime/build-tool names and absolute paths, and judges
         each finding against scripts/plugin-vocabulary-allowlist.txt (the plugin's own legitimate
         vocabulary). Identifying tokens are caught by the local pre-push hook
-        scripts/hooks/pre-push, reading a private file outside the repo
+        scripts/hooks/pre-push, reading a denylist file outside the repo
       - a NARROW markdown pre-flight for the markdownlint rules most likely to slip past local review
         (MD018, MD049/MD050, MD004, MD060, MD028, MD026) - a tripwire, not a substitute for
         markdownlint-cli2, which only CI can run because the linter package may not be installed
@@ -39,7 +40,7 @@
         skill splits out) and every agent file stays within its byte budget in
         scripts/component-size-budget.txt - a ratchet, check [12]
 
-    Run from the repo root:  powershell -NoProfile -File scripts/validate-local.ps1
+    Run from the repo root:  pwsh -NoProfile -File scripts/validate-local.ps1
     Exit code 0 = green; 1 = one or more failures.
 #>
 
@@ -679,13 +680,14 @@ Write-Output "[7] project facts under plugins/ (shape heuristic)"
 # gate naming the exact token, and a forgotten entry is a false RED, never a false green.
 #
 # There is no enumerated-consumer denylist or regression floor: such a list would itself name private
-# identifiers, so it cannot ship in a public repo. Identifying tokens are caught by the LOCAL pre-push hook
-# (scripts/hooks/pre-push) reading a private file outside the repo; this gate carries no term list.
+# identifiers, so it cannot ship in a public repo. Identifying tokens are caught by the optional LOCAL
+# pre-push hook (scripts/hooks/pre-push) reading a denylist file outside the repo; this gate carries
+# no term list.
 # What the heuristic does NOT catch is recorded honestly rather than papered over:
 #   - a kebab-case or all-lowercase consumer slug ('buoy-freight-sloop') is shape-identical to the
 #     plugin's own kebab vocabulary (skill names, Project Facts keys) and cannot be told apart
-#     without semantics - ONLY the private-file pre-push scan covers them, and only locally (CI
-#     has no private list);
+#     without semantics - ONLY the optional pre-push hook covers them, and only locally (CI
+#     has no denylist);
 #   - a consumer stack the world-vocabulary list below has never heard of;
 #   - the two acknowledged blind spots inside Get-ProjectFactFinding (inflected-acronym shapes) and
 #     the allowlist (anything legitimately listed there can no longer be flagged anywhere).
@@ -720,19 +722,19 @@ $script:PathSignalRegex = '(?<![A-Za-z0-9])(?:[A-Za-z]:[\\/][A-Za-z0-9_.\-]*[\\/
 # build and test tools, and the concrete build/test command strings built from them. This list is
 # heuristic definition, not consumer data, which is why it lives in the script and not in a data
 # file: it changes when the WORLD gains a build tool, never when a consumer adopts. NEVER add a
-# consumer's own name, slug or private tooling here - that belongs in the private pre-push terms file.
+# consumer's own name, slug or private tooling here - that belongs in the pre-push denylist file.
 # Entries must start and end with a word character, since each is matched \b-anchored and case-
 # insensitively; multi-word entries are matched as written. Anything here that the plugin legitimately
 # names itself goes in the allowlist file (today: 'node', 'npm').
 $script:StackVocabulary = @(
-    'angular', 'bazel', 'Bevy', 'cargo', 'cmake', 'conda', 'CryEngine', 'cypress', 'django',
-    'docker', 'dotnet', 'flutter', 'Godot', 'gradle', 'jest', 'junit', 'kubectl', 'laravel',
-    'LibGDX', 'maven', 'mocha', 'MonoGame', 'msbuild', 'mvn', 'node', 'npm', 'nuget', 'nunit',
-    'phpunit', 'playwright', 'pnpm', 'poetry', 'pytest', 'rails', 'react', 'rustc', 'svelte',
-    'terraform', 'tox', 'Unity', 'Unreal', 'vite', 'vitest', 'webpack', 'xcodebuild', 'xunit',
-    'yarn', 'cargo test', 'go build', 'go test', 'gradle build', 'make build', 'make test',
-    'mvn test', 'npm run', 'swift build', 'ansible', 'fastapi', 'flask', 'helm', 'rollup', 'sbt',
-    'nextjs'
+    'actix', 'angular', 'ansible', 'bazel', 'bundler', 'cargo', 'cmake', 'composer', 'conda',
+    'cypress', 'django', 'docker', 'dotnet', 'fastapi', 'flask', 'flutter', 'gin', 'Godot',
+    'gradle', 'helm', 'jest', 'junit', 'kubectl', 'laravel', 'maven', 'mocha', 'msbuild', 'mvn',
+    'nextjs', 'node', 'npm', 'nuget', 'nunit', 'phpunit', 'pipenv', 'playwright', 'pnpm', 'poetry',
+    'pytest', 'rails', 'react', 'rollup', 'rustc', 'sbt', 'spring', 'svelte', 'terraform', 'tox',
+    'Unity', 'Unreal', 'vite', 'vitest', 'webpack', 'xcodebuild', 'xunit', 'yarn', 'cargo test',
+    'go build', 'go test', 'gradle build', 'make build', 'make test', 'mvn test', 'npm run',
+    'swift build'
 )
 # Longest entry first: .NET alternation takes the FIRST alternative that matches at a position, so
 # with 'cargo' ahead of 'cargo test' a planted `cargo test` reports as the bare tool name. Sorting by

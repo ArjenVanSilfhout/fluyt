@@ -1,5 +1,5 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "worktree": {
     "baseRef": "fresh"
   },
@@ -75,19 +75,6 @@
             "shell": "bash",
             "command": "node -e 'let d=\"\";process.stdin.on(\"data\",c=>d+=c);process.stdin.on(\"end\",()=>{try{const j=JSON.parse(d||\"{}\");const sid=j.session_id;const aid=j.agent_id;if(typeof sid!==\"string\"||!sid||typeof aid!==\"string\"||!aid){process.exit(0);}const os=require(\"os\");const fs=require(\"fs\");const path=require(\"path\");const safe=sid.replace(/[^A-Za-z0-9_-]/g,\"_\");const file=path.join(os.tmpdir(),\"fluyt-live-agents-\"+safe+\".json\");let state=null;try{const rawState=fs.readFileSync(file,\"utf8\");state=JSON.parse(rawState);}catch(e){process.exit(0);}if(!state||typeof state!==\"object\"||!state.agents||typeof state.agents!==\"object\"||!(aid in state.agents)){process.exit(0);}delete state.agents[aid];if(Object.keys(state.agents).length===0){try{fs.unlinkSync(file);}catch(e){}}else{fs.writeFileSync(file,JSON.stringify(state));}process.exit(0);}catch(e){process.exit(0);}});' 2>/dev/null || true",
             "statusMessage": "Lowering the HEAD-freeze live-agent flag"
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "shell": "powershell",
-            "command": "$ErrorActionPreference='SilentlyContinue'; $pl=Join-Path $env:USERPROFILE '.claude\\plugins'; $km=Get-Content (Join-Path $pl 'known_marketplaces.json') -Raw | ConvertFrom-Json; $ref=$km.'fluyt'.source.ref; $clone=(git -C (Join-Path $pl 'marketplaces\\fluyt') branch --show-current); $lu=$km.'fluyt'.lastUpdated; if($ref -ne 'main' -or $clone -ne 'main'){ @{ systemMessage = \"Fluyt marketplace pin BROKEN (ref='$ref', clone branch='$clone', lastUpdated=$lu). Repair per /fluyt:install-refresh-plugin: widen the clone's refspec, re-fetch main, restore the ref pin.\" } | ConvertTo-Json -Compress } else { $ipj=Get-Content (Join-Path $pl 'installed_plugins.json') -Raw | ConvertFrom-Json; $rec=@($ipj.plugins.'fluyt@fluyt') | Where-Object { $_.scope -eq 'user' } | Select-Object -First 1; $localV=$null; if($rec){ $localV=(Get-Content (Join-Path $rec.installPath '.codex-plugin\\plugin.json') -Raw | ConvertFrom-Json).version }; $remoteV=$null; $raw=(gh api -H 'Accept: application/vnd.github.raw' 'repos/ArjenVanSilfhout/fluyt/contents/plugins/fluyt/.codex-plugin/plugin.json?ref=main' 2>$null); if($raw){ $remoteV=($raw | ConvertFrom-Json).version }; if(-not $localV -or -not $remoteV){ @{ systemMessage = \"Fluyt pin ref OK (main/main) but staleness UNVERIFIED (installed='$localV', main tip='$remoteV' - a read failed, likely gh offline). Do NOT read this as fresh; verify per /fluyt:install-refresh-plugin.\" } | ConvertTo-Json -Compress } elseif($localV -eq $remoteV){ @{ systemMessage = \"Fluyt pin OK and fresh: installed $localV == main tip (ref=main, clone=main, lastUpdated=$lu)\" } | ConvertTo-Json -Compress } else { @{ systemMessage = \"Fluyt install STALE: installed $localV, main ships $remoteV (the pin itself is OK - this is the clone can be on main yet behind its tip). Refresh: claude plugin marketplace update fluyt; then claude plugin update fluyt@fluyt; then restart the client.\" } | ConvertTo-Json -Compress } }",
-            "timeout": 30,
-            "statusMessage": "Checking the Fluyt marketplace pin AND install freshness"
           }
         ]
       }

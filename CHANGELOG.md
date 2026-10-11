@@ -73,5 +73,5 @@ First public release. One plugin, `fluyt`, shipped from one payload to Claude Co
 **Repo tooling**
 
 - A local validation gate (`scripts/validate-local.ps1`) with a CI workflow that runs it, a
-  per-file component size budget, a guard fixture matrix, a release publisher, and an opt-in
-  pre-push scan for identifying terms.
+  per-file component size budget, a guard fixture matrix, a release publisher, and an optional
+  pre-push hook that blocks pushes containing terms from a denylist file kept outside the repo.

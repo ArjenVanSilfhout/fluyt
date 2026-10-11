@@ -20,7 +20,7 @@
 # category that looks like a violation and is not is the plugin naming ITSELF: CLAUDE.md's
 # sanctioned-self-reference test ("names the plugin's OWN identity or home - its slug, its repo,
 # its author, its manifest metadata - never a consumer fact") is why 'Fluyt' and
-# 'ArjenVanSilfhout' are listed below rather than scrubbed. If you are about to add an entry and
+# 'ArjenVanSilfhout' are listed below rather than removed. If you are about to add an entry and
 # cannot say which of the sections below it belongs to, that is the signal to stop and check
 # whether it is really the plugin's vocabulary at all.
 #
@@ -52,7 +52,6 @@ PowerShell
 # Named in agent frontmatter `tools:` lists, hook wiring, and prose about what a client can do.
 SubagentStop
 PreToolUse
-UserPromptSubmit
 WebFetch
 WebSearch
 SendMessage
@@ -75,12 +74,10 @@ NativeCommandError
 
 # --- process and domain vocabulary -------------------------------------------------------------
 # MoSCoW: the tier-label scheme. SemVer: the version format. PullRequest: the forge's own API type
-# name. ExpectedResult: the test-naming convention example in the test-writer role.
-# AgentRouting: a switch parameter on the plugin's OWN shipped github-labels.ps1 template.
+# name. AgentRouting: a switch parameter on the plugin's OWN shipped github-labels.ps1 template.
 MoSCoW
 SemVer
 PullRequest
-ExpectedResult
 AgentRouting
 
 # --- runtimes the plugin's own shipped assets depend on ----------------------------------------

@@ -265,7 +265,7 @@ action you take).
   - **Which `baseRef` to configure depends on whether `default-branch` IS the `integration-branch`**
     (Project Facts) — the two topologies need opposite settings.
     - **`default-branch == integration-branch`** (the topology this playbook recommends, because it
-      makes `Closes #N` auto-fire): prefer `worktree.baseRef: "fresh"` (leaving the key unset is
+      makes `Closes #N` auto-fire): prefer `worktree.baseRef: "fresh"` (leaving the key unset
       behaves identically). A worktree then branches from the remote **default** branch — which on
       this topology IS the integration branch — **but the client resolves "the remote default" via
       the local `origin/HEAD` symref, a clone-time snapshot that never auto-updates.** A repo whose
