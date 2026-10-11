@@ -14,9 +14,19 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.6.0**
+Current version: **1.7.0**
 
 ---
+
+## [1.7.0] — 2026-10-11
+
+**release (*The ritual* step 3):** GitHub Release notes are now a short summary of everything since
+the previous release, instead of pasted CHANGELOG sections. The summary opens with one line naming
+the previous release, groups short bullets by area with one line per change describing its effect
+on the reader, and closes with a pointer to the CHANGELOG version range. *Afterwards* now points to
+that summary. Repo-side, `scripts/publish-release.ps1` no longer builds notes: it requires
+`-NotesFile` and refuses to publish without a readable, non-empty one. MINOR: a shipped skill
+changes an output a consumer produces.
 
 ## [1.6.0] — 2026-10-11
 
