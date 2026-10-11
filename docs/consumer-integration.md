@@ -18,8 +18,8 @@ fluyt assumes a specific substrate — confirm these before adopting:
 - **A plugin-capable Claude Code or Codex client** — to install the marketplace and invoke the
   process skills. Claude Code loads the role manifests natively; Codex uses the shipped role adapter.
 - **Node.js 18 or later on `PATH`, on Claude Code** — the plugin's five Claude Code hooks are
-  `node -e` one-liners, so without Node they are inert: each still lets the work through, and says
-  it was skipped (the exact wording is in `plugins/fluyt/README.md`, *Hooks*).
+  `node -e` one-liners, so without it their Node logic is inert: each still lets the work through,
+  and says it was skipped (the exact wording is in `plugins/fluyt/README.md`, *Hooks*).
 
 **Azure DevOps is the one supported alternative forge:** set Project Facts `forge: azure-devops` and
 the `forge-azure-devops` adapter skill (§1) translates the rituals' GitHub/`gh` steps to `az`. Read

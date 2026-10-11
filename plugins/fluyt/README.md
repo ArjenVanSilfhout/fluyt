@@ -43,9 +43,10 @@ mechanism, so on Codex the process rules the hooks enforce remain prose-only (th
 cross-client authority; a hook is prevention layered in front of them, never their replacement).
 
 **Prerequisite: Node.js 18 or later on `PATH`.** Every hook is a `node -e` one-liner, so without
-Node none of them does its job. Each checks for `node` before anything else and, when it is
-missing, still lets the session proceed but says so, rather than passing for a considered allow:
-each `PreToolUse` hook prints a one-line `systemMessage` naming itself
+it every hook's Node logic is inert (only the `SubagentStop` shell fallback still writes). Each
+checks for `node` before anything else and, when it is missing, still lets the session proceed
+but says so, rather than passing for a considered allow: each `PreToolUse` hook prints a one-line
+`systemMessage` naming itself
 (`fluyt hook skipped: node is not on PATH, so the <hook> did not run`), and `SubagentStop` writes
 its line tagged `(fallback: node not on PATH)` instead of the generic `(fallback)`. Every other
 failure stays exactly as fail-open as that hook's own paragraph below describes.
