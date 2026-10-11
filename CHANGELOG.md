@@ -14,9 +14,17 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.4.2**
+Current version: **1.4.3**
 
 ---
+
+## [1.4.3] — 2026-10-11
+
+**ship-work-item (§1, first bullet):** the commit no longer appears among the duties that stay
+with the orchestrator on every path. The bullet now names the two lane-commit exceptions the
+skill and its roles already carry: a worktree `developer` commits its own branch, and a pinned
+`test-writer` commits only its `test-dir` files. PATCH: no instruction changes, since both
+exceptions already existed.
 
 ## [1.4.2] — 2026-10-11
 

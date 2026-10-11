@@ -94,9 +94,11 @@ action you take).
 - **Delegate the implementation — you orchestrate.** Project Facts `delegation` decides *who*
   implements, and delegation is the default: **an absent key counts as `default`**, so unless the
   consumer opted out you spawn the `fluyt:developer` agent to write the code while you do the
-  recon, write the spec, and keep **branch, CHANGELOG, version, commit, PR, and merge** — those stay
-  with the orchestrator on every path through this skill, not only in *Parallel work* (which reserves
-  the same shared files for the same reason). Hand the slice only to a role that can run the gate:
+  recon, write the spec, and keep **branch, CHANGELOG, version, PR, and merge** — those stay with
+  the orchestrator on every path through this skill, not only in *Parallel work* (which reserves the
+  same shared files for the same reason). The commit is yours too, except in an isolated lane: a
+  worktree `developer` commits its own branch (*Delegation and worktree isolation*), and a
+  `test-writer` pinned to that worktree commits only its `test-dir` files (*Parallel work*). Hand the slice only to a role that can run the gate:
   `developer` and `test-writer` carry Bash and can run `build-cmd` / `test-cmd`; `product-owner`,
   `scrum-master`, and `tech-debt-reviewer` cannot, so an implementation slice never goes to them. And
   **read what comes back** — the returned diff is what keeps your §2 version call, the §3 commit-guard,
