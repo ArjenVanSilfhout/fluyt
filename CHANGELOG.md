@@ -14,9 +14,18 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.2.3**
+Current version: **1.2.4**
 
 ---
+
+## [1.2.4] — 2026-10-11
+
+**CI (dev ruleset):** the `local invariants (validate-local.ps1)` job is now a required status check
+on `dev`, so a merge waits for a green run instead of landing the instant a PR is ready.
+
+The ruleset is renamed `dev: PR-only, CI-green`; the workflow and action comments describe the
+ruleset read instead of classic branch protection. The context had reported on every PR into `dev`
+so far before being required, per the `branch-protection` skill. PATCH: CI configuration.
 
 ## [1.2.3] — 2026-10-11
 
