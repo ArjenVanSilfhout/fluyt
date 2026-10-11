@@ -307,8 +307,9 @@ Work through the templates, merging each:
    is left alone, a pending value is chased.
 2. **Client routing** - if `CLAUDE.md` is missing, seed it from
    the skeleton; if it exists, merge in the **"Agentic process (fluyt plugin)" routing
-   paragraph and its notation line** (this is what makes the shared skills discoverable - a plugin's own prose is not
-   auto-loaded) and list any project-specific local skills. For `agent-clients: codex | both`, also
+   paragraph and its notation line** (this is what makes the shared skills discoverable - a
+   plugin's own prose is not auto-loaded) and list any project-specific local skills. For
+   `agent-clients: codex | both`, also
    merge `templates/AGENTS-skeleton.md` into `AGENTS.md`; it makes Codex auto-load the pointer to the
    same `CLAUDE.md` contract and routes specialist work through `dispatch-role`.
 3. **The consumer-owned sections** (`templates/CLAUDE-skeleton.md`) - the skeleton ships these as

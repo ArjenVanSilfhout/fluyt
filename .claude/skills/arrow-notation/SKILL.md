@@ -95,9 +95,10 @@ anything — apply one, then convert:
    block hashes and the code-span set (commands below).
 3. Convert line by line (no legend to add); record a **ledger**: before text → after text → every
    qualifier/negation and where it survives.
-4. Measure after with the same commands. **Qualifier counts must match exactly**; fenced hashes identical; the code-span diff adds nothing. Read that diff rather than its hash: the per-line `grep -o` pairs
-   backticks across prose too, so a few pairing artifacts (prose fragments such as a lone em dash
-   between two spans) appear on both sides and are not changes.
+4. Measure after with the same commands. **Qualifier counts must match exactly**; fenced hashes
+   identical; the code-span diff adds nothing. Read that diff rather than its hash: the per-line
+   `grep -o` pairs backticks across prose too, so a few pairing artifacts (prose fragments such
+   as a lone em dash between two spans) appear on both sides and are not changes.
    A count that moved is a lost or invented qualifier — find it before going on.
 5. Gate (`pwsh -NoProfile -File scripts/validate-local.ps1`, redirect to a file): `[12]` budget,
    `[7]` invariants. MD038 has no local check — scan spans yourself.
