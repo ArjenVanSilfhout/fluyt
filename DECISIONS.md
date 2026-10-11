@@ -16,10 +16,9 @@ CHANGELOG explains it. The rule stands; its rationale is corrected in CLAUDE.md 
 reversible.**
 The nautical-codename release titles, the git-ignored hand-over at `docs/process/HANDOVER.local.md`,
 and the `<type-or-id>: <summary> (vX.Y.Z)` commit subject: the user's call ("Keep all three"),
-relayed by the hub. The plugin version at ratification is 1.4.0 (the CHANGELOG `Current version:` on
-the integration branch that day). The markers in CLAUDE.md stay `chosen` until the user confirms
-that edit in the session chat; when flipped they read `ratified @v1.4.0`. `agent-routing` was not
-part of the call and stays `chosen`.
+relayed by the hub. The markers in CLAUDE.md stay `chosen` until the user confirms that edit in the
+session chat; when flipped they read `ratified @v<the installed payload's .codex-plugin/plugin.json
+version at that moment>`. `agent-routing` was not part of the call and stays `chosen`.
 
 **2026-10-11 · The consumer `.gitignore` fragment no longer ignores `.mcp.json` · reversible.**
 On Claude Code a root `.mcp.json` is the project-scoped, shareable MCP configuration; ignoring it hid

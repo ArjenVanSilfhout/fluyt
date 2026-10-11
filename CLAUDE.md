@@ -220,8 +220,9 @@ stays where it is rather than being duplicated here.
   A consumer gets the plugin payload and their own repo — not this tracker, and not this
   `DECISIONS.md`. So a bare `#<issue>` or a "see the marketplace `DECISIONS.md`" pointer inside
   `plugins/` is dangling *for its actual reader*, however well it resolves here. **Cite a version
-  instead** (`until v1.2.0`) — it resolves for them through the payload manifest's `version` and
-  the public CHANGELOG, which the payload itself does not carry — or state the reasoning without
+  instead** (`until v1.2.0`) — it resolves for them through the payload's
+  `.codex-plugin/plugin.json` `version` (the Claude manifest is versionless) and the public
+  CHANGELOG, which the payload itself does not carry — or state the reasoning without
   the pointer; a justification that needs an unreachable reference to stand up was not carrying its
   own weight. This is an **audience** rule, distinct from the resolvability rule in
   `versioning-and-changelog` (which is about *timing* — citing something not yet recorded — and is
