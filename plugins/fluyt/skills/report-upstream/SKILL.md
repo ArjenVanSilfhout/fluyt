@@ -1,8 +1,8 @@
 ---
 name: report-upstream
 description: >-
-  File a bug or feature request UPSTREAM about the fluyt plugin itself — a shared skill,
-  agent, hook, or template — rather than the consumer's own backlog. Use whenever a shared component
+  File a bug or feature request UPSTREAM about the fluyt plugin itself - a shared skill,
+  agent, hook, or template - rather than the consumer's own backlog. Use whenever a shared component
   is broken, crashes, contradicts its own docs, assumes a Project Facts key that isn't in the
   contract, or is missing a capability that would help more than one project. Files to the plugin's
   home repo with the right labels, provenance stripped by default and only after the user approves
@@ -10,7 +10,7 @@ description: >-
   to the web issue form when `gh` cannot reach it.
 ---
 
-# Report upstream — file a bug or feature request against fluyt
+# Report upstream - file a bug or feature request against fluyt
 
 This skill files feedback about the **shared plugin itself** (a skill, agent, hook, or template) to
 the plugin's home repo, `ArjenVanSilfhout/fluyt`, so the fix lands once for every project
@@ -18,16 +18,16 @@ instead of being patched locally where it drifts.
 
 ## When to use this vs the `backlog` skill
 
-- **`report-upstream`** — the bug or gap is in a **shared** component (a skill, agent, the
+- **`report-upstream`** - the bug or gap is in a **shared** component (a skill, agent, the
   `SubagentStop` hook, or a scaffolding template): the fix changes a plugin file.
-- **`backlog`** — a work item for the project you are in: the fix changes a file in *this* repo.
+- **`backlog`** - a work item for the project you are in: the fix changes a file in *this* repo.
 
 ## The upstream target (a deliberate constant)
 
-This skill targets `ArjenVanSilfhout/fluyt` — the plugin's own home, the **one** repo slug a
+This skill targets `ArjenVanSilfhout/fluyt` - the plugin's own home, the **one** repo slug a
 shared asset may name: the plugin's identity, not a consumer project fact.
 
-**This stays `gh`-shaped regardless of Project Facts `forge`** — filing targets the plugin's own
+**This stays `gh`-shaped regardless of Project Facts `forge`** - filing targets the plugin's own
 GitHub home, not the consumer's forge (a deliberate non-translation the `forge-azure-devops`
 adapter itself records), so even a `forge: azure-devops` consumer uses `gh` here.
 
@@ -36,7 +36,7 @@ adapter itself records), so even a `forge: azure-devops` consumer uses `gh` here
 - **Main session only.** A session running as a dispatched sub-agent or an isolated worker **never
   files** (no `gh issue create`, no web form): it drafts the report and hands it back to its
   orchestrator, which shows the user and files.
-- **Project Facts `report-upstream: off`** (absent = `on`): **refuse to file and say why** — this
+- **Project Facts `report-upstream: off`** (absent = `on`): **refuse to file and say why** - this
   repo has opted out of upstream reporting.
 
 ## Prerequisites
@@ -44,34 +44,34 @@ adapter itself records), so even a `forge: azure-devops` consumer uses `gh` here
 - **`gh` must be authenticated.** The repo is public; filing needs only a GitHub account.
   Check `gh auth status`. If `gh` cannot reach `ArjenVanSilfhout/fluyt`, skip to
   **"No `gh`? Use the web form"** below.
-- **Be on the latest plugin first.** Run `/plugin marketplace update fluyt` before filing —
+- **Be on the latest plugin first.** Run `/plugin marketplace update fluyt` before filing -
   the bug may already be fixed on current `main`. Note the installed release version (step 2),
   not just "latest `main`".
 
 ## 1. Decide: bug or feature
 
-- **Bug** — a shared component misbehaves, contradicts its docs, or assumes a key outside the
+- **Bug** - a shared component misbehaves, contradicts its docs, or assumes a key outside the
   contract.
-- **Feature** — a shared component lacks a capability, or a new shared asset would help several
+- **Feature** - a shared component lacks a capability, or a new shared asset would help several
   projects.
 
 ## 2. Gather the report
 
 Collect these before filing:
 
-- **Provenance — stripped by default.** The public-facing text (title, body, repro, comments)
+- **Provenance - stripped by default.** The public-facing text (title, body, repro, comments)
   carries **no consumer repo name or slug, no local paths, no machine names, no person names, and no
   project facts**; generalize or drop them from the repro and quoted output. Add the origin repo
   (`gh repo view --json nameWithOwner -q .nameWithOwner`, else `git remote get-url origin`) **only
   if the user opts in for this filing** after seeing the draft.
-- **Component** — the exact shared asset: the skill / agent / hook / template name (e.g.
+- **Component** - the exact shared asset: the skill / agent / hook / template name (e.g.
   `ship-work-item`, `preflight-reviewer`, `hooks.json`, `CLAUDE-project-facts.md`).
 - **The substance:**
   - *Bug:* expected vs actual, plus the **smallest repro** (the command / step / prompt that
     triggers it, and any message).
   - *Feature:* the problem it solves, a sketch of the desired behaviour, and **why it belongs in the
     shared plugin** (which other project would also benefit) rather than as a local skill.
-- **Version note — state the installed release; you can always determine it.** The Claude manifest is
+- **Version note - state the installed release; you can always determine it.** The Claude manifest is
   versionless, but `.codex-plugin/plugin.json` ships in the same installed payload on both clients
   and its `version` mirrors the package CHANGELOG:
   `grep '"version"' <installPath>/.codex-plugin/plugin.json`. Give that version, plus the date and
@@ -86,7 +86,7 @@ gh issue list --repo ArjenVanSilfhout/fluyt --state all --label from-consumer \
   --limit 1000 --json number,title,state
 ```
 
-**If the count returned equals the limit, the list was cut** — raise the limit and re-run.
+**If the count returned equals the limit, the list was cut** - raise the limit and re-run.
 
 Scan the titles for the same component + symptom. If you find a clear match, add your detail as a
 **comment** instead of a new issue and stop:
@@ -95,12 +95,12 @@ Scan the titles for the same component + symptom. If you find a clear match, add
 gh issue comment <n> --repo ArjenVanSilfhout/fluyt --body-file <file>
 ```
 
-Do **not** rely on `gh issue list --search` for a freshly-filed duplicate — the index lags; the
+Do **not** rely on `gh issue list --search` for a freshly-filed duplicate - the index lags; the
 `--label from-consumer` list above is the reliable scan.
 
 ## 4. Confirm before filing
 
-Filing **publishes outside the consumer's own repo** — it creates a durable, externally-visible
+Filing **publishes outside the consumer's own repo** - it creates a durable, externally-visible
 record on `ArjenVanSilfhout/fluyt` that anyone on the internet can see.
 Treat it like any outward-facing action: **propose first, then send.**
 
@@ -125,16 +125,16 @@ gh issue create --repo ArjenVanSilfhout/fluyt \
   --body-file <file>
 ```
 
-- **Label** — `bug` for a defect, `enhancement` for a feature request, **always plus
+- **Label** - `bug` for a defect, `enhancement` for a feature request, **always plus
   `from-consumer`**. The `bug`, `enhancement` and `from-consumer` labels must exist on the repo. Do
-  **not** apply the tier labels (`must` / `should` / `could`) — tiering is the maintainer's triage
+  **not** apply the tier labels (`must` / `should` / `could`) - tiering is the maintainer's triage
   call; leave it for them.
-- **Title** — prefix `[bug]` or `[feat]`, then `<component>: <summary>`.
-- **Body** — use this shape (it mirrors the repo's issue-form templates):
-  - **From:** `<consumer repo>` — **only on the user's opt-in** (step 4); otherwise **omit the
+- **Title** - prefix `[bug]` or `[feat]`, then `<component>: <summary>`.
+- **Body** - use this shape (it mirrors the repo's issue-form templates):
+  - **From:** `<consumer repo>` - **only on the user's opt-in** (step 4); otherwise **omit the
     line** (the `from-consumer` label already marks it as consumer feedback).
   - **Component:** `<skill / agent / hook / template name>`
-  - *Bug:* **Expected vs actual** + **Repro** — or *Feature:* **Problem** + **Desired behaviour** +
+  - *Bug:* **Expected vs actual** + **Repro** - or *Feature:* **Problem** + **Desired behaviour** +
     **Why it belongs in the shared plugin**
   - **Version:** the installed release version (step 2), plus `<date>` (+ commit if known)
 
@@ -162,5 +162,5 @@ above apply here too. (A GitHub account is enough.)
 
 ## Filing from Fluyt itself
 
-If you are working *in* the Fluyt repo, "upstream" is this repo — just use the `backlog` skill
+If you are working *in* the Fluyt repo, "upstream" is this repo - just use the `backlog` skill
 directly. `report-upstream` exists for the **downstream → upstream** direction.

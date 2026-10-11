@@ -14,8 +14,8 @@ First identify the active client: **Claude Code** or **Codex**. Do not mix their
 repair commands. Use the matching section below with `<marketplace>`, `<plugin>`,
 `<marketplace-source>`, `<release-ref>`, and `<plugin-source-path>` filled from the installed
 marketplace and the consumer's Project Facts. `<plugin-source-path>` is the `<plugin>` entry's
-`source` in the marketplace manifest, resolved relative to the **marketplace clone root** — the
-directory holding `.claude-plugin/marketplace.json`, not the plugin's own `.claude-plugin/` — with
+`source` in the marketplace manifest, resolved relative to the **marketplace clone root** - the
+directory holding `.claude-plugin/marketplace.json`, not the plugin's own `.claude-plugin/` - with
 any leading `./` dropped; it is `.` when the plugin sits at that root.
 
 ## Claude Code
@@ -49,7 +49,7 @@ setting you can see declared in the repo appears to have no effect, and the obse
 the *documented default* rather than the value you declared. That reads as a harness defect, so the
 search goes to the wrong place.
 
-**The check** — compare the directory the session resolves from against the location of the settings
+**The check** - compare the directory the session resolves from against the location of the settings
 file you expect to apply, then confirm the key is present in the **loaded** one, not merely in the one
 you meant:
 
@@ -59,11 +59,11 @@ grep -sn '<the key>' <session-root>/.claude/settings*.json   # no output ⇒ not
 grep -sn '<the key>' <repo>/.claude/settings.json            # present ⇒ declared but skipped
 ```
 
-**Use `-s`, and read the OUTPUT — not the exit code.** When a directory holds no `settings*.json` at
-all the glob does not expand, and a bare `grep` reports "No such file or directory" — precisely in the
+**Use `-s`, and read the OUTPUT - not the exit code.** When a directory holds no `settings*.json` at
+all the glob does not expand, and a bare `grep` reports "No such file or directory" - precisely in the
 state you are diagnosing. `-s` suppresses that message, so an absent file reads as an absent key. It
 does **not** normalise the exit status: it is **2** when nothing matched the glob, **1** for a
-clean no-match, **0** when the key was found — so a check keyed to exit 1 for "not in effect" silently
+clean no-match, **0** when the key was found - so a check keyed to exit 1 for "not in effect" silently
 misses the no-file case. Read what the command prints.
 
 There is a **third** layer this two-way comparison does not show: user-level settings
@@ -90,7 +90,7 @@ claude plugin update <plugin>@<marketplace>      # re-point the install record a
                                                  # the client to apply
 ```
 
-Two traps beside them: `claude plugin install` **no-ops** when the plugin already shows installed —
+Two traps beside them: `claude plugin install` **no-ops** when the plugin already shows installed -
 it is not a refresh command, so reaching for it reports success while changing nothing; and on a
 client whose install cache is **keyed by commit SHA** (`cache/<marketplace>/<plugin>/<sha>/`), an
 in-place cache overwrite leaves the recorded SHA asserting contents it no longer has, where
@@ -114,7 +114,7 @@ node -e "$S" "$F" <plugin>@<marketplace> <folder>   # b: dry run
 APPLY=1 node -e "$S" "$F" <plugin>@<marketplace> <folder>   # c: apply
 ```
 
-**Fallback — overwrite the cache from the source clone** (when the client cannot refresh through
+**Fallback - overwrite the cache from the source clone** (when the client cannot refresh through
 its own CLI), without deleting unrelated state. Paths below are relative to the client state root
 above; `<installPath>` is the absolute path recorded in the install record:
 
@@ -124,7 +124,7 @@ cp -R plugins/marketplaces/<marketplace>/<plugin-source-path>/. <installPath>/
 
 This copy applies only when the entry's `source` is a path inside the clone. An object `source`
 (`npm`, `url`, `github`, `git-subdir`) fetches the payload from elsewhere, so there is nothing under
-the clone to copy — reinstall through the client instead.
+the clone to copy - reinstall through the client instead.
 
 An agent may be able to copy into `<installPath>` while still being denied deletion or edits to
 `installed_plugins.json`; hand those user-owned steps back explicitly. Diagnose the loaded payload
@@ -143,25 +143,25 @@ grep '"version"' <installPath>/.codex-plugin/plugin.json
 ```
 
 Use that as the first question you answer, because it is the one that matters when a consumer has
-drifted — a stale cache does not misbehave, it behaves correctly according to older rules, so
+drifted - a stale cache does not misbehave, it behaves correctly according to older rules, so
 nothing surfaces the gap except the version.
 
-**Source/cache equality answers a different question — keep both, don't substitute one for the
+**Source/cache equality answers a different question - keep both, don't substitute one for the
 other.** Equality is a payload **integrity** check: it proves the cache mirrors the clone, not
-*which release* either of them is — so it will report a healthy install that is six versions
+*which release* either of them is - so it will report a healthy install that is six versions
 behind, and says nothing about which ref the clone is tracking, which is the pin itself. Read the
 resolved ref back and compare it to the declared one: check the `<marketplace>` entry's `source`
 object in `plugins/known_marketplaces.json` for a `ref` field that matches Project Facts
-`release-branch` — not absent, and not `integration-branch` — then cross-check the clone directly
+`release-branch` - not absent, and not `integration-branch` - then cross-check the clone directly
 with `git -C plugins/marketplaces/<marketplace> branch --show-current`, since the clone reports
 whichever branch it actually holds regardless of what the JSON claims. Run this check on any
 install rather than assuming either way; it is a routine diagnostic, not evidence of a specific
 client defect.
 
-**Run it again after EVERY marketplace update — an update can silently un-pin you.** A client
+**Run it again after EVERY marketplace update - an update can silently un-pin you.** A client
 version may rewrite the entry from the pinned `github` shape to a bare `git` + `url` shape,
 **dropping both `ref` and `autoUpdate`**, and re-create the clone as a **shallow, single-branch**
-checkout of the repository's *default* branch — which for any repo following `adopt-conventions` is
+checkout of the repository's *default* branch - which for any repo following `adopt-conventions` is
 the **integration** branch. The consumer is then one update away from receiving unreleased work.
 
 **This is invisible to every check except the ref check.** Immediately after a release the release
@@ -169,7 +169,7 @@ and integration branches are content-identical, so `.codex-plugin/plugin.json` r
 release and a source/cache diff comes back clean. Both can read clean while the clone is already
 hard-wired to the integration branch. **A correct version is not evidence of a correct pin.**
 
-**`lastUpdated` is a cheap trigger for whether to re-run the ref check below — never a health signal
+**`lastUpdated` is a cheap trigger for whether to re-run the ref check below - never a health signal
 for the pin itself.** The marketplace entry's `lastUpdated` field records when the client last
 rewrote the entry. Record its value whenever you repair or verify the pin (the three commands
 below):
@@ -178,15 +178,15 @@ below):
 grep -o '"lastUpdated"[^,}]*' plugins/known_marketplaces.json
 ```
 
-On a later visit, read it again first. Unmoved means no update ran since — skip the three-command
-check. Moved means one did, and the check is owed. Neither state proves the pin's health by itself
-— the same way a correct payload version above is not evidence of a correct pin. Only the three
+On a later visit, read it again first. Unmoved means no update ran since - skip the three-command
+check. Moved means one did, and the check is owed. Neither state proves the pin's health by itself -
+the same way a correct payload version above is not evidence of a correct pin. Only the three
 commands settle it.
 
-On a mismatch, repair **both halves** — the JSON alone is not enough — and repair them **in this
+On a mismatch, repair **both halves** - the JSON alone is not enough - and repair them **in this
 order**, because the order decides what a half-finished repair leaves behind:
 
-1. **The clone — do this first.** Its fetch refspec is rewired, not just its checked-out branch, so
+1. **The clone - do this first.** Its fetch refspec is rewired, not just its checked-out branch, so
    `git checkout <release-branch>` fails outright with *pathspec did not match*. Widen the refspec
    first, or the fetch cannot see the branch at all:
    ```sh
@@ -194,13 +194,13 @@ order**, because the order decides what a half-finished repair leaves behind:
    git -C <clone> fetch origin <release-branch> --depth=1
    git -C <clone> checkout -B <release-branch> origin/<release-branch>
    ```
-2. **The entry — only once the clone is verified on the release branch.** Restore the pinned source
+2. **The entry - only once the clone is verified on the release branch.** Restore the pinned source
    shape, since the broken state has no `ref` field to edit:
    `"source": {"source": "github", "repo": "<owner>/<repo>", "ref": "<release-branch>"}`, plus
-   `"autoUpdate": true` if it was dropped. Write UTF-8 **without a BOM** — a strict parser rejects
-   one. Writing the entry first risks the failed-clone-repair state the note below warns about — no
+   `"autoUpdate": true` if it was dropped. Write UTF-8 **without a BOM** - a strict parser rejects
+   one. Writing the entry first risks the failed-clone-repair state the note below warns about - no
    network, an auth prompt, a denied command, an interrupted session.
-   **Edit the entry programmatically — parse the file, mutate `source`, re-serialise — rather
+   **Edit the entry programmatically - parse the file, mutate `source`, re-serialise - rather
    than hand-writing it.** Its `installLocation` values may be Windows paths whose backslashes must
    be doubled in JSON; a shell heredoc can collapse them and produce invalid JSON the client
    rejects. Parsing and re-serialising also satisfies the no-BOM requirement above by construction,
@@ -208,7 +208,7 @@ order**, because the order decides what a half-finished repair leaves behind:
 
 Repairing only the JSON is **worse than leaving it**: the entry then asserts a pin that nothing
 honours, and the reader has no reason to run the clone check again. **That is why the clone goes
-first** — when the clone repair is the half that fails, nothing has been claimed, the entry still
+first** - when the clone repair is the half that fails, nothing has been claimed, the entry still
 shows the broken bare-`git` shape, and the next reader's check still fires. The two halves are
 independent, so the ordering costs nothing and should be chosen for the failure case.
 
@@ -221,22 +221,22 @@ git -C <clone> config --get-all remote.origin.fetch    # must include refs/heads
 grep -o '"ref"[^,}]*' plugins/known_marketplaces.json  # must be present
 ```
 
-Whichever path got you here — a clean verification or a completed repair — record the entry's
+Whichever path got you here - a clean verification or a completed repair - record the entry's
 `lastUpdated` value now, so a later visit has a baseline to compare against before deciding whether
 the three commands above are owed again.
 
 Known sharp edge: `/plugin install` can no-op when the plugin already shows installed, and
-`/plugin marketplace update` can report the plugin as not found against the corrected entry — if
+`/plugin marketplace update` can report the plugin as not found against the corrected entry - if
 either happens, fall back to a full uninstall followed by a clean reinstall so the clone is redone
 against the fixed ref. With the refspec rewired, a clean reinstall is often simpler than hand-editing
 git config. **Read the install records first, though:** `installed_plugins.json` can hold records at
 several scopes (user, plus per-project entries for OTHER repos), and an uninstall can take those
-with it — where the pin is intact and only the payload is behind, the `update` path above refreshes
+with it - where the pin is intact and only the payload is behind, the `update` path above refreshes
 without touching any of them, which is why it is the primary and this is the last resort.
 
 **Naming the ref matters on the remote side too: `gh api repos/<owner>/<repo>/commits` resolves the
 repository's DEFAULT branch.** For any repo following `adopt-conventions`, the default branch is the
-*integration* branch — so that call returns **unreleased** history, and reading a version out of it
+*integration* branch - so that call returns **unreleased** history, and reading a version out of it
 reports work consumers have not received. Name the ref explicitly
 (`gh api "repos/<owner>/<repo>/commits?sha=<release-branch>"`) whenever you are asking what the
 released version is. Getting this wrong is silent: the answer looks plausible and is simply ahead of
@@ -245,7 +245,7 @@ what is pinned.
 ### The SESSION's own loaded payload can be stale, even when the cache above is fresh
 
 **Lead with the honest limit: an agent cannot introspect the text it already loaded.** Everything
-below is a heuristic that prompts a **restart** — never a proof — this skill does not claim to
+below is a heuristic that prompts a **restart** - never a proof - this skill does not claim to
 *detect* session staleness, only to prompt for it.
 
 Every check above compares the **installed cache** against the **marketplace clone or its pin**. None
@@ -254,7 +254,7 @@ narrower, separate gap. `"autoUpdate": true` (trade-off below) is what makes it 
 can land under a *live* orchestrator mid-session. The cache re-points to the new payload and the
 previous payload directory is left behind, marked `.orphaned_at`, rather than deleted. Every subagent
 spawned **after** that moment loads the new payload; the orchestrator itself keeps whatever it loaded
-at session start, for the rest of its life — nothing about a running session re-reads the cache. The
+at session start, for the rest of its life - nothing about a running session re-reads the cache. The
 result is silent in exactly the way a stale cache is silent one level down: the orchestrator behaves
 correctly according to older rules, and nothing surfaces the gap except the version.
 
@@ -262,19 +262,19 @@ Two cheap, non-conclusive signals:
 
 1. **Name the installed release at ritual start**, reusing the grep above
    (`grep '"version"' <installPath>/.codex-plugin/plugin.json`) rather than a new mechanism. Its
-   value is not detection — it puts the number **in the transcript**, so a later mismatch against a
+   value is not detection - it puts the number **in the transcript**, so a later mismatch against a
    subagent's self-reported version becomes at least noticeable.
-2. **More than one payload directory under the plugin's cache root** (`cache/<marketplace>/<plugin>/`
-   — the same shape Codex's install cache uses, below), with the live one not being the one the
+2. **More than one payload directory under the plugin's cache root** (`cache/<marketplace>/<plugin>/` -
+   the same shape Codex's install cache uses, below), with the live one not being the one the
    session started under, is the observable signature: the `.orphaned_at`-marked sibling is the
    previous payload, left in place by the mid-session swap rather than removed.
 
-**Both signals are prompts to restart the client — state the remedy plainly, since an unstated remedy
+**Both signals are prompts to restart the client - state the remedy plainly, since an unstated remedy
 invites the reader to invent one.** A session keeps the payload it loaded for its whole life; only a
 restart re-reads the cache. If a restart is not available and a session suspects it is stale, the
 interim discipline at load-bearing steps is to read the **marketplace-source copy** (the plugin's own
 home repo, working tree) or the **freshly-updated cache copy**, read directly as a file rather than
-recalled from memory — and to remember the loaded **skill catalog itself does not refresh this way**:
+recalled from memory - and to remember the loaded **skill catalog itself does not refresh this way**:
 a skill added, renamed, or removed since load stays invisible until restart, whichever file you check.
 
 **This is a third instance of the SESSION being the unit that decides what loads.** Project settings
@@ -283,7 +283,7 @@ resolving from the session root (above) is the first; a shipped hook always writ
 skill's dispatch-feed `SubagentStop` hook); this is the third. What the session started with is what
 it keeps, in all three.
 
-**`autoUpdate` is a choice with both costs — present them, recommend neither.** `true` is what makes
+**`autoUpdate` is a choice with both costs - present them, recommend neither.** `true` is what makes
 the mid-session swap above reachable at all; `false` trades that freshness for stability, turning an
 update into a deliberate act at a session boundary instead of something that can happen underneath a
 running session. Choose it knowingly rather than inheriting whichever a template defaulted to.

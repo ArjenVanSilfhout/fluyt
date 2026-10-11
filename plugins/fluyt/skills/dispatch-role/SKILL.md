@@ -33,7 +33,7 @@ No other role name is valid. Claude Code users should keep dispatching the nativ
 1. Read the consumer's `CLAUDE.md` in full. It remains Fluyt's canonical Project Facts and
    working-agreement file on both clients; a Codex consumer's `AGENTS.md` routes here. If the file or
    a fact required by the role is missing, stop and ask instead of guessing.
-2. Resolve this skill's directory, then read the selected `../../agents/<role>.md` **in full** — the
+2. Resolve this skill's directory, then read the selected `../../agents/<role>.md` **in full** - the
    single source of truth; never substitute a remembered, summarized, or consumer-local copy. Confirm
    its frontmatter `name` matches the requested role.
 3. Check that the requested task belongs to the role and can obey its write/tool boundary. Translate
@@ -43,7 +43,7 @@ No other role name is valid. Claude Code users should keep dispatching the nativ
 4. Map the role's model alias semantically because Codex and Claude expose different model selectors.
    **`ship-work-item`'s *Model selection for sub-agents* is the canonical home for spawn model-tier
    policy; the mapping here only projects its tiers onto the Codex surface, so take any question the
-   mapping does not answer — overrides, ad-hoc recon spawns, the heavy tier — from there.** `sonnet`
+   mapping does not answer - overrides, ad-hoc recon spawns, the heavy tier - from there.** `sonnet`
    means the balanced implementation/verification tier; `opus` or `fable` means the strongest
    available deep-analysis tier with high reasoning. A Project Facts `model:<tier>` issue label still
    overrides the default at the same semantic tier. If the current Codex dispatch surface cannot set a
@@ -51,12 +51,12 @@ No other role name is valid. Claude Code users should keep dispatching the nativ
    instructions and boundaries exact.
 5. Spawn a Codex subagent through the client's supported multi-agent mechanism. Give it the task, the
    complete canonical role instructions (or an exact readable installed path), the consumer
-   `CLAUDE.md` path, and a fail-fast base check that asserts **existence AND commit identity** — the
+   `CLAUDE.md` path, and a fail-fast base check that asserts **existence AND commit identity** - the
    named files exist *and* `git rev-parse HEAD` is exactly equal to the expected base SHA the prompt
    states, compared by exact equality rather than `git merge-base --is-ancestor`. The prompt must name
    the role explicitly. State that SHA in the prompt; the subagent has nothing to assert against
-   otherwise. **If the mapped Codex subagent has no shell — as `product-owner`, `scrum-master` and
-   `tech-debt-reviewer` do not on Claude — it cannot run `git rev-parse`; state the SHA anyway (the
+   otherwise. **If the mapped Codex subagent has no shell - as `product-owner`, `scrum-master` and
+   `tech-debt-reviewer` do not on Claude - it cannot run `git rev-parse`; state the SHA anyway (the
    check becomes real once the surface can run it), and its role file already tells it to mark the
    identity half NOT RUN and say so.** Read a NOT-RUN identity half in the handback as the honest
    result it is, not as a passed check.
@@ -75,4 +75,4 @@ Use smoke mode to verify installation without changing a consumer repo. For each
 - finish with exactly `Skills consulted: <canonical role path>, <consumer CLAUDE.md path>`.
 
 The orchestrator treats a role as reachable only when the smoke report names the correct role and
-boundary and carries that final line — a plugin listing alone does not qualify.
+boundary and carries that final line - a plugin listing alone does not qualify.
