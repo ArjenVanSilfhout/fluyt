@@ -71,9 +71,10 @@ substantive report ends with a **"Skills consulted"** line naming the skill / ru
 missing line is worth questioning ("none" is legitimate only for a trivial mechanical task).
 
 **Project-specific skills** stay in this repo under `.claude/skills/`: `/triage-upstream`
-(maintainer-side triage of inbound `from-consumer` issues — see Task flow below) and
+(maintainer-side triage of inbound `from-consumer` issues — see Task flow below),
 `/arrow-notation` (applying the `⇒`/`→` legend to a skill or agent file, with the rewording tips
-and proof steps).
+and proof steps), and `/trim-to-budget` (cutting a shipped file to its byte budget without
+changing behaviour, including when to split a file and when not to).
 
 ## Project Facts (Fluyt contract v1 — this repo's own values)
 
