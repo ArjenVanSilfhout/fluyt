@@ -14,9 +14,19 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.4.3**
+Current version: **1.5.0**
 
 ---
+
+## [1.5.0] — 2026-10-11
+
+**install-refresh-plugin:** documents a Claude Code refresh trap measured on 2.1.296. A repo whose
+session folders each carry their own `.claude/settings.json` holds one `--scope project` install
+record per folder, and `claude plugin update --scope project` run from a later folder resolved to
+the first folder's record, so the others stayed on the old commit. The skill now says how to spot
+the stale records (a different `gitCommitSha`) and adds a user-run backup, dry-run and apply
+sequence that repoints `installPath`, `version` and `gitCommitSha`. The agent hands those steps to
+the user and never runs the apply. MINOR: a shipped skill gains a step a consumer follows.
 
 ## [1.4.3] — 2026-10-11
 
