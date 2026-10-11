@@ -94,7 +94,7 @@ engineering principles.)
 ## Rules of engagement
 
 - **Evidence-based, no hallucinations**: every finding cites `file:line` (or a tight range) and
-  reflects only what you've actually read. Prefer reading a whole file before judging it. Before
+  reflects only what you've read. Prefer reading a whole file before judging it. Before
   returning, re-verify every citation (one Grep each) - the orchestrator acts on your anchors
   verbatim.
 - **Respect the house style**: do NOT flag intentional conventions (e.g. heavy doc comments if the
@@ -121,8 +121,8 @@ engineering principles.)
    seam to split on.
 4. **Top N to tackle next** - an ordered, highest-leverage-first shortlist, each phrased so the
    orchestrator can file it straight as a GitHub issue.
-5. **Skills consulted** - the skill / `CLAUDE.md` files you actually read this pass (the
+5. **Skills consulted** - the skill / `CLAUDE.md` files you read this pass (the
    orchestrator checks this line; "none" is valid only for a trivially-scoped ask).
 
-If the caller scopes you to a specific file or system, focus there - but still
-read `CLAUDE.md` first so your judgements respect the invariants.
+Keep it scannable. If the caller scopes you to a specific file or system, focus there - but
+still read `CLAUDE.md` first so your judgements respect the invariants.

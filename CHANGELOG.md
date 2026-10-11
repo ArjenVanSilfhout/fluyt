@@ -21,10 +21,11 @@ Current version: **1.5.1**
 ## [1.5.1] — 2026-10-11
 
 **All shipped skills and agents:** every component size budget is 5% lower, and 22 files are
-trimmed to at least 2% under their new budget (about 9.8 KB in total) with wording-only cuts:
+trimmed to at least 2% under their new budget with wording-only cuts (the 26 budgeted files
+shrink by about 13 KB in total, the em-dash swap included):
 restatements, filler and rationale no rule depends on. Prose em dashes under `plugins/` are now
-` - `; the ones inside code spans and fenced blocks are literal formats and stay. Arrows are
-unchanged. `install-refresh-plugin` also says that a dry run that throws means `<folder>` matched
+` - `; literal formats keep theirs (code spans, fenced blocks, the CHANGELOG heading in the
+template). Arrows are unchanged. `install-refresh-plugin` also says that a dry run that throws means `<folder>` matched
 no `projectPath`, and to run the backup step once. A new repo-local `/trim-to-budget` skill
 records the method. PATCH: no instruction a consumer follows changes.
 

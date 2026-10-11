@@ -334,8 +334,8 @@ Work through the templates, merging each:
      them nothing to enforce.
    - **Code style** - match-the-surrounding-code rules, doc-comment density, the boy-scout rule.
      Present **documentation posture** as an explicit decision, like
-     `delegation`/`worktree-isolation`: **(a) lean/agent-facing (recommended)** - document only what isn't directly clear from the
-     code, for the agent working it, applied forward + boy-scout; costs discoverability for a human
+     `delegation`/`worktree-isolation`: **(a) lean/agent-facing (recommended)** - document only
+     what isn't directly clear from the code, for the agent working it, applied forward + boy-scout; costs discoverability for a human
      reader who expects in-code reference. **(b) dense/reference-style** - reference-style API
      documentation on most public members, for a project whose consumers genuinely read IDE/API
      reference; costs restatement-rot (the comment class that drifts once the code it restates
@@ -455,8 +455,8 @@ its supported path is the plugin's `dispatch-role` skill, not copied `.codex/age
   `developer` and confirm the report names its canonical file and ends with `Skills consulted: ...`.
 - **If the `fluyt:*` agents won't spawn** ("agent type 'fluyt:…' not found") even though the skills
   already resolve, **restart the client fully** - a `/plugin` reload refreshes skills but does not
-  always register newly-added agents. Interim fallback until you can restart: run a
-  `general-purpose` agent with the target agent file's mandate pasted into the prompt.
+  always register newly-added agents; only a full restart does. Interim fallback until you can
+  restart: run a `general-purpose` agent with the target agent file's mandate pasted into the prompt.
 - **Confirm the Claude marketplace pin is committed** when applicable - the consumer's
   `.claude/settings.json` pins this plugin's marketplace source to the `release-branch` via `ref`
   (see step 2.4). Without it the repo tracks the default branch and silently drifts off released

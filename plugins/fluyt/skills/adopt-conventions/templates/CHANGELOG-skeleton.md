@@ -25,7 +25,7 @@ Current version: **0.0.1**
 
 ---
 
-## [0.0.1] - YYYY-MM-DD
+## [0.0.1] — YYYY-MM-DD
 
 **Bootstrap:** <first entry - bold one-line summary of the initial state or first work item>.
 

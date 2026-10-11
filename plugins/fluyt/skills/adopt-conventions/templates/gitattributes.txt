@@ -1,4 +1,4 @@
-# .gitattributes template — LF-normalised repo with CRLF Windows scripts.
+# .gitattributes template - LF-normalised repo with CRLF Windows scripts.
 # Copy into your repo's .gitattributes (merge with any existing rules). Add binary types your
 # project uses.
 
@@ -9,6 +9,6 @@
 *.ps1 text eol=crlf
 *.bat text eol=crlf
 
-# Binary assets (extend for your project — e.g. .pdf .zip .woff2).
+# Binary assets (extend for your project - e.g. .pdf .zip .woff2).
 *.png binary
 *.webp binary

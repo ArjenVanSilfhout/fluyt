@@ -99,8 +99,9 @@ paths below are the fallback.
 Code 2.1.296). A `.claude/settings.json` per folder gives each its own record, and `update` from a
 later folder resolved to the **first** folder's, reporting "already at the latest". Stale records
 differ in `gitCommitSha` from the refreshed one (`<folder>` below: its `projectPath`). **The agent
-hands these steps to the user and never runs the apply;** restart afterwards. A dry run that throws means `<folder>` matched no `projectPath`. Run (a) once: a re-run
-overwrites the original `.bak`.
+hands these steps to the user and never runs the apply;** restart afterwards. A dry run that
+throws means `<folder>` matched no `projectPath`. Run (a) once: a re-run overwrites the original
+`.bak`.
 
 ```sh
 F=~/.claude/plugins/installed_plugins.json; cp "$F" "$F.bak"   # a

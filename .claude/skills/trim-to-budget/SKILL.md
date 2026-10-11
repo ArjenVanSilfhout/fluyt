@@ -22,7 +22,8 @@ behaviour change goes in as MINOR with its own reason, or the budget stays where
 - Size = UTF-8 bytes with CR (0x0D) removed, which is what `[12]` counts. In Bash:
   `tr -d '\r' < <file> | wc -c`. Never use characters, lines or the size Explorer shows.
 - An em dash, arrow or curly quote is 3 bytes. **Em dashes go**: write ` - ` instead. An em dash
-  that starts a wrapped line must be reworded, because `- ` at the start of a line is a list item.
+  that starts a wrapped line must be reworded, because a line that starts with a hyphen and a
+  space is a list item.
   **Arrows stay** (`⇒`, `→`). They are notation, not decoration.
 - Work out the target first: **2% under the budget**, i.e. `floor(budget * 0.98)`. That headroom
   lets the next improvement to the skill land without reopening the budget.
@@ -36,6 +37,7 @@ A split moves bytes and never removes them. What it buys is **load cost on the c
 says to read it. So judge a split by what a typical run stops reading, not by the budget line.
 
 **Split when ALL of these hold:**
+
 - **The content is off the common path.** It is needed only in one mode, on one platform, or on
   one failure: a recipe for parallel lanes, portability notes, a catalogue of known failures.
 - **It stands alone.** It reads correctly without the surrounding `SKILL.md` text.
@@ -45,6 +47,7 @@ says to read it. So judge a split by what a typical run stops reading, not by th
   "see also".
 
 **Do not split when ANY of these hold:**
+
 - **Every run needs it.** A split on the main path adds a read per run and makes the total larger.
 - **It is a gate, stop condition, or safety rule.** A rule behind a link is skipped at the moment
   it matters. It stays in front of the reader.
