@@ -46,6 +46,8 @@ Fluyt ships itself with its own process.
 
 **Requires** a GitHub repo with Issues and an authenticated `gh` CLI (or Azure DevOps with an
 authenticated `az`, via `forge-azure-devops`), and a plugin-capable Claude Code or Codex client.
+On Claude Code, the five hooks also need **Node.js 18 or later** on `PATH`: each is a `node -e`
+one-liner, so without Node they are inert, and each says so whenever it is skipped.
 The full guide is [`docs/consumer-integration.md`](docs/consumer-integration.md).
 
 ### 1. Install the plugin
@@ -187,7 +189,8 @@ Five Claude Code hooks, in [`hooks/hooks.json`](plugins/fluyt/hooks/hooks.json):
 - **echoes** the staged CHANGELOG entry's date against today's UTC date;
 - **logs** each finished sub-agent to a local feed that `scrum` reads.
 
-Every hook fails open: if it can't decide, it lets the command through.
+Every hook fails open: if it can't decide, it lets the command through. Without Node.js it fails
+open too, but not silently: it reports that it was skipped.
 
 Ten templates ship with [`adopt-conventions`](plugins/fluyt/skills/adopt-conventions/SKILL.md)
 and [`branch-protection`](plugins/fluyt/skills/branch-protection/SKILL.md): a Project Facts
@@ -256,6 +259,9 @@ instruction loading.**
     CHANGELOG echo, `git diff --cached` and `git show`. They write nothing.
   - `SubagentStop` appends one line (timestamp, sub-agent type) to `docs/process/dispatch.local.md`
     in your repo, creating `docs/process/` if needed. It is the only write any hook makes.
+  - **Without Node.js** on `PATH`, no hook logic runs and nothing is blocked: each `PreToolUse`
+    hook prints a one-line skip message, and `SubagentStop` writes its line tagged
+    `(fallback: node not on PATH)`.
   - **Network:** two hooks call `gh` (`gh pr list` before a branch delete, `gh pr view` before a
     merge). That is a call to GitHub using your own `gh` login, and nothing else.
   - **Codex runs no hooks.**

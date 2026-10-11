@@ -17,6 +17,9 @@ fluyt assumes a specific substrate — confirm these before adopting:
   `gh` (no stored token; it rides your existing login).
 - **A plugin-capable Claude Code or Codex client** — to install the marketplace and invoke the
   process skills. Claude Code loads the role manifests natively; Codex uses the shipped role adapter.
+- **Node.js 18 or later on `PATH`, on Claude Code** — the plugin's five Claude Code hooks are
+  `node -e` one-liners, so without Node they are inert: each still lets the work through, and says
+  it was skipped (the exact wording is in `plugins/fluyt/README.md`, *Hooks*).
 
 **Azure DevOps is the one supported alternative forge:** set Project Facts `forge: azure-devops` and
 the `forge-azure-devops` adapter skill (§1) translates the rituals' GitHub/`gh` steps to `az`. Read
@@ -70,9 +73,10 @@ Once installed, the plugin contributes:
 Codex dispatches them through `dispatch-role`, which reads the same canonical `agents/*.md` file and
 does not install a divergent `.codex/agents/*.toml` copy.
 
-**Claude Code hook** — a `SubagentStop` breadcrumb that appends to
-`docs/process/dispatch.local.md` (the dispatch cadence feed `/fluyt:scrum` reads, kept
-separate from `docs/process/retro-log.local.md`, the human-appended friction notes). Codex role
+**Claude Code hooks** — five, disclosed in `plugins/fluyt/README.md` *Hooks*: four `PreToolUse`
+guards on Bash and a `SubagentStop` breadcrumb that appends to `docs/process/dispatch.local.md`
+(the dispatch cadence feed `/fluyt:scrum` reads, kept separate from
+`docs/process/retro-log.local.md`, the human-appended friction notes). Codex runs none; role
 dispatch works without claiming that Claude's hook schema is active there.
 
 The enable key is `fluyt@fluyt`.

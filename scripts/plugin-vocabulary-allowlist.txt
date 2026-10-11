@@ -81,8 +81,8 @@ PullRequest
 AgentRouting
 
 # --- runtimes the plugin's own shipped assets depend on ----------------------------------------
-# 'node': the shipped hook's timestamp helper is a node one-liner (with a shell fallback), and the
-# scrum skill documents that. 'npm': also a Claude Code plugin SOURCE TYPE the install-refresh
+# 'node': every shipped hook is a node -e one-liner (the timestamp helper with a shell fallback, as
+# the scrum skill documents). 'npm': also a Claude Code plugin SOURCE TYPE the install-refresh
 # skill has to enumerate. Listing these does mean a consumer's Node/npm facts would not be flagged
 # by the stack signal - accepted, because the plugin genuinely ships a Node dependency; a consumer
 # NAME or path alongside them still trips the other two signals.

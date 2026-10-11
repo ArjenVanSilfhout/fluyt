@@ -14,9 +14,22 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.2.4**
+Current version: **1.3.0**
 
 ---
+
+## [1.3.0] — 2026-10-11
+
+**Hooks (hooks.json, READMEs):** every shipped hook now checks for `node` first and, when it is
+missing, still lets the work through but says so; Node.js 18 or later is declared as the
+prerequisite for the hooks.
+
+Each `PreToolUse` hook prints a one-line `systemMessage` naming the guard that did not run, and the
+`SubagentStop` feed line is tagged `(fallback: node not on PATH)`. With node present every hook
+produces byte-for-byte the same output as before, verified by running the saved commands from
+`hooks.json` with and without node on PATH, with a blocked commit as the control. The scrum skill
+and the scrum-master role name the new tag; both READMEs and the consumer guide declare the
+prerequisite, and the consumer guide now counts the hooks correctly. MINOR: hook output changes.
 
 ## [1.2.4] — 2026-10-11
 

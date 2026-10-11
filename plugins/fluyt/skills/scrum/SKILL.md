@@ -38,8 +38,9 @@ Pull from the sources that actually exist (don't invent):
   name the gate it narrows.)
 - **Dispatch feed** — `docs/process/dispatch.local.md` if present. The `SubagentStop` hook appends
   one line per subagent finish: a timestamp, enriched with the subagent's type when the hook's stdin
-  JSON carries one (a portable `node` parse; it falls back to a `(fallback)` stamp when `node` is
-  unavailable or the stdin is unparsable — fail-soft is absolute, see the hook definition). Treat it as
+  JSON carries one (a portable `node` parse; it falls back to a `(fallback)` stamp when the stdin is
+  unparsable, or a `(fallback: node not on PATH)` one when `node` is missing — fail-soft is
+  absolute, see the plugin README's *Hooks* section). Treat it as
   a *cadence tripwire* that something ran, **not** a metric. It still **over-counts**: every Task-tool
   spawn stamps at any nesting depth (delegates' own subagents included), and every *resume* stamps
   again, not just the first completion. Since dispatch → findings → fix → resume is the *recommended*
