@@ -4,6 +4,14 @@ Short entries, newest first. Format: date · decision · why · reversibility.
 
 ---
 
+**2026-10-11 · The consumer `.gitignore` fragment no longer ignores `.mcp.json` · reversible.**
+On Claude Code a root `.mcp.json` is the project-scoped, shareable MCP configuration; ignoring it hid
+a consumer's setup from teammates and CI and un-tracked an existing file on adoption. The fragment
+keeps a comment that secrets never go into a committed one (environment-variable expansion, or a
+plugin's `userConfig` with `sensitive: true`). Not taken: keep ignoring it and document the
+trade-off; a Project Facts key letting each consumer choose. The user's call (option 1), relayed by
+the hub, recorded on issue #4. This repo's own gate check [13] still forbids tracking one here.
+
 **2026-10-11 · One marketplace repo holds one plugin, shipped to Claude Code and Codex from a single
 payload · irreversible once consumers install — splitting the plugin changes every install.**
 Both clients install from this repo, each with its own manifest and marketplace file pointing at the

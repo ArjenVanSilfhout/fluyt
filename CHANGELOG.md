@@ -14,9 +14,20 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.3.1**
+Current version: **1.4.0**
 
 ---
+
+## [1.4.0] — 2026-10-11
+
+**Template (adopt-conventions):** the consumer `.gitignore` fragment no longer ignores `.mcp.json`;
+its comment now says secrets never go into a committed one (environment-variable expansion, or a
+plugin `userConfig` with `sensitive: true`).
+
+On Claude Code that file is the shareable, project-scoped MCP configuration, so ignoring it hid a
+consumer setup from teammates and CI and un-tracked an existing file on adoption. The user chose
+this over documenting the trade-off or adding a Project Facts key (DECISIONS.md, 2026-10-11). MINOR:
+a shipped template changes what a consumer gets.
 
 ## [1.3.1] — 2026-10-11
 
