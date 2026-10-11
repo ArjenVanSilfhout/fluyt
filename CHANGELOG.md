@@ -20,13 +20,13 @@ Current version: **1.2.3**
 
 ## [1.2.3] — 2026-10-11
 
-**Tooling (gate, agent-liveness):** the one drive-letter path root in the plugin vocabulary allowlist
-is gone, and the prose example that needed it now uses a placeholder root.
+**Tooling (gate, agent-liveness):** the one drive-letter path root in the plugin vocabulary
+allowlist is gone, and the prose example that needed it now uses a placeholder root.
 
-The path signal of the gate keeps only the root segment of a drive-letter path, so that entry exempted
-every path under the root, not just the one example. The example in `agent-liveness` keeps its point
-(a backslash read as a regex escape) without a real drive letter. PATCH: a script asset and
-illustrative wording; no instruction a consumer follows changes.
+The path signal of the gate keeps only the root segment of a drive-letter path, so that entry
+exempted every path under the root, not just the one example. The example in `agent-liveness` keeps
+its point (a backslash read as a regex escape) without a real drive letter. PATCH: a script asset
+and illustrative wording; no instruction a consumer follows changes.
 
 ## [1.2.2] — 2026-10-11
 
