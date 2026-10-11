@@ -103,8 +103,7 @@ Return a short retrospective the user can act on:
   dev agent"), ranked by leverage, and marked **"needs your OK."**
   **A proposal that targets a shared plugin component belongs UPSTREAM** - file it via
   `/fluyt:report-upstream` (its gates apply: main session, user-approved draft), not as a
-  **locally re-implemented copy** of the shared component, which will drift from the plugin (see
-  `report-upstream`'s own warning). A divergence the consumer's `CLAUDE.md` records as a deliberate
+  **locally re-implemented copy** of the shared component, which will drift from the plugin. A divergence the consumer's `CLAUDE.md` records as a deliberate
   deviation with its reason is not that - it is the sanctioned form.
 - If useful, offer to file accepted proposals as GitHub issues once approved.
 

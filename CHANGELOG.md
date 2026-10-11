@@ -14,9 +14,18 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.7.0**
+Current version: **1.7.1**
 
 ---
+
+## [1.7.1] — 2026-10-11
+
+**Fix (ship-work-item, orchestrator, scrum):** four doc errors found in a size review.
+`ship-work-item` dropped its own arrow legend, left over after 1.6.0 moved the legend into the
+instruction-file skeletons. `portability.md` no longer calls every trap a scoped conditional,
+since its last two rules apply on every OS. `orchestrator`'s description, lead-in and rules
+heading now agree that rules 2 and 13 are its own. `scrum` no longer cites a `report-upstream`
+warning that does not exist. PATCH: no instruction a consumer follows changes.
 
 ## [1.7.0] — 2026-10-11
 

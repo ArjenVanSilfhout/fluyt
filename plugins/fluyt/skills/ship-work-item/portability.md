@@ -2,8 +2,8 @@
 
 The on-demand part of the `ship-work-item` skill, read when its `SKILL.md` points here.
 
-Environment traps - all **scoped conditionals, not defaults** (the
-process is OS-agnostic; most consumers won't hit them):
+Environment traps - most are **scoped conditionals, not defaults** (the process is OS-agnostic),
+but the last two (CI over local, the verdict token) apply on every OS:
 
 - **Windows / PowerShell 5.1: `&&` and `||` do not chain commands** (parser error). Run the steps as
   separate commands, or use the Bash tool for a POSIX command block - don't assume a bash-like shell.

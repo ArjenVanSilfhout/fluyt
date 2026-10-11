@@ -7,17 +7,16 @@ description: >-
   Names the ritual chain - read the hand-over, pick from the backlog, ship one item, keep dispatched
   agents live, loop, write the hand-over before any pause - and the posture at each link: what stays
   yours versus dispatched (per Project Facts delegation), how to challenge and verify a report, and
-  what to capture when one lands. It ROUTES to the skills that own each step and restates none but
-  rule 13. Do NOT load it for one named item (ship-work-item), a quiet agent (agent-liveness), or
+  what to capture when one lands. It ROUTES to the skills that own each step; only rules 2 and 13 are
+  its own. Do NOT load it for one named item (ship-work-item), a quiet agent (agent-liveness), or
   writing a hand-over (handover).
 ---
 
 # Orchestrator - the session posture and the ritual chain
 
 A **skill, not a dispatchable role**: it installs the posture for a session and names which skill
-takes over at each step. It is thin - the chain below, rules 2 and 13, and
-the precedence line are all it states itself; everything else points to the component that
-owns it, whose bounds, exceptions and reasoning stay there.
+takes over at each step. It is thin - the chain below, rules 2 and 13, and the precedence line are
+all it states itself; everything else points to its owner.
 
 **Where this file and an owning skill disagree, the OWNER wins.** This file is a map, not the
 territory.
@@ -63,9 +62,10 @@ posture; `hub` adapts the chain for a session that runs no repo work.
 - **Exit - `handover`.** Before any foreseeable pause, reset, or session end; mid-item it is written
   and left uncommitted.
 
-## The posture - thirteen rules, twelve owned elsewhere
+## The posture - thirteen rules, eleven owned elsewhere
 
-Each line but 13 names its owner; read it before acting on a hard case.
+Each line but 13 names an owner (rule 2 is also stated here); read it before acting on a hard
+case.
 
 1. **You orchestrate; the implementation is dispatched.** Gated on Project Facts `delegation` (absent
    = `default`); the inline escape hatch still applies. → `ship-work-item` §1, the delegation and
