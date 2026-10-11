@@ -14,9 +14,78 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.3.1**
+Current version: **1.6.0**
 
 ---
+
+## [1.6.0] — 2026-10-11
+
+**adopt-conventions (CLAUDE.md and AGENTS.md skeletons):** the arrow legend (`⇒` implies, `→` then)
+now ships once, as one line in the plugin-owned routing section, instead of per skill. Existing
+consumers are offered it on their next re-sync, which already proposes any missing plugin-owned
+paragraph. Onboarding names the notation line in its routing merge. Known gaps: built-in Explore
+and Plan subagents skip CLAUDE.md, per the Claude Code docs, so a brief to them spells the arrows
+out; whether Codex subagents read AGENTS.md is unverified. No other symbols join the legend:
+measured candidates saved no tokens. This repo's CLAUDE.md and AGENTS.md carry the line, the
+repo-local `/arrow-notation` skill drops its per-file legend rule, and AGENTS.md lists
+`trim-to-budget`. MINOR: a shipped template gains a line a consumer follows.
+
+## [1.5.1] — 2026-10-11
+
+**All shipped skills and agents:** every component size budget is 5% lower, and 22 files are
+trimmed to at least 2% under their new budget with wording-only cuts (the 26 budgeted files
+shrink by about 13 KB in total, the em-dash swap included):
+restatements, filler and rationale no rule depends on. Prose em dashes under `plugins/` are now
+` - `; literal formats keep theirs (code spans, fenced blocks, the CHANGELOG heading in the
+template). Arrows are unchanged. `install-refresh-plugin` also says that a dry run that throws means `<folder>` matched
+no `projectPath`, and to run the backup step once. A new repo-local `/trim-to-budget` skill
+records the method. PATCH: no instruction a consumer follows changes.
+
+## [1.5.0] — 2026-10-11
+
+**install-refresh-plugin:** documents a Claude Code refresh trap measured on 2.1.296. A repo whose
+session folders each carry their own `.claude/settings.json` holds one `--scope project` install
+record per folder, and `claude plugin update --scope project` run from a later folder resolved to
+the first folder's record, so the others stayed on the old commit. The skill now says how to spot
+the stale records (a different `gitCommitSha`) and adds a user-run backup, dry-run and apply
+sequence that repoints `installPath`, `version` and `gitCommitSha`. The agent hands those steps to
+the user and never runs the apply. MINOR: a shipped skill gains a step a consumer follows.
+
+## [1.4.3] — 2026-10-11
+
+**ship-work-item (§1, first bullet):** the commit no longer appears among the duties that stay
+with the orchestrator on every path. The bullet now names the two lane-commit exceptions the
+skill and its roles already carry: a worktree `developer` commits its own branch, and a pinned
+`test-writer` commits only its `test-dir` files. PATCH: no instruction changes, since both
+exceptions already existed.
+
+## [1.4.2] — 2026-10-11
+
+**Docs (CLAUDE.md):** the three Project Facts marked `provenance: chosen` (codename release titles,
+the hand-over path, the commit-subject format) now read `provenance: ratified @v1.3.1`, the
+installed payload version, on the user's confirmation; `agent-routing` stays `chosen`.
+PATCH: repo-side documentation.
+
+## [1.4.1] — 2026-10-11
+
+**Docs (CLAUDE.md, DECISIONS.md):** the citation rule no longer says the CHANGELOG ships; a version
+resolves for a consumer through the payload manifest and the public CHANGELOG.
+
+DECISIONS.md gains a dated correction entry (the old entry stays as written) and records the user
+ratification of the three Project Facts marked `provenance: chosen`; their markers are unchanged.
+PATCH: repo-side documentation.
+
+## [1.4.0] — 2026-10-11
+
+**Template (adopt-conventions):** the consumer `.gitignore` fragment no longer ignores `.mcp.json`;
+its comment now says secrets never go into a committed one (environment-variable expansion, or a
+plugin `userConfig` with `sensitive: true`).
+
+On Claude Code that file is the shareable, project-scoped MCP configuration, so ignoring it hid a
+new consumer setup from teammates and CI (a plain `git add` skips an ignored file). A consumer that
+adopted earlier keeps the old ignore line, since adoption only appends; a re-sync surfaces it. The
+user chose this over documenting the trade-off or adding a Project Facts key (DECISIONS.md,
+2026-10-11). MINOR: a shipped template changes what a consumer gets.
 
 ## [1.3.1] — 2026-10-11
 

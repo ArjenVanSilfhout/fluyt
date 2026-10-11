@@ -1,18 +1,18 @@
-# .gitignore additions for a Fluyt consumer — APPEND these to your existing .gitignore.
+# .gitignore additions for a Fluyt consumer - APPEND these to your existing .gitignore.
 # (Do not overwrite your file; these are additive lines the shared workflow relies on.)
 
-# Local Claude Code overrides — never committed.
+# Local Claude Code overrides - never committed.
 .claude/settings.local.json
 
-# Agent worktrees (harness-managed isolated checkouts for subagents) — never commit these.
+# Agent worktrees (harness-managed isolated checkouts for subagents) - never commit these.
 .claude/worktrees/
 
-# Scrum local-only feeds — the friction notes (ship-work-item's "capture any friction" step,
+# Scrum local-only feeds - the friction notes (ship-work-item's "capture any friction" step,
 # retro-log.local.md) and the fluyt SubagentStop hook's dispatch feed (dispatch.local.md).
 # One glob covers both and any future *.local.md stream, so a new feed never needs another
 # consumer-facing ignore migration. Raw evidence for the next /fluyt:scrum pass; never committed.
 docs/process/*.local.md
 
-# MCP server files — never tracked, at any depth. User secrets reach a plugin only through
-# userConfig with sensitive: true, never a committed .mcp.json.
-.mcp.json
+# MCP server config: a root .mcp.json is the shareable, project-scoped file and stays tracked.
+# Secrets never go into a committed .mcp.json - use environment-variable expansion, or a plugin's
+# userConfig with sensitive: true.

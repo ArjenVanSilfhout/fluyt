@@ -2,7 +2,7 @@
 
 Short entries, newest first, in the format below.
 
-Decisions only — never version numbers or completion status (CHANGELOG's job). An entry MAY
+Decisions only - never version numbers or completion status (CHANGELOG's job). An entry MAY
 also be posted as a comment on the relevant GitHub issue.
 
 ---

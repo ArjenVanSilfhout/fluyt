@@ -70,10 +70,14 @@ Codex dispatches the same canonical role files through `$fluyt:dispatch-role`. E
 substantive report ends with a **"Skills consulted"** line naming the skill / rule files it read; a
 missing line is worth questioning ("none" is legitimate only for a trivial mechanical task).
 
+Notation in fluyt skills and agent files: `⇒` = implies (what follows, or what a system does); `→` =
+then (the next step, or the action you take).
+
 **Project-specific skills** stay in this repo under `.claude/skills/`: `/triage-upstream`
-(maintainer-side triage of inbound `from-consumer` issues — see Task flow below) and
+(maintainer-side triage of inbound `from-consumer` issues — see Task flow below),
 `/arrow-notation` (applying the `⇒`/`→` legend to a skill or agent file, with the rewording tips
-and proof steps).
+and proof steps), and `/trim-to-budget` (cutting a shipped file to its byte budget without
+changing behaviour, including when to split a file and when not to).
 
 ## Project Facts (Fluyt contract v1 — this repo's own values)
 
@@ -118,7 +122,7 @@ and proof steps).
 - `github-releases`: yes — the `release` skill publishes a GitHub Release (tag + CHANGELOG notes) per
   release. See DECISIONS.md, 2026-10-11. **Release titles carry a nautical codename** —
   `vX.Y.Z "Name"`; pick one in-theme at each cut, and do not reuse an earlier one. Recorded here so
-  precedent-copying cannot drop it. <!-- provenance: chosen -->
+  precedent-copying cannot drop it. <!-- provenance: ratified @v1.3.1 -->
 - `release-publish`: none — no package-registry publish, store upload, or deploy beyond the
   git-only release. <!-- provenance: ratified -->
 - `changelog`: `CHANGELOG.md` (root). A version bump here and the
@@ -126,9 +130,9 @@ and proof steps).
   `[3]` reds otherwise; an inline CHANGELOG edit with no delegate checklist is where the mirror is
   easiest to miss.
 - `decisions`: `DECISIONS.md` (root)
-- `handover`: `docs/process/HANDOVER.local.md` <!-- provenance: chosen --> — git-ignored by default
-  (the `.gitignore` `docs/process/*.local.md` glob; gate check `[13]` fails if one is ever tracked),
-  so a hand-over never lands in history.
+- `handover`: `docs/process/HANDOVER.local.md` <!-- provenance: ratified @v1.3.1 --> — git-ignored by
+  default (the `.gitignore` `docs/process/*.local.md` glob; gate check `[13]` fails if one is ever
+  tracked), so a hand-over never lands in history.
 - `version-rules`: MINOR (X.Y.0) = a **shipped component's behaviour changes** — a skill, agent,
   hook, or template gains or changes an instruction, step, or output a consumer follows. PATCH
   (X.Y.Z) = wording / clarification / formatting / typo in a shipped file that changes no instruction
@@ -139,7 +143,7 @@ and proof steps).
   `versioning-and-changelog` skill defines — see DECISIONS.md, 2026-10-11.)
 - `commit-subject`: `<type-or-id>: <summary> (vX.Y.Z)` — version stamped in the subject; at most
   72 characters including the stamp and the squash merge's `(#<PR>)` suffix (the shipped
-  default). <!-- provenance: chosen -->
+  default). <!-- provenance: ratified @v1.3.1 -->
 - `co-author-trailers`: forbidden (maintainer identity only — no Co-Authored-By lines, ever)
 - `pr-approvals`: none — solo maintainer; requiring `1` would deadlock with nobody else to approve.
   <!-- provenance: ratified -->
@@ -220,9 +224,11 @@ stays where it is rather than being duplicated here.
   A consumer gets the plugin payload and their own repo — not this tracker, and not this
   `DECISIONS.md`. So a bare `#<issue>` or a "see the marketplace `DECISIONS.md`" pointer inside
   `plugins/` is dangling *for its actual reader*, however well it resolves here. **Cite a version
-  instead** (`until v1.2.0`) — the CHANGELOG ships, so a version resolves for them — or state the
-  reasoning without the pointer; a justification that needs an unreachable reference to stand up was
-  not carrying its own weight. This is an **audience** rule, distinct from the resolvability rule in
+  instead** (`until v1.2.0`) — it resolves for them through the payload's
+  `.codex-plugin/plugin.json` `version` (the Claude manifest is versionless) and the public
+  CHANGELOG, which the payload itself does not carry — or state the reasoning without
+  the pointer; a justification that needs an unreachable reference to stand up was not carrying its
+  own weight. This is an **audience** rule, distinct from the resolvability rule in
   `versioning-and-changelog` (which is about *timing* — citing something not yet recorded — and is
   checked against this repo's own tree). Both apply; neither substitutes for the other. **Illustrative
   placeholders are exempt** and must stay readable as such — `- [ ] #18` in an epic template, or a

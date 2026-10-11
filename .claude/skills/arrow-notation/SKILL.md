@@ -15,20 +15,23 @@ Repo-local (`.claude/skills/`), never shipped. It records how to apply the notat
 rules.
 
 **The goal is skimmability, not bytes.** Each glyph is 3 bytes in UTF-8, so an arrow only saves
-bytes against a word of four or more letters, and the legend costs ~100 B. Promise the reader
-faster scanning, never a smaller file.
+bytes against a word of four or more letters. Promise the reader faster scanning, never a smaller
+file.
 
 ## The legend
 
-Put it **once per file**, near the top (after the intro, before the first numbered section):
+**A converted file carries no legend of its own.** The legend lives once, in the consumer's
+instruction file (CLAUDE.md / AGENTS.md), shipped by the adopt-conventions skeletons so a re-sync
+offers it to existing consumers:
 
 ```text
-Notation: `⇒` = implies (what follows, or what a system does); `→` = then (the next step, or the
-action you take).
+Notation in fluyt skills and agent files: `⇒` = implies (what follows, or what a system does); `→` =
+then (the next step, or the action you take).
 ```
 
-- **One per file, not one per plugin.** A consumer loads a single skill; a legend in a sibling file
-  is a dangling pointer for that reader.
+- **Known gaps, say so rather than claim coverage.** Built-in Explore and Plan subagents skip
+  CLAUDE.md (per the docs, not measured), so a brief to them spells the arrows out in words.
+  Whether Codex subagents read AGENTS.md is unverified.
 - `⇒` = an outcome nobody chooses (GitHub closes the issue, the agent commits on the wrong branch).
   `→` = a step the reader takes. Mixing them up is easy — check every glyph.
 - **No new glyphs.** Add a glyph to the legend only when a converted line actually uses it.
@@ -90,12 +93,12 @@ anything — apply one, then convert:
 1. Read the whole target file and the repo CLAUDE.md Code style. Branch per `ship-work-item`.
 2. Measure before: CR-excluded bytes (`tr -d '\r' < F | wc -c`), the qualifier counts, the fenced
    block hashes and the code-span set (commands below).
-3. Add the legend; convert line by line; record a **ledger**: before text → after text → every
+3. Convert line by line (no legend to add); record a **ledger**: before text → after text → every
    qualifier/negation and where it survives.
-4. Measure after with the same commands. **Qualifier counts must match exactly** (the legend adds none); fenced hashes identical; the code-span diff adds only
-   the legend's own two spans. Read that diff rather than its hash: the per-line `grep -o` pairs
-   backticks across prose too, so a few pairing artifacts (prose fragments such as a lone em dash
-   between two spans) appear on both sides and are not changes.
+4. Measure after with the same commands. **Qualifier counts must match exactly**; fenced hashes
+   identical; the code-span diff adds nothing. Read that diff rather than its hash: the per-line
+   `grep -o` pairs backticks across prose too, so a few pairing artifacts (prose fragments such
+   as a lone em dash between two spans) appear on both sides and are not changes.
    A count that moved is a lost or invented qualifier — find it before going on.
 5. Gate (`pwsh -NoProfile -File scripts/validate-local.ps1`, redirect to a file): `[12]` budget,
    `[7]` invariants. MD038 has no local check — scan spans yourself.
