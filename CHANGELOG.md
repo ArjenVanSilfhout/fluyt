@@ -14,9 +14,18 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.4.0**
+Current version: **1.4.1**
 
 ---
+
+## [1.4.1] — 2026-10-11
+
+**Docs (CLAUDE.md, DECISIONS.md):** the citation rule no longer says the CHANGELOG ships; a version
+resolves for a consumer through the payload manifest and the public CHANGELOG.
+
+DECISIONS.md gains a dated correction entry (the old entry stays as written) and records the user
+ratification of the three Project Facts marked `provenance: chosen`; their markers are unchanged.
+PATCH: repo-side documentation.
 
 ## [1.4.0] — 2026-10-11
 
