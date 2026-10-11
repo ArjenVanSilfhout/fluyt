@@ -23,9 +23,8 @@ A key that merely **gates an optional feature** (e.g. `release-milestones`, `rel
 different: when it is absent - including because the consumer's Project Facts block predates the key
 being added to the template - treat it as its **documented default**, not a STOP. For
 `release-milestones` the default is `no` (skip the milestone step); for `release-tags` the default is
-`yes` (tag the release); for `release-publish` the default is `none` (skip the publish step) - so an
-early adopter silently gets the safe default for each instead of an error. STOP-and-ask is for the
-required keys above, not for an unset feature gate.
+`yes` (tag the release); for `release-publish` the default is `none` (skip the publish step).
+STOP-and-ask is for the required keys above, not for an unset feature gate.
 
 **The one rule that matters:** the release PR merges with a regular **MERGE COMMIT, never squash** -
 squashing collapses the whole release into one commit and loses the per-item history that the
@@ -103,11 +102,13 @@ step runs as written, **including step 4's re-alignment**; a hotfix skips its CH
    git push origin vX.Y.Z
    ```
    **Publish a GitHub Release - only when `github-releases: yes`** (default `no`; it implies
-   `release-tags: yes`, since a Release needs a tag). Draw the notes from the CHANGELOG sections that
-   are **new in this release** (a release bundles several `## [X.Y.Z]` entries since the last one) -
-   write them to a temp file, then:
+   `release-tags: yes`, since a Release needs a tag). Write a **summary** of everything since the
+   previous release, never CHANGELOG sections pasted: one opening line naming the previous release;
+   short bullets grouped by area (whatever areas this release touched); one line per change, giving
+   its effect on the reader, not the mechanism; a closing pointer to the CHANGELOG version range for
+   full detail. Write it to a temp file, then:
    ```sh
-   gh release create vX.Y.Z --title "vX.Y.Z" --notes-file <changelog-excerpt>
+   gh release create vX.Y.Z --title "vX.Y.Z" --notes-file <notes-file>
    ```
    The tag and Release are **human-facing markers**; consumers still pin the branch tip.
 4. **Restore the integration branch - GitHub may have just auto-deleted it.** If the repo has
@@ -260,8 +261,7 @@ step runs as written, **including step 4's re-alignment**; a hotfix skips its CH
 
 Nothing in the CHANGELOG changes at release time, and there is no tracker to sync - the backlog
 issues were closed per work item as they merged (and, if `release-milestones: yes`, grouped under the
-release-version milestone in step 5). If the user wants release notes, derive them from the CHANGELOG
-entries between the two releases.
+release-version milestone in step 5). Release notes are step 3's summary.
 
 ## Hotfix (out-of-band release)
 

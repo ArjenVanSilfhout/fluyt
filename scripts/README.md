@@ -4,7 +4,8 @@ Local tooling for this repo; none of it ships in the plugin payload.
 
 - `validate-local.ps1` - the dual-package local gate (CI is authoritative).
 - `guard-matrix.js` - fixture matrix for the shipped guard hook.
-- `publish-release.ps1` - the release publisher.
+- `publish-release.ps1` - the release publisher. Needs `-NotesFile`: a short summary you write (per the
+  `release` skill, step 3); it never builds notes from the CHANGELOG and refuses to run without one.
 - `plugin-vocabulary-allowlist.txt`, `component-size-budget.txt` - data files the gate reads.
 - `hooks/pre-push` - the opt-in denylist scan below.
 
