@@ -14,9 +14,21 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.5.1**
+Current version: **1.6.0**
 
 ---
+
+## [1.6.0] — 2026-10-11
+
+**adopt-conventions (CLAUDE.md and AGENTS.md skeletons):** the arrow legend (`⇒` implies, `→` then)
+now ships once, as one line in the plugin-owned routing section, instead of per skill. Existing
+consumers are offered it on their next re-sync, which already proposes any missing plugin-owned
+paragraph. Onboarding names the notation line in its routing merge. Known gaps: built-in Explore
+and Plan subagents skip CLAUDE.md, per the Claude Code docs, so a brief to them spells the arrows
+out; whether Codex subagents read AGENTS.md is unverified. No other symbols join the legend:
+measured candidates saved no tokens. This repo's CLAUDE.md and AGENTS.md carry the line, the
+repo-local `/arrow-notation` skill drops its per-file legend rule, and AGENTS.md lists
+`trim-to-budget`. MINOR: a shipped template gains a line a consumer follows.
 
 ## [1.5.1] — 2026-10-11
 
