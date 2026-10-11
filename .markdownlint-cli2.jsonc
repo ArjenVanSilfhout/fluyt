@@ -1,0 +1,19 @@
+{
+  // markdownlint-cli2 config for Fluyt.
+  // Prose-and-checklist docs, not a strict style guide — we relax the rules that
+  // fight readable long-form Markdown and skip the plugin's template fragments
+  // (they are deliberately partial files, not standalone documents).
+  "config": {
+    "default": true,
+    "MD013": false, // line-length: our docs use long prose/table lines on purpose
+    "MD031": false, // blanks-around-fences: we indent illustrative fences inside numbered ritual steps
+    "MD033": false, // inline HTML: allowed where it aids formatting
+    "MD036": false, // emphasis-as-heading: bold inline sub-labels ("**A) ...**") are intentional, not headings
+    "MD040": false, // fenced-code-language: some illustrative blocks are plain templates, not a language
+    "MD041": false  // first-line-heading: SKILL.md files open with YAML frontmatter
+  },
+  "ignores": [
+    "plugins/fluyt/skills/adopt-conventions/templates/**",
+    "**/node_modules/**"
+  ]
+}

@@ -1,0 +1,99 @@
+# Fluyt plugin-vocabulary allowlist
+#
+# WHAT THIS IS: the single source of truth for the HEURISTIC half of check [7] in
+# scripts/validate-local.ps1 - the inverted forbidden-strings guard that mechanically enforces
+# CLAUDE.md's "Zero project facts in plugins/" invariant. That half does not enumerate known-bad
+# tokens (a denylist cannot know which consumers exist). It flags EVERYTHING under plugins/ that is
+# project-fact-SHAPED - slug-shaped identifiers, framework / runtime / build-tool names, absolute
+# and drive-letter paths - and then subtracts the lines below. Every entry here is a token that
+# looks like a project fact but is legitimately the PLUGIN'S OWN vocabulary.
+#
+# THE MAINTENANCE TRIGGER IS THE POINT: this file is maintained when the PLUGIN'S OWN VOCABULARY
+# CHANGES - a new agent-client tool name, a new shipped snippet, a new product the plugin has to
+# name by name. That is a moment the maintainer is already in these files, with the gate red in
+# front of them telling them the exact token. It is deliberately NOT maintained when a third party
+# adopts the plugin: that moment is unobserved, so an enumerated-consumers list cannot stay
+# current. A forgotten entry here shows up as a RED gate on the next run.
+#
+# WHAT MUST NEVER GO HERE: a consumer's project name, repo slug, or stack token. When check [7]
+# flags one of those, the fix is to REMOVE THE FACT from plugins/ - never to allowlist it. The one
+# category that looks like a violation and is not is the plugin naming ITSELF: CLAUDE.md's
+# sanctioned-self-reference test ("names the plugin's OWN identity or home - its slug, its repo,
+# its author, its manifest metadata - never a consumer fact") is why 'Fluyt' and
+# 'ArjenVanSilfhout' are listed below rather than scrubbed. If you are about to add an entry and
+# cannot say which of the sections below it belongs to, that is the signal to stop and check
+# whether it is really the plugin's vocabulary at all.
+#
+# FORMAT: one token per line. Blank lines and lines starting with '#' are ignored - everything else
+# is taken verbatim (trimmed) as a token. Matching is WHOLE-FINDING and case-INsensitive: an entry
+# exempts a finding only when it equals that finding's matched text, so 'GitHub' exempts the word
+# GitHub and does NOT exempt 'GitHubSomethingElse' (which the heuristic reports as its own,
+# separate finding). Case-insensitivity is deliberate - a token differing from legitimate plugin
+# vocabulary only in letter case is not a distinct project fact worth reddening the gate for.
+#
+# ENCODING: keep every entry ASCII-only - check [7] reads
+# plugins/ content as UTF-8 explicitly, but this file is read as plain text on a PowerShell 5.1
+# host, where Get-Content's default codepage is not UTF-8.
+
+# --- the plugin naming itself (CLAUDE.md's sanctioned self-reference) --------------------------
+Fluyt
+ArjenVanSilfhout
+
+# --- products and platforms the plugin must name by name ---------------------------------------
+# The forges its skills drive, and the shell its portability notes are about. None is a consumer
+# fact: the plugin's own process is GitHub-based, its forge-azure-devops skill is the shipped Azure
+# DevOps adapter (naming the platform is the skill's job), and its snippets have to say which shell
+# they are.
+GitHub
+DevOps
+PowerShell
+
+# --- agent-client API surface (tool names, hook events, capabilities) --------------------------
+# Named in agent frontmatter `tools:` lists, hook wiring, and prose about what a client can do.
+SubagentStop
+PreToolUse
+UserPromptSubmit
+WebFetch
+WebSearch
+SendMessage
+ListAgents
+AskUserQuestion
+
+# --- shell / PowerShell API vocabulary inside shipped snippets ---------------------------------
+# These are fragments of cmdlet, parameter and property names the heuristic sees once the hyphen or
+# sigil is treated as a token boundary (Get-ChildItem -> 'ChildItem', $ErrorActionPreference ->
+# 'ErrorActionPreference'). Code fences are deliberately NOT skipped by the scan - a leaked consumer
+# build command would hide in exactly such a block - so this vocabulary is paid for here instead.
+ChildItem
+CimInstance
+CommandLine
+ProcessId
+LastWriteTime
+ErrorActionPreference
+ExecutionPolicy
+NativeCommandError
+
+# --- process and domain vocabulary -------------------------------------------------------------
+# MoSCoW: the tier-label scheme. SemVer: the version format. PullRequest: the forge's own API type
+# name. ExpectedResult: the test-naming convention example in the test-writer role.
+# AgentRouting: a switch parameter on the plugin's OWN shipped github-labels.ps1 template.
+MoSCoW
+SemVer
+PullRequest
+ExpectedResult
+AgentRouting
+
+# --- runtimes the plugin's own shipped assets depend on ----------------------------------------
+# 'node': the shipped hook's timestamp helper is a node one-liner (with a shell fallback), and the
+# scrum skill documents that. 'npm': also a Claude Code plugin SOURCE TYPE the install-refresh
+# skill has to enumerate. Listing these does mean a consumer's Node/npm facts would not be flagged
+# by the stack signal - accepted, because the plugin genuinely ships a Node dependency; a consumer
+# NAME or path alongside them still trips the other two signals.
+node
+npm
+
+# --- illustrative, non-machine-specific paths --------------------------------------------------
+# A generic Windows path root used to explain why -match mis-reads backslashes. It names no repo,
+# no machine and no consumer; a real machine path (e.g. a full C:\...\<project> checkout) produces a
+# DIFFERENT matched root and is still flagged.
+C:\Repos\

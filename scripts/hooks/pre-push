@@ -1,0 +1,142 @@
+#!/bin/sh
+# pre-push: reject identifying tokens before they leave this machine.
+#
+# The list covers identifying tokens: names, emails, paths, machine and project names. The list
+# itself lives outside the repo, in a private file, so publishing the check never publishes the
+# terms.
+# So: NO CI scan, NO Actions secret - only this local check, reading a private file outside the
+# repo, and FAILING CLOSED (exit 1) when that file is missing, unreadable or holds no terms.
+#
+# WHAT IT SCANS, for every pushed ref (git feeds `<local ref> <local sha> <remote ref> <remote sha>`
+# lines on stdin; deletions are skipped):
+#   (a) the full tree at the pushed sha (git grep -I: binary files skipped);
+#   (b) every commit being pushed: author name+email, committer name+email, full message;
+#   (c) for an annotated tag: its tag name, tagger and message.
+# Matching is case-insensitive fixed-string. Hits print as file:line / `commit <sha> <field>` /
+# `tag <name>` plus the matched line, all to the terminal only; exit 1 after reporting every hit.
+#
+# MANUAL MODE: run with stdin on a terminal, or pass --all, to scan the HEAD tree plus ALL history
+# reachable from HEAD and every annotated tag. On a repo that still has hits this is the "what is
+# left to scrub" list - run it that way on a fresh clone before enabling the blocking hook (it
+# WILL report existing hits, by design), and enable the hook only once it comes back clean.
+#
+# INSTALL (opt-in per clone):   git config core.hooksPath scripts/hooks
+# PROVISION: create the terms file, one term per line ('#' comments and blank lines ignored), at
+#   ${XDG_CONFIG_HOME:-$HOME/.config}/denylist/terms.txt   or point DENYLIST_FILE at another path.
+#   NEVER commit it; terms are never written to any file inside the repo (the sanitized copy lives
+#   under ${TMPDIR:-/tmp} and is removed on exit).
+#
+# POSIX sh only: no bash-isms, no pwsh - runs under Git for Windows' sh, Linux and macOS.
+
+ZERO=0000000000000000000000000000000000000000
+terms_file=${DENYLIST_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/denylist/terms.txt}
+
+mode=hook
+for arg in "$@"; do
+  [ "$arg" = "--all" ] && mode=all
+done
+if [ "$mode" = hook ] && [ -t 0 ]; then mode=all; fi
+
+if [ ! -r "$terms_file" ]; then
+  echo "pre-push: terms file not found or unreadable: $terms_file" >&2
+  echo "pre-push: create it (one term per line) or set DENYLIST_FILE; see the header of $0." >&2
+  exit 1
+fi
+
+work=$(mktemp -d "${TMPDIR:-/tmp}/prepush.XXXXXX") || exit 1
+trap 'rm -rf "$work"' EXIT HUP INT TERM
+terms=$work/terms
+tr -d '\r' < "$terms_file" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' |
+  grep -v -e '^$' -e '^#' > "$terms"
+if [ ! -s "$terms" ]; then
+  echo "pre-push: no terms in $terms_file (only blanks/comments) - refusing to pass an empty check." >&2
+  exit 1
+fi
+
+hits=0
+errors=0
+out=$work/out
+
+# report <label>: print $out (if non-empty) under a label and count it as a hit.
+report() {
+  if [ -s "$out" ]; then
+    hits=$((hits + 1))
+    echo "HIT $1" >&2
+    sed 's/^/    /' "$out" >&2
+  fi
+}
+
+# fail <message>: a scan that could not run is a blocking error, never a clean pass.
+fail() {
+  errors=$((errors + 1))
+  echo "pre-push: ERROR $1" >&2
+}
+
+scan_text() { # <label>; reads $work/in
+  grep -i -F -f "$terms" "$work/in" > "$out" 2>/dev/null
+  rc=$?
+  if [ "$rc" -ge 2 ]; then fail "text scan failed ($1)"; return; fi
+  report "$1"
+}
+
+scan_tree() { # <sha>
+  git grep -I -i -n -F -f "$terms" "$1" > "$out" 2>"$work/err"
+  rc=$?
+  if [ "$rc" -ge 2 ]; then fail "git grep failed for $1: $(head -1 "$work/err")"; return; fi
+  report "tree $1"
+}
+
+scan_commit() { # <sha>
+  short=$(git rev-parse --short "$1")
+  git log -1 --format='%an <%ae>' "$1" > "$work/in"; scan_text "commit $short author"
+  git log -1 --format='%cn <%ce>' "$1" > "$work/in"; scan_text "commit $short committer"
+  git log -1 --format='%B' "$1" > "$work/in"; scan_text "commit $short message"
+}
+
+scan_tag() { # <name> <sha>
+  if [ "$(git cat-file -t "$2" 2>/dev/null)" = tag ]; then
+    { echo "$1"; git cat-file tag "$2"; } > "$work/in"; scan_text "tag $1"
+  fi
+}
+
+scan_commits() { # <rev-list args...>; returns 1 (scanning nothing) when rev-list fails
+  git rev-list "$@" > "$work/revs" 2>/dev/null || return 1
+  while read -r c; do
+    scan_commit "$c"
+  done < "$work/revs"
+}
+
+if [ "$mode" = all ]; then
+  scan_tree HEAD
+  scan_commits HEAD || fail "cannot list commits reachable from HEAD"
+  git for-each-ref --format='%(refname:short) %(objectname)' refs/tags > "$work/tags"
+  while read -r name sha; do
+    [ -n "$name" ] || continue
+    scan_tag "$name" "$sha"
+  done < "$work/tags"
+else
+  while read -r lref lsha rref rsha; do
+    [ -n "$lsha" ] || continue
+    [ "$lsha" = "$ZERO" ] && continue
+    scan_tree "$lsha"
+    if [ "$rsha" = "$ZERO" ]; then
+      scan_commits "$lsha" --not --remotes || fail "cannot list commits of $lsha"
+    else
+      scan_commits "$rsha..$lsha" || scan_commits "$lsha" --not --remotes || fail "cannot list commits of $lsha (remote sha $rsha unknown locally)"
+    fi
+    case "$rref" in
+      refs/tags/*) scan_tag "${rref#refs/tags/}" "$lsha" ;;
+    esac
+  done
+fi
+
+if [ "$errors" -gt 0 ]; then
+  echo "pre-push: $errors scan error(s) - the check could not run completely, push blocked." >&2
+  exit 1
+fi
+if [ "$hits" -gt 0 ]; then
+  echo "pre-push: $hits hit group(s) matched the private terms file - push blocked." >&2
+  exit 1
+fi
+echo "pre-push: ok (no private terms found)"
+exit 0

@@ -1,0 +1,28 @@
+{
+  "name": "fluyt",
+  "version": "1.0.0",
+  "description": "Client-agnostic delivery, backlog, release, review, and retrospective workflows for Codex and Claude Code.",
+  "author": {
+    "name": "Fluyt contributors",
+    "url": "https://github.com/ArjenVanSilfhout/fluyt"
+  },
+  "homepage": "https://github.com/ArjenVanSilfhout/fluyt",
+  "repository": "https://github.com/ArjenVanSilfhout/fluyt",
+  "license": "MIT",
+  "keywords": ["agentic-development", "delivery", "workflow", "multi-agent"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Fluyt",
+    "shortDescription": "Shared delivery and agent-team workflows",
+    "longDescription": "Install the Fluyt delivery ritual, backlog conventions, release process, retrospectives, and specialist-role dispatch in Codex.",
+    "developerName": "Fluyt contributors",
+    "category": "Productivity",
+    "capabilities": ["Workflow", "Multi-agent", "Read", "Write"],
+    "websiteURL": "https://github.com/ArjenVanSilfhout/fluyt",
+    "defaultPrompt": [
+      "Use Fluyt to pick and ship the next work item.",
+      "Use Fluyt to review this branch before opening a PR.",
+      "Use Fluyt to run a retrospective on the agent workflow."
+    ]
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "worktree": {
+    "baseRef": "fresh"
+  },
+  "autoCompactEnabled": true,
+  "enabledPlugins": {
+    "fluyt@fluyt": true
+  },
+  "extraKnownMarketplaces": {
+    "fluyt": {
+      "source": {
+        "source": "github",
+        "repo": "ArjenVanSilfhout/fluyt",
+        "ref": "main"
+      },
+      "autoUpdate": true
+    }
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "node -e 'let d=\"\";process.stdin.on(\"data\",c=>d+=c);process.stdin.on(\"end\",()=>{try{const j=JSON.parse(d||\"{}\");const cmd=j.tool_input&&j.tool_input.command;if(typeof cmd!==\"string\"){process.exit(0);}const hd=function(s){const HX=/\\b(?:bash|sh|zsh|dash|ksh|fish|pwsh|powershell|cmd|eval|source|node|python|python3|perl|ruby)\\b/i;const HO=/<<-?[ \\t]*([\"\\x27]?)([A-Za-z_][A-Za-z0-9_]*)\\1/g;let o=\"\";let k=0;let m;while((m=HO.exec(s))){const i=m.index;if(i>0&&s.charAt(i-1)===\"<\"){HO.lastIndex=i+2;continue;}if(s.charAt(i+2)===\"<\"){HO.lastIndex=i+2;continue;}const le=s.indexOf(\"\\n\",i);if(le<0)break;const ol=s.slice(s.lastIndexOf(\"\\n\",i)+1,le);const bs=le+1;const dl=m[2];let q=bs;let be=s.length;let te=s.length;while(q<=s.length){let e=s.indexOf(\"\\n\",q);if(e<0)e=s.length;if(s.slice(q,e).trim()===dl){be=q;te=e;break;}if(e>=s.length){be=s.length;te=s.length;break;}q=e+1;}if(!HX.test(ol)){o+=s.slice(k,bs);k=be;}HO.lastIndex=te;}return o+s.slice(k);};const cx=hd(cmd);const fs=require(\"fs\");const path=require(\"path\");/* judge the working copy each commit TARGETS (git -C, else the hook cwd); a linked worktree (.git is a FILE) is judged by its own HEAD instead of failing open. Unresolvable target = cannot decide = allow. */const wcOf=function(start){let dir=start;for(let i=0;dir&&i<10;i++){const g=path.join(dir,\".git\");let st=null;try{st=fs.statSync(g);}catch(e){}if(st){return {root:dir,git:g,linked:st.isFile()};}const parent=path.dirname(dir);if(parent===dir)break;dir=parent;}return null;};const headOf=function(w){let gd=w.git;if(w.linked){const gm=fs.readFileSync(w.git,\"utf8\").match(/^gitdir:\\s*(.+)$/m);if(!gm)return null;gd=path.resolve(w.root,gm[1].trim());}const hm=fs.readFileSync(path.join(gd,\"HEAD\"),\"utf8\").match(/^ref:\\s*refs\\/heads\\/(.+)$/m);return hm?hm[1].trim():null;};const tgtOf=function(opts,base){const tk=opts.trim()?opts.trim().split(/\\s+/):[];let d=base;let hasC=false;for(let i=0;i<tk.length;i++){if(tk[i]!==\"-C\")continue;hasC=true;let p=tk[++i];if(typeof p!==\"string\")return {dir:null,hasC:true};p=p.replace(/^([\"\\x27])(.*)\\1$/,\"$2\");if(!p||/[$`\"\\x27*?]|^~/.test(p))return {dir:null,hasC:true};if(process.platform===\"win32\")p=p.replace(/^\\/([a-zA-Z])(?=\\/|$)/,\"$1:\");if(!d&&!path.isAbsolute(p))return {dir:null,hasC:true};d=d?path.resolve(d,p):p;}return {dir:d,hasC:hasC};};const RX=/(?:^|[;&|\\n]|\\$\\()\\s*git\\b((?:\\s+\\S+){0,4}?)\\s+commit\\b/gi;const cwd=typeof j.cwd===\"string\"?j.cwd:null;let m;let hit=null;while((m=RX.exec(cx))){const t=tgtOf(m[1],cwd);if(t.hasC&&(!t.dir||!fs.existsSync(t.dir)))continue;let w=t.dir?wcOf(t.dir):null;if(!w&&!t.hasC&&process.env.CLAUDE_PROJECT_DIR){const g=path.join(process.env.CLAUDE_PROJECT_DIR,\".git\");if(fs.existsSync(g))w={root:process.env.CLAUDE_PROJECT_DIR,git:g,linked:fs.statSync(g).isFile()};}if(!w)continue;let branch=null;try{branch=headOf(w);}catch(e){}if(!branch)continue;if(branch===\"dev\"||branch===\"main\"){hit={branch:branch,root:w.root};break;}}if(!hit){process.exit(0);}const out={hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Direct commits on dev/main are blocked in this repo - every change lands via PR (branch off dev first, ship-work-item section 0.2). This commit targets \"+hit.root+\", which is on \"+hit.branch+\" (judged from git -C when given, else the hook cwd). If HEAD moved under you, re-check `git branch --show-current`.\"}};process.stdout.write(JSON.stringify(out));process.exit(0);}catch(e){process.exit(0);}});' 2>/dev/null || true",
+            "statusMessage": "Blocking a direct git commit on dev/main — work lands via PR"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "node -e 'let d=\"\";process.stdin.on(\"data\",c=>d+=c);process.stdin.on(\"end\",()=>{try{const j=JSON.parse(d||\"{}\");const cmd=j.tool_input&&j.tool_input.command;if(typeof cmd!==\"string\"){process.exit(0);}const hd=function(s){const HX=/\\b(?:bash|sh|zsh|dash|ksh|fish|pwsh|powershell|cmd|eval|source|node|python|python3|perl|ruby)\\b/i;const HO=/<<-?[ \\t]*([\"\\x27]?)([A-Za-z_][A-Za-z0-9_]*)\\1/g;let o=\"\";let k=0;let m;while((m=HO.exec(s))){const i=m.index;if(i>0&&s.charAt(i-1)===\"<\"){HO.lastIndex=i+2;continue;}if(s.charAt(i+2)===\"<\"){HO.lastIndex=i+2;continue;}const le=s.indexOf(\"\\n\",i);if(le<0)break;const ol=s.slice(s.lastIndexOf(\"\\n\",i)+1,le);const bs=le+1;const dl=m[2];let q=bs;let be=s.length;let te=s.length;while(q<=s.length){let e=s.indexOf(\"\\n\",q);if(e<0)e=s.length;if(s.slice(q,e).trim()===dl){be=q;te=e;break;}if(e>=s.length){be=s.length;te=s.length;break;}q=e+1;}if(!HX.test(ol)){o+=s.slice(k,bs);k=be;}HO.lastIndex=te;}return o+s.slice(k);};const cx=hd(cmd);const fs=require(\"fs\");const path=require(\"path\");const os=require(\"os\");/* freeze only the working copy a HEAD move TARGETS (git -C, else the hook cwd), and count only agents sharing it. An agent counts where its own Bash cwd was SEEN (wc, marked below); until its first Bash call it is presumed to share the main checkout - conservative, so a fresh isolated lane still freezes the main HEAD until it runs Bash. */const wcOf=function(start){let dir=start;for(let i=0;dir&&i<10;i++){const g=path.join(dir,\".git\");let st=null;try{st=fs.statSync(g);}catch(e){}if(st){return {root:dir,git:g,linked:st.isFile()};}const parent=path.dirname(dir);if(parent===dir)break;dir=parent;}return null;};const tgtOf=function(opts,base){const tk=opts.trim()?opts.trim().split(/\\s+/):[];let d=base;let hasC=false;for(let i=0;i<tk.length;i++){if(tk[i]!==\"-C\")continue;hasC=true;let p=tk[++i];if(typeof p!==\"string\")return {dir:null,hasC:true};p=p.replace(/^([\"\\x27])(.*)\\1$/,\"$2\");if(!p||/[$`\"\\x27*?]|^~/.test(p))return {dir:null,hasC:true};if(process.platform===\"win32\")p=p.replace(/^\\/([a-zA-Z])(?=\\/|$)/,\"$1:\");if(!d&&!path.isAbsolute(p))return {dir:null,hasC:true};d=d?path.resolve(d,p):p;}return {dir:d,hasC:hasC};};const rp=function(p){try{return fs.realpathSync.native(p);}catch(e){return path.resolve(p);}};const same=function(a,b){a=rp(a);b=rp(b);return process.platform===\"win32\"?a.toLowerCase()===b.toLowerCase():a===b;};const cwd=typeof j.cwd===\"string\"?j.cwd:null;const sid=j.session_id;const aid=typeof j.agent_id===\"string\"&&j.agent_id?j.agent_id:null;const file=typeof sid===\"string\"&&sid?path.join(os.tmpdir(),\"fluyt-live-agents-\"+sid.replace(/[^A-Za-z0-9_-]/g,\"_\")+\".json\"):null;if(file&&aid&&cwd){try{const w=wcOf(cwd);if(w){const st=JSON.parse(fs.readFileSync(file,\"utf8\"));const en=st&&st.agents&&typeof st.agents===\"object\"?st.agents[aid]:null;if(en&&typeof en===\"object\"){const root=rp(w.root);if(en.wc!==root||en.isolated!==w.linked){en.wc=root;en.isolated=w.linked;fs.writeFileSync(file,JSON.stringify(st));}}}}catch(e){}}const RX=/(?:^|[;&|\\n]|\\$\\()\\s*git\\b((?:\\s+\\S+){0,4}?)\\s+(checkout|switch|reset|stash)\\b/gi;if(!RX.test(cx)){process.exit(0);}RX.lastIndex=0;if(!file){process.exit(0);}let state=null;try{const rawState=fs.readFileSync(file,\"utf8\");state=JSON.parse(rawState);}catch(e){process.exit(0);}if(!state||typeof state!==\"object\"||!state.agents||typeof state.agents!==\"object\"){process.exit(0);}const now=Date.now();const ttl=120*60*1000;let m;while((m=RX.exec(cx))){const t=tgtOf(m[1],cwd);if(t.hasC&&(!t.dir||!fs.existsSync(t.dir)))continue;let w=t.dir?wcOf(t.dir):null;if(!w&&!t.hasC&&process.env.CLAUDE_PROJECT_DIR){const g=path.join(process.env.CLAUDE_PROJECT_DIR,\".git\");if(fs.existsSync(g))w={root:process.env.CLAUDE_PROJECT_DIR,git:g,linked:fs.statSync(g).isFile()};}if(!w)continue;const fresh=[];for(const id in state.agents){const en=state.agents[id];if(!en||typeof en.started!==\"number\"||(now-en.started)>=ttl)continue;const sh=(typeof en.wc===\"string\"&&en.wc)?(same(en.wc,w.root)&&!(id===aid&&w.linked)):!w.linked;if(sh)fresh.push((en.type||\"unknown\")+\":\"+id);}if(fresh.length>0){const reason=\"HEAD is frozen: \"+fresh.length+\" live agent(s) share the working copy this command targets (\"+w.root+\": \"+fresh.join(\", \")+\") - ship-work-item section 1, While a non-isolated agent is live. An agent counts where its own Bash cwd was seen, or - before its first Bash call - when the target is a main checkout. If no agent is actually live (stale flag), delete \"+file+\" and retry.\";const out={hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:reason}};process.stdout.write(JSON.stringify(out));process.exit(0);}}process.exit(0);}catch(e){process.exit(0);}});' 2>/dev/null || true",
+            "statusMessage": "HEAD-freeze guard: denying checkout/switch/reset/stash while a non-isolated agent is live"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "node -e 'let d=\"\";process.stdin.on(\"data\",c=>d+=c);process.stdin.on(\"end\",()=>{try{const j=JSON.parse(d||\"{}\");const cmd=j.tool_input&&j.tool_input.command;if(typeof cmd!==\"string\"){process.exit(0);}const hd=function(s){const HX=/\\b(?:bash|sh|zsh|dash|ksh|fish|pwsh|powershell|cmd|eval|source|node|python|python3|perl|ruby)\\b/i;const HO=/<<-?[ \\t]*([\"\\x27]?)([A-Za-z_][A-Za-z0-9_]*)\\1/g;let o=\"\";let k=0;let m;while((m=HO.exec(s))){const i=m.index;if(i>0&&s.charAt(i-1)===\"<\"){HO.lastIndex=i+2;continue;}if(s.charAt(i+2)===\"<\"){HO.lastIndex=i+2;continue;}const le=s.indexOf(\"\\n\",i);if(le<0)break;const ol=s.slice(s.lastIndexOf(\"\\n\",i)+1,le);const bs=le+1;const dl=m[2];let q=bs;let be=s.length;let te=s.length;while(q<=s.length){let e=s.indexOf(\"\\n\",q);if(e<0)e=s.length;if(s.slice(q,e).trim()===dl){be=q;te=e;break;}if(e>=s.length){be=s.length;te=s.length;break;}q=e+1;}if(!HX.test(ol)){o+=s.slice(k,bs);k=be;}HO.lastIndex=te;}return o+s.slice(k);};const cx=hd(cmd);const re=/(?:^|[;&|\\n]|\\$\\()\\s*(?:(?:pwsh|powershell)(?:\\.exe)?\\b[^\\n;`]*?-File\\s+\\S*validate-local\\.ps1\\S*|\\S*validate-local\\.ps1)(?:[^\\n;`&]|&(?!&))*?\\|(?:[^\\n;`&]|&(?!&))*?\\b(?:grep|Select-String|sls)\\b/i;if(!re.test(cx)){process.exit(0);}const out={hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Reading the gate verdict by grepping its output can let a RED gate through - the exit code of grep masks the exit code of the script. Run scripts/validate-local.ps1 bare and check ITS exit code, or redirect output to a file and grep that file in a separate command.\"}};process.stdout.write(JSON.stringify(out));process.exit(0);}catch(e){process.exit(0);}});' 2>/dev/null || true",
+            "statusMessage": "Blocking a piped grep/Select-String/sls read of the gate's verdict - check the exit code instead"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "node -e 'let d=\"\";process.stdin.on(\"data\",c=>d+=c);process.stdin.on(\"end\",()=>{try{const j=JSON.parse(d||\"{}\");const sid=j.session_id;const aid=j.agent_id;if(typeof sid!==\"string\"||!sid||typeof aid!==\"string\"||!aid){process.exit(0);}const atype=typeof j.agent_type===\"string\"&&j.agent_type?j.agent_type:\"unknown\";const os=require(\"os\");const fs=require(\"fs\");const path=require(\"path\");const safe=sid.replace(/[^A-Za-z0-9_-]/g,\"_\");const file=path.join(os.tmpdir(),\"fluyt-live-agents-\"+safe+\".json\");let state={agents:{}};try{const rawState=fs.readFileSync(file,\"utf8\");const parsed=JSON.parse(rawState);if(parsed&&typeof parsed===\"object\"&&parsed.agents&&typeof parsed.agents===\"object\"){state=parsed;}}catch(e){}const en={type:atype,started:Date.now()};/* a spawn whose cwd is already a linked worktree is recorded there now; any other is marked by the HEAD-freeze hook on its first Bash call. */try{let dir=typeof j.cwd===\"string\"?j.cwd:null;for(let i=0;dir&&i<10;i++){const g=path.join(dir,\".git\");let st=null;try{st=fs.statSync(g);}catch(e){}if(st){if(st.isFile()){let r=dir;try{r=fs.realpathSync.native(dir);}catch(e){}en.wc=r;en.isolated=true;}break;}const parent=path.dirname(dir);if(parent===dir)break;dir=parent;}}catch(e){}state.agents[aid]=en;fs.writeFileSync(file,JSON.stringify(state));process.exit(0);}catch(e){process.exit(0);}});' 2>/dev/null || true",
+            "statusMessage": "Raising the HEAD-freeze live-agent flag"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "node -e 'let d=\"\";process.stdin.on(\"data\",c=>d+=c);process.stdin.on(\"end\",()=>{try{const j=JSON.parse(d||\"{}\");const sid=j.session_id;const aid=j.agent_id;if(typeof sid!==\"string\"||!sid||typeof aid!==\"string\"||!aid){process.exit(0);}const os=require(\"os\");const fs=require(\"fs\");const path=require(\"path\");const safe=sid.replace(/[^A-Za-z0-9_-]/g,\"_\");const file=path.join(os.tmpdir(),\"fluyt-live-agents-\"+safe+\".json\");let state=null;try{const rawState=fs.readFileSync(file,\"utf8\");state=JSON.parse(rawState);}catch(e){process.exit(0);}if(!state||typeof state!==\"object\"||!state.agents||typeof state.agents!==\"object\"||!(aid in state.agents)){process.exit(0);}delete state.agents[aid];if(Object.keys(state.agents).length===0){try{fs.unlinkSync(file);}catch(e){}}else{fs.writeFileSync(file,JSON.stringify(state));}process.exit(0);}catch(e){process.exit(0);}});' 2>/dev/null || true",
+            "statusMessage": "Lowering the HEAD-freeze live-agent flag"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "$ErrorActionPreference='SilentlyContinue'; $pl=Join-Path $env:USERPROFILE '.claude\\plugins'; $km=Get-Content (Join-Path $pl 'known_marketplaces.json') -Raw | ConvertFrom-Json; $ref=$km.'fluyt'.source.ref; $clone=(git -C (Join-Path $pl 'marketplaces\\fluyt') branch --show-current); $lu=$km.'fluyt'.lastUpdated; if($ref -ne 'main' -or $clone -ne 'main'){ @{ systemMessage = \"Fluyt marketplace pin BROKEN (ref='$ref', clone branch='$clone', lastUpdated=$lu). Repair per /fluyt:install-refresh-plugin: widen the clone's refspec, re-fetch main, restore the ref pin.\" } | ConvertTo-Json -Compress } else { $ipj=Get-Content (Join-Path $pl 'installed_plugins.json') -Raw | ConvertFrom-Json; $rec=@($ipj.plugins.'fluyt@fluyt') | Where-Object { $_.scope -eq 'user' } | Select-Object -First 1; $localV=$null; if($rec){ $localV=(Get-Content (Join-Path $rec.installPath '.codex-plugin\\plugin.json') -Raw | ConvertFrom-Json).version }; $remoteV=$null; $raw=(gh api -H 'Accept: application/vnd.github.raw' 'repos/ArjenVanSilfhout/fluyt/contents/plugins/fluyt/.codex-plugin/plugin.json?ref=main' 2>$null); if($raw){ $remoteV=($raw | ConvertFrom-Json).version }; if(-not $localV -or -not $remoteV){ @{ systemMessage = \"Fluyt pin ref OK (main/main) but staleness UNVERIFIED (installed='$localV', main tip='$remoteV' - a read failed, likely gh offline). Do NOT read this as fresh; verify per /fluyt:install-refresh-plugin.\" } | ConvertTo-Json -Compress } elseif($localV -eq $remoteV){ @{ systemMessage = \"Fluyt pin OK and fresh: installed $localV == main tip (ref=main, clone=main, lastUpdated=$lu)\" } | ConvertTo-Json -Compress } else { @{ systemMessage = \"Fluyt install STALE: installed $localV, main ships $remoteV (the pin itself is OK - this is the clone can be on main yet behind its tip). Refresh: claude plugin marketplace update fluyt; then claude plugin update fluyt@fluyt; then restart the client.\" } | ConvertTo-Json -Compress } }",
+            "timeout": 30,
+            "statusMessage": "Checking the Fluyt marketplace pin AND install freshness"
+          }
+        ]
+      }
+    ]
+  }
+}

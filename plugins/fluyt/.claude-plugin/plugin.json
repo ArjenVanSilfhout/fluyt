@@ -1,0 +1,8 @@
+{
+  "name": "fluyt",
+  "description": "Client-agnostic agentic development process: work-item delivery ritual, GitHub-Issues backlog, integration-to-release promotions, retrospectives, versioning discipline, team subagents, consumer-repo scaffolding.",
+  "author": { "name": "Fluyt contributors" },
+  "homepage": "https://github.com/ArjenVanSilfhout/fluyt",
+  "repository": "https://github.com/ArjenVanSilfhout/fluyt",
+  "license": "MIT"
+}

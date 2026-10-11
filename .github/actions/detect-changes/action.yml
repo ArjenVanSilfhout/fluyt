@@ -1,0 +1,103 @@
+name: detect changed paths
+description: >-
+  Docs-only CI fast path. Reads the changed-file set server-side and reports whether any
+  shipped plugin payload (plugin_relevant) or any .ps1 file (ps1_relevant) changed. Fails closed:
+  both outputs stay "true" unless the changed-file set was positively read.
+
+# a local composite action run as a named step, because a separate job bills a full rounded-up
+# minute per run. Its one caller is the single `local invariants (validate-local.ps1)` job
+# in validate.yml, which is intended as the required check on `dev`: that job must keep running
+# unconditionally
+# and gate only its expensive STEPS on these outputs (Rule 1 - gate the steps, never the job: a
+# job-level `if:` that evaluates false makes the job *skipped*, the identical Pending-forever trap
+# `paths:` sets for a required check - see the branch-protection skill, "Offer a docs-only fast
+# path for the expensive steps").
+#
+# Requires the calling job to have checked the repo out (a local action is read from the working
+# tree) - but the detection itself needs no git history: `gh pr view --json files` and
+# `gh api .../compare/...` both resolve the changed-file set server-side, so the caller's checkout
+# depth does not matter.
+#
+# FAIL-CLOSED, not fail-open: every branch below defaults to "relevant" (run the full steps) and
+# only flips to "not relevant" once the changed-file set has been POSITIVELY read. A force-push or a
+# branch's first push reports `before` as all-zeros (nothing to diff against); an API call that
+# errors leaves `determined=0`. In either case this step intentionally does NOT attempt a fallback
+# diff - it reports undetermined and the calling job runs its full steps. A fast path that
+# silently skips validation on an undetermined diff would open a gap (the local gate's [4]/[5]
+# check is the SOLE enforcer of the description-length cap - see the NOTE on the `claude plugin
+# validate` step in validate.yml).
+
+outputs:
+  plugin_relevant:
+    description: '"true" unless the changed-file set was read and nothing under plugins/ or .claude-plugin/ changed.'
+    value: ${{ steps.detect.outputs.plugin_relevant }}
+  ps1_relevant:
+    description: '"true" unless the changed-file set was read and no .ps1 file changed.'
+    value: ${{ steps.detect.outputs.ps1_relevant }}
+
+runs:
+  using: composite
+  steps:
+    - name: Determine which paths changed (docs-only fast path)
+      id: detect
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        # Pin the repo explicitly rather than relying on the local git context - without GH_REPO
+        # `gh pr view` fails on every PR event when this runs checkout-less, and the fast path
+        # degrades to its fail-closed default.
+        GH_REPO: ${{ github.repository }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        BEFORE_SHA: ${{ github.event.before }}
+        AFTER_SHA: ${{ github.event.after }}
+      run: |
+        # Scoped by PATH, not extension (Rule 2): plugins/** and .claude-plugin/** hold the
+        # shipped payload - a .md there IS the product, not documentation about it, so an
+        # extension-based "only .md changed" rule would disable validation on the highest-risk
+        # changes. ps1_relevant is judged by extension deliberately - the PSScriptAnalyzer
+        # job's OBJECT is the .ps1 file set itself, so extension IS the right axis there; the
+        # path-not-extension trap is specific to the plugin-validate job.
+        plugin_relevant=true
+        ps1_relevant=true
+        files=""
+        determined=0
+
+        if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+          # gh resolves the PR's own merge-base diff for us - correct regardless of how many
+          # commits the PR has, and needs no local git history at all.
+          if files=$(gh pr view "${PR_NUMBER}" --json files --jq '.files[].path' 2>&1); then
+            determined=1
+          fi
+        elif [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+          if [ -n "${BEFORE_SHA}" ] && [ "${BEFORE_SHA}" != "0000000000000000000000000000000000000000" ]; then
+            if files=$(gh api "repos/${GITHUB_REPOSITORY}/compare/${BEFORE_SHA}...${AFTER_SHA}" --jq '.files[].filename' 2>&1); then
+              determined=1
+            fi
+          fi
+        fi
+
+        if [ "$determined" = "1" ]; then
+          echo "Changed files:"
+          echo "$files"
+          if printf '%s\n' "$files" | grep -Eq '^(plugins/|\.claude-plugin/)'; then
+            plugin_relevant=true
+          else
+            plugin_relevant=false
+          fi
+          if printf '%s\n' "$files" | grep -Eq '\.ps1$'; then
+            ps1_relevant=true
+          else
+            ps1_relevant=false
+          fi
+        else
+          echo "Could not determine the changed file set for event '${GITHUB_EVENT_NAME}' (force-push, first push, or a failed API call) - failing closed: the calling job will run its full steps."
+          # $files holds the failed command's stderr (captured via 2>&1) - print it so the
+          # failure names itself in the log instead of being swallowed.
+          if [ -n "$files" ]; then
+            echo "Underlying error: $files"
+          fi
+        fi
+
+        echo "plugin_relevant=$plugin_relevant" >> "$GITHUB_OUTPUT"
+        echo "ps1_relevant=$ps1_relevant" >> "$GITHUB_OUTPUT"
+        echo "Decision: plugin_relevant=$plugin_relevant ps1_relevant=$ps1_relevant (event=${GITHUB_EVENT_NAME})"

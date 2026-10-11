@@ -1,0 +1,20 @@
+{
+  "name": "fluyt",
+  "interface": {
+    "displayName": "Fluyt"
+  },
+  "plugins": [
+    {
+      "name": "fluyt",
+      "source": {
+        "source": "local",
+        "path": "./plugins/fluyt"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

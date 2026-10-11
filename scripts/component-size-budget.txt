@@ -1,0 +1,56 @@
+# Fluyt component size budgets
+#
+# WHAT THIS IS: the per-file byte budgets check [12] in scripts/validate-local.ps1 enforces for
+# every Markdown file directly in a shipped skill directory (plugins/*/skills/*/*.md - SKILL.md plus
+# the reference files a skill splits out, in scope; a skill's templates/ subdirectory is
+# one level deeper and NOT budgeted) and every canonical role (plugins/*/agents/*.md). Every lane
+# that loads one of these files pays for ALL of it on EVERY load, and without a cap, files regrow
+# silently. This is a RATCHET, not a target: it stops silent growth; it does not demand a trim.
+#
+# THE FORMULA (DECISIONS.md, 2026-10-11): a file's budget is its current
+# measured size x 1.05, rounded UP to the next 100 bytes - i.e. ceil(size * 1.05 / 100) * 100.
+# "Measured size" is the UTF-8 byte count of the file with CR (0x0D) bytes excluded, so a Windows
+# checkout and Linux CI measure the same number (see the [12] comment in the script).
+#
+# THE MAINTENANCE RULE:
+#   - RAISING a line is a DELIBERATE act. A file that outgrows its budget fails the gate; the
+#     remedies are to trim it, or to raise its line here - and the reason for the raise goes in
+#     the PR. Re-apply the formula to the new size; do not round generously.
+#   - LOWERING follows when a file shrinks: the gate WARNs (non-blocking) when a budget sits above
+#     the formula's value for the file's current size, and names the number to set. Take it - that
+#     is what makes this a ratchet.
+#   - A NEW skill, skill reference file or agent needs its own line here: the gate FAILs on an
+#     in-scope file with no budget. A removed or renamed file's line must go too: the gate FAILs on
+#     a stale line.
+#
+# FORMAT: one entry per line, '<repo-relative path, forward slashes> <budget in bytes>', separated
+# by whitespace. Blank lines and lines starting with '#' are ignored. Paths are matched exactly and
+# case-sensitively; a path may appear only once. Keep entries sorted by path and ASCII-only (this
+# file is read on PowerShell 5.1 hosts too - see plugin-vocabulary-allowlist.txt's ENCODING note).
+
+plugins/fluyt/agents/developer.md 19700
+plugins/fluyt/agents/preflight-reviewer.md 26600
+plugins/fluyt/agents/product-owner.md 9000
+plugins/fluyt/agents/scrum-master.md 9800
+plugins/fluyt/agents/tech-debt-reviewer.md 8500
+plugins/fluyt/agents/test-writer.md 14600
+plugins/fluyt/skills/adopt-conventions/SKILL.md 43600
+plugins/fluyt/skills/agent-liveness/SKILL.md 19200
+plugins/fluyt/skills/backlog/SKILL.md 14400
+plugins/fluyt/skills/branch-protection/SKILL.md 19200
+plugins/fluyt/skills/dispatch-role/SKILL.md 5700
+plugins/fluyt/skills/forge-azure-devops/SKILL.md 11700
+plugins/fluyt/skills/handover/SKILL.md 11800
+plugins/fluyt/skills/hook-authoring/SKILL.md 11200
+plugins/fluyt/skills/hub/SKILL.md 17600
+plugins/fluyt/skills/install-refresh-plugin/SKILL.md 22700
+plugins/fluyt/skills/orchestrator/SKILL.md 9000
+plugins/fluyt/skills/release/SKILL.md 23700
+plugins/fluyt/skills/report-upstream/SKILL.md 8500
+plugins/fluyt/skills/scrum/SKILL.md 9400
+plugins/fluyt/skills/ship-work-item/SKILL.md 76600
+plugins/fluyt/skills/ship-work-item/closing-keyword-grep.md 2900
+plugins/fluyt/skills/ship-work-item/known-failure-modes.md 2200
+plugins/fluyt/skills/ship-work-item/parallel-work.md 6600
+plugins/fluyt/skills/ship-work-item/portability.md 2300
+plugins/fluyt/skills/versioning-and-changelog/SKILL.md 8600

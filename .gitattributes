@@ -1,0 +1,10 @@
+# Normalize line endings: LF in repo and working tree (Markdown/JSON prefer LF).
+* text=auto eol=lf
+
+# Windows scripts keep CRLF so cmd/PowerShell edge cases don't bite.
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+
+# Binary assets
+*.png binary
+*.webp binary

@@ -1,0 +1,6 @@
+{
+  "worktree": {
+    "baseRef": "fresh"
+  },
+  "autoCompactEnabled": true
+}

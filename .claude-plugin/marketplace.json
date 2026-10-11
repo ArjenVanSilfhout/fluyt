@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "fluyt",
+  "owner": { "name": "Fluyt contributors" },
+  "metadata": {
+    "description": "A client-agnostic agentic-development process for Claude Code: the backlog, ship, review, release, and retro skeleton any project builds on."
+  },
+  "plugins": [
+    {
+      "name": "fluyt",
+      "source": "./plugins/fluyt",
+      "description": "Client-agnostic delivery process: ship-work-item ritual, GitHub-Issues backlog conventions, release ritual, retrospectives, versioning discipline, six team subagents, and an adopt-conventions scaffolding skill.",
+      "category": "workflow",
+      "license": "MIT",
+      "tags": ["process", "workflow", "delivery", "agentic"]
+    }
+  ]
+}

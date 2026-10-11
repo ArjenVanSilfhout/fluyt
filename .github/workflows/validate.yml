@@ -1,0 +1,267 @@
+name: validate
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+# Deny-all token default: with no top-level `permissions:` the GITHUB_TOKEN takes the repo's
+# default scopes, which can be read-write. `{}` grants nothing, so a job added later starts with no
+# scopes and must opt in itself, in its own `permissions:` block, naming exactly what it needs.
+# Only `pull_request` (never `pull_request_target`) triggers this workflow, so a fork PR runs with a
+# read-only token and no secrets; check [15] of scripts/validate-local.ps1 pins all of this.
+permissions: {}
+
+# Cancel superseded runs on the same ref - but only PR runs (branch-protection skill §5):
+# superseding an in-flight PR run is free, whereas cancelling a `dev` / `main` push run would leave
+# a merged commit unverified.
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # ONE JOB, ON PURPOSE: GitHub bills every job rounded UP to a whole minute, so the JOB COUNT is
+  # the bill. `claude plugin validate`, `markdownlint` and `PSScriptAnalyzer` are named steps below;
+  # `detect changed paths` is the composite action .github/actions/detect-changes.
+  #
+  # The job `name:` is intended as the required status check on `dev` once branch protection is set
+  # (classic branch protection; read it with `gh api repos/{owner}/{repo}/branches/dev/protection
+  # --jq .required_status_checks.contexts`). Treat it as an API surface: renaming it makes the
+  # required context never report, which deadlocks every PR. Splitting a step back out into its own
+  # job does NOT make it required unless its name is added to that set.
+  #
+  # Failure semantics match separate jobs: every step after checkout carries `!cancelled()`,
+  # so a red step never stops the independent checks after it from running and reporting in the
+  # log, and any red step fails the job. The fast-path gates read `!= 'false'` (not `== 'true'`) so
+  # that a detect step that failed outright - outputs empty - runs everything: fail-closed.
+  local-invariants:
+    name: local invariants (validate-local.ps1)
+    runs-on: ubuntu-latest
+    # The detect-changes action reads the PR's file list / the push compare via `gh`.
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      # The lint/validate steps run on the checkout's DEFAULT ref - on a pull_request event that is
+      # the synthetic refs/pull/<n>/merge commit, i.e. what `dev` would become. The invariant gate further down re-pins to the PR's real head (see there).
+      - uses: actions/checkout@v7
+        with:
+          # Check [11] compares this branch's commits against `dev` and scans EVERY commit and
+          # annotated tag for no-reply emails, so it needs real history AND tags.
+          # The default shallow clone cannot resolve `dev..HEAD` and the check would report NOT RUN
+          # on every PR - a gate that never fires in the environment where the violation is
+          # introduced is decorative. Accepted cost: a full clone on every run of this job.
+          fetch-depth: 0
+          # Explicit: tags are part of the no-reply scan; do not rely on fetch-depth's side effect.
+          fetch-tags: true
+
+      # Never gated on the diff itself - it decides which of the steps below run (Rule 1).
+      - name: Detect changed paths (docs-only fast path)
+        id: changes
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/detect-changes
+
+      # --- gitleaks secret scan --------------------------------------------------------
+      # Scans the FULL history (fetch-depth: 0 above), every commit, every file type. Deliberately
+      # NOT behind the docs-only fast path: a secret can land in any file, so a path-gated scan
+      # would be blind exactly where it matters. Installed from the pinned release tarball with a
+      # SHA-256 check (published in the release's gitleaks_8.30.1_checksums.txt) instead of the
+      # gitleaks-action: no third-party action to trust, no license/org-key question, no extra token
+      # permissions. Bump = new version in the URL + the new hash from that release's checksums file.
+      # --redact: CI logs of a public repo are public, so a finding must never echo the secret; -v still
+      # prints rule id / file / commit / fingerprint. Exit code 1 on any finding fails the job.
+      - name: gitleaks secret scan (full history)
+        if: ${{ !cancelled() }}
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          set -euo pipefail
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL -o "$RUNNER_TEMP/$archive" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/$archive" | sha256sum -c -
+          mkdir "$RUNNER_TEMP/gitleaks"
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP/gitleaks" gitleaks
+          "$RUNNER_TEMP/gitleaks/gitleaks" git . --redact --no-banner --no-color -v
+
+      # --- markdownlint ------------------------------------------------------------------------
+      - name: markdownlint
+        if: ${{ !cancelled() }}
+        uses: DavidAnson/markdownlint-cli2-action@v24
+        with:
+          globs: '**/*.md'
+
+      # --- claude plugin validate -------------------------------------------------------------
+      - name: Set up Node
+        if: ${{ !cancelled() && steps.changes.outputs.plugin_relevant != 'false' }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Install Claude Code
+        if: ${{ !cancelled() && steps.changes.outputs.plugin_relevant != 'false' }}
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Skip reason - claude plugin validate (docs-only diff)
+        if: ${{ !cancelled() && steps.changes.outputs.plugin_relevant == 'false' }}
+        run: |
+          echo "Nothing under plugins/** or .claude-plugin/** changed - skipping the Claude Code install and both validate steps."
+
+      # plugin.json is versionless BY DESIGN (track-main invariant): a version field can silently
+      # block consumer auto-updates (DECISIONS.md, 2026-10-11). This strict call descends into
+      # plugin.json, surfacing the "No version specified" warning; it stays --strict and tolerates
+      # ONLY that one known warning - any other warning or any error still fails the build. Keeping
+      # --strict is NOT about the 1024-char description cap, which this validator does not enforce
+      # (see the NOTE below). Do NOT "fix" this by adding a version field to plugin.json, and do NOT
+      # drop --strict here: doing so
+      # would stop failing this step on any OTHER manifest-level warning it can currently catch.
+      # NOTE: this step validates plugin.json/marketplace.json manifests only - it does NOT
+      # read SKILL.md or agent frontmatter at all, so it does not enforce the 1024-character
+      # description cap (as of claude CLI 2.1.220). That cap is asserted only by the local gate's
+      # [4]/[5] check (scripts/validate-local.ps1) - it is not covered here.
+      # ADVICE BLOCK: newer CLIs print an "Advice (does not
+      # change the verdict):" block between the warnings and the verdict line. It is verdict-neutral
+      # by its own wording, so the awk below drops it - the header plus the INDENTED lines under it,
+      # up to the first non-indented line (normally the verdict) - BEFORE the remainder check;
+      # warnings and errors still fail closed exactly as above. It runs on the RAW output, before
+      # whitespace stripping, because indentation is the only thing telling an advice item from a
+      # header: any un-indented line inside the span (an error, a new section, a renamed verdict)
+      # ends the skip and so still fails closed. Glyphs match as [^[:space:]]+, never literally -
+      # the CLI picks them from TERM (ℹ/✘ in CI; i/× under TERM=linux, the console).
+      # The version-nag greps below match glyphs the same way, the rest of each line exactly.
+      # Rejected: pinning the CLI, and adding the README install line it suggests.
+      - name: Validate the marketplace (strict)
+        if: ${{ !cancelled() && steps.changes.outputs.plugin_relevant != 'false' }}
+        run: |
+          set +e
+          output=$(claude plugin validate . --strict 2>&1)
+          status=$?
+          set -e
+          echo "$output"
+          if [ "$status" -eq 0 ]; then
+            exit 0
+          fi
+          normalized=$(printf '%s\n' "$output" \
+            | awk '
+                /^[^[:space:]]+ Advice \(does not change the verdict\):[[:space:]]*$/ { skip = 1; next }
+                skip && /^[^[:space:]]/ { skip = 0 }
+                !skip { print }
+              ' \
+            | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')
+          remainder=$(printf '%s\n' "$normalized" \
+            | grep -Ev '^Validating marketplace manifest: ' \
+            | grep -Ev '^[^[:space:]]+ Found [0-9]+ warnings?:$' \
+            | grep -Ev '^[^[:space:]]+ plugins\[0\] plugin\.json → version: No version specified\. Consider adding a version following semver \(e\.g\., "1\.0\.0"\)$' \
+            | grep -Ev '^[^[:space:]]+ Validation failed \(--strict treats warnings as errors\)$' \
+            | grep -Ev '^$' \
+            || true)
+          if [ -n "$remainder" ]; then
+            echo "Unexpected claude plugin validate output beyond the known version-nag warning and the Advice block - failing closed:"
+            echo "$remainder"
+            exit 1
+          fi
+          exit 0
+
+      # Per-plugin validation runs --strict too, same exception as the marketplace step above:
+      # --strict promotes the "No version specified" warning to an error. Omitting `version` is
+      # deliberate (track-main - a stale explicit version silently blocks consumer auto-updates), so
+      # this step applies the tolerate-only-the-nag pattern of the marketplace step above:
+      # the same exit-status handling, Advice-block skip and whitespace normalization, tolerating
+      # ONLY that one warning (plus the header, the "Found N warning(s)" line and the strict verdict
+      # line); any other warning or error fails closed. Per-plugin output differs from the
+      # marketplace call's: the header reads "Validating plugin manifest: <path>" and the nag line
+      # carries no `plugins[0] plugin.json →` prefix, just "<glyph> version: No version ...".
+      # Every plugin is validated before the step exits, so one failure does not hide another.
+      # Still manifest-only: it does NOT read SKILL.md or agent frontmatter. Do NOT add a
+      # version field to plugin.json, and do NOT drop --strict here.
+      - name: Validate each plugin (strict)
+        if: ${{ !cancelled() && steps.changes.outputs.plugin_relevant != 'false' }}
+        run: |
+          check_plugin() {
+            set +e
+            output=$(claude plugin validate "$1" --strict 2>&1)
+            status=$?
+            set -e
+            echo "$output"
+            if [ "$status" -eq 0 ]; then
+              return 0
+            fi
+            normalized=$(printf '%s\n' "$output" \
+              | awk '
+                  /^[^[:space:]]+ Advice \(does not change the verdict\):[[:space:]]*$/ { skip = 1; next }
+                  skip && /^[^[:space:]]/ { skip = 0 }
+                  !skip { print }
+                ' \
+              | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')
+            remainder=$(printf '%s\n' "$normalized" \
+              | grep -Ev '^Validating plugin manifest: ' \
+              | grep -Ev '^[^[:space:]]+ Found [0-9]+ warnings?:$' \
+              | grep -Ev '^[^[:space:]]+ version: No version specified\. Consider adding a version following semver \(e\.g\., "1\.0\.0"\)$' \
+              | grep -Ev '^[^[:space:]]+ Validation failed \(--strict treats warnings as errors\)$' \
+              | grep -Ev '^$' \
+              || true)
+            if [ -n "$remainder" ]; then
+              echo "Unexpected claude plugin validate output for $1 beyond the known version-nag warning and the Advice block - failing closed:"
+              echo "$remainder"
+              return 1
+            fi
+            return 0
+          }
+          failed=0
+          for dir in plugins/*/; do
+            echo "== validating $dir =="
+            check_plugin "$dir" || failed=1
+          done
+          exit "$failed"
+
+      # --- PSScriptAnalyzer -------------------------------------------------------------------
+      # Its OBJECT is the .ps1 file set itself, so gating by file extension (rather than by path
+      # prefix, as the plugin-validate steps do) is the correct axis here - see the comment in
+      # .github/actions/detect-changes/action.yml for why the two use different rules.
+      - name: PSScriptAnalyzer (fail on Warning or worse)
+        if: ${{ !cancelled() && steps.changes.outputs.ps1_relevant != 'false' }}
+        shell: pwsh
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+          $results = Get-ChildItem -Recurse -Filter *.ps1 |
+            ForEach-Object { Invoke-ScriptAnalyzer -Path $_.FullName -Severity Warning, Error }
+          if ($results) {
+            $results | Format-Table -AutoSize | Out-String | Write-Host
+            Write-Error "PSScriptAnalyzer found $($results.Count) issue(s) at Warning or above."
+            exit 1
+          }
+          Write-Host "PSScriptAnalyzer: clean."
+      - name: Skip reason - PSScriptAnalyzer (no .ps1 changed)
+        if: ${{ !cancelled() && steps.changes.outputs.ps1_relevant == 'false' }}
+        shell: pwsh
+        run: |
+          Write-Host "No .ps1 file changed - skipping the PSScriptAnalyzer install and analysis step."
+
+      # --- local invariants (validate-local.ps1) ----------------------------------------------
+      # On a pull_request event the checkout above is the synthetic refs/pull/<n>/merge ref, which
+      # layers a forge-authored merge commit on top of the branch's real commits. That inflates
+      # check [11]'s "N commit(s) ahead of 'origin/dev'" count by one vs the same branch checked
+      # out locally - and the count is the tell distinguishing "check ran" from "check never
+      # executed", so a silently-wrong count defeats its own purpose. So re-pin to the PR's real
+      # head here (the merge commit's second parent, already in the full-depth clone); on a push
+      # event there is no pull_request context, so the expression degrades to github.sha (the
+      # pushed head, already checked out) - unchanged behaviour there. No step above writes to the
+      # working tree, so the switch is clean.
+      - name: Pin the PR's real head for check [11]
+        if: ${{ !cancelled() }}
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: git checkout --detach "$HEAD_SHA"
+
+      # Runs the SAME structural + invariant gate the maintainer runs locally: the
+      # zero-project-facts forbidden-strings grep, the Claude no-version invariant,
+      # Codex strict-semver/marketplace/skill/role-adapter checks, manifest/frontmatter/hooks
+      # structure, CHANGELOG version consistency, manifest-dir purity, commit identity,
+      # and per-file SKILL.md + agent byte budgets.
+      # The Codex checks are intentionally additive to the authoritative Claude validation steps above.
+      - name: Run the invariant gate
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        run: ./scripts/validate-local.ps1

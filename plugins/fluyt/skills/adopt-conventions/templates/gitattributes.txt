@@ -1,0 +1,14 @@
+# .gitattributes template — LF-normalised repo with CRLF Windows scripts.
+# Copy into your repo's .gitattributes (merge with any existing rules). Add binary types your
+# project uses.
+
+# Normalize line endings: LF in repo and working tree.
+* text=auto eol=lf
+
+# Windows scripts keep CRLF so cmd/PowerShell edge cases don't bite.
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+
+# Binary assets (extend for your project — e.g. .pdf .zip .woff2).
+*.png binary
+*.webp binary

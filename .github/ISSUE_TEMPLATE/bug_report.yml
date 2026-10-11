@@ -1,0 +1,72 @@
+name: Bug report
+description: A shared fluyt component (skill, agent, hook, or template) is broken or wrong.
+title: "[bug] "
+labels: ["bug", "from-consumer"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        You are filing a bug against the **shared fluyt plugin** — not your own project's
+        backlog. For a work item in your own repo, use that repo's issues instead.
+  - type: input
+    id: from-repo
+    attributes:
+      label: From (your repo, optional)
+      description: Which project are you filing from? Leave blank for a private repo.
+      placeholder: your-org/your-repo
+    validations:
+      required: false
+  - type: dropdown
+    id: client
+    attributes:
+      label: Client
+      description: Which agent client were you using?
+      options:
+        - Claude Code
+        - Codex
+        - both
+    validations:
+      required: true
+  - type: dropdown
+    id: component-kind
+    attributes:
+      label: Component kind
+      options:
+        - skill
+        - agent
+        - hook
+        - template
+        - docs
+        - other
+    validations:
+      required: true
+  - type: input
+    id: component-name
+    attributes:
+      label: Component name
+      description: The exact skill / agent / hook / template name.
+      placeholder: "ship-work-item, preflight-reviewer, hooks.json, CLAUDE-project-facts.md"
+    validations:
+      required: true
+  - type: textarea
+    id: expected-actual
+    attributes:
+      label: Expected vs actual
+      description: What you expected the component to do, and what it did instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The smallest command / step / prompt that triggers it, plus any message.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Client and plugin version
+      description: Client version, plus the plugin version from `CHANGELOG.md` ("Current version") or `codex plugin list`.
+      placeholder: "Claude Code 2.1.x, fluyt 1.0.0"
+    validations:
+      required: true

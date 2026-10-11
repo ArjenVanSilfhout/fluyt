@@ -1,0 +1,19 @@
+# OS cruft
+Thumbs.db
+.DS_Store
+*.tmp
+*~
+
+# Local Claude Code overrides — never committed
+.claude/settings.local.json
+
+# Agent worktrees (harness-managed isolated checkouts for subagents) — never commit these.
+.claude/worktrees/
+
+# Scrum local-only feeds — friction notes (retro-log.local.md) and the SubagentStop hook's dispatch
+# feed (dispatch.local.md). One glob covers both and any future *.local.md stream; never committed.
+docs/process/*.local.md
+
+# Never track an MCP server file at any depth — user secrets reach a plugin only through
+# userConfig with sensitive: true. The validation gate fails if one is ever tracked.
+.mcp.json

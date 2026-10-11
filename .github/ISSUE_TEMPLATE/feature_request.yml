@@ -1,0 +1,63 @@
+name: Feature request
+description: Ask for a new capability, a new shared skill/agent/template, or an improvement to an existing one.
+title: "[feat] "
+labels: ["enhancement", "from-consumer"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        You are requesting a feature for the **shared fluyt plugin**. A good upstream feature
+        helps more than one project — a one-repo-only need is usually a local skill in that repo.
+        **New skills are generally not accepted**; open a request only for a real gap, and describe
+        the problem first. For open-ended ideas, use Discussions instead.
+  - type: input
+    id: from-repo
+    attributes:
+      label: From (your repo, optional)
+      description: Which project are you filing from? Leave blank for a private repo.
+      placeholder: your-org/your-repo
+    validations:
+      required: false
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - new skill
+        - new agent
+        - new template
+        - existing skill
+        - existing agent
+        - hook
+        - docs
+        - other
+    validations:
+      required: true
+  - type: input
+    id: component-name
+    attributes:
+      label: Component (if it already exists)
+      placeholder: "backlog, developer, ..."
+    validations:
+      required: false
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem would this solve? What do you do today without it?
+    validations:
+      required: true
+  - type: textarea
+    id: desired
+    attributes:
+      label: Desired behaviour
+      description: A sketch of how the shared component should behave.
+    validations:
+      required: true
+  - type: textarea
+    id: why-shared
+    attributes:
+      label: Why it belongs in the shared plugin
+      description: Which other project(s) would also benefit, and why this is not just a local skill.
+    validations:
+      required: true
