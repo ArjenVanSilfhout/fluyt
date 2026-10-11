@@ -41,9 +41,6 @@ pick, PR/merge, the closing-keyword machinery, the CI gate, branch protection - 
 forge's adapter skill (`forge-azure-devops` for Azure DevOps); this ritual's process and stops stay
 authoritative on every forge.
 
-Notation: `⇒` = implies (what follows, or what a system does); `→` = then (the next step, or the
-action you take).
-
 ## 0. Before you start
 
 1. **Pick the next item** using the `backlog` skill's selection order (tier labels from Project
