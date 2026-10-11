@@ -46,6 +46,8 @@ Fluyt ships itself with its own process.
 
 **Requires** a GitHub repo with Issues and an authenticated `gh` CLI (or Azure DevOps with an
 authenticated `az`, via `forge-azure-devops`), and a plugin-capable Claude Code or Codex client.
+On Claude Code, the five hooks also need **Node.js 18 or later** on `PATH`: each is a `node -e`
+one-liner, so without it their Node logic is inert, and each says so whenever it is skipped.
 The full guide is [`docs/consumer-integration.md`](docs/consumer-integration.md).
 
 ### 1. Install the plugin
@@ -102,10 +104,13 @@ On Codex: `$fluyt:ship-work-item`.
 
 ### Staying current
 
-Update the plugin (`/plugin marketplace update fluyt` on Claude Code;
-`codex plugin marketplace upgrade fluyt`, then `codex plugin add fluyt@fluyt`,
-on Codex), then run `adopt-conventions` in re-sync mode ("re-sync the conventions"). It proposes
-what changed and applies nothing without your yes.
+**Claude Code**, three steps, each needed: `claude plugin marketplace update fluyt` refreshes the
+marketplace clone; `claude plugin update fluyt@fluyt` re-points the install record at the new
+payload (for a repo with a project-scoped record, run it from that folder with `--scope project`);
+then restart Claude Code, because a running session can keep the payload it loaded. **Codex:**
+`codex plugin marketplace upgrade fluyt`, then `codex plugin add fluyt@fluyt`, then start a new
+task. On either client, then run `adopt-conventions` in re-sync mode ("re-sync the conventions").
+It proposes what changed and applies nothing without your yes.
 
 ## What's inside
 
@@ -184,7 +189,8 @@ Five Claude Code hooks, in [`hooks/hooks.json`](plugins/fluyt/hooks/hooks.json):
 - **echoes** the staged CHANGELOG entry's date against today's UTC date;
 - **logs** each finished sub-agent to a local feed that `scrum` reads.
 
-Every hook fails open: if it can't decide, it lets the command through.
+Every hook fails open: if it can't decide, it lets the command through, and it says so when Node
+is missing (see *Trust and data*).
 
 Ten templates ship with [`adopt-conventions`](plugins/fluyt/skills/adopt-conventions/SKILL.md)
 and [`branch-protection`](plugins/fluyt/skills/branch-protection/SKILL.md): a Project Facts
@@ -253,6 +259,9 @@ instruction loading.**
     CHANGELOG echo, `git diff --cached` and `git show`. They write nothing.
   - `SubagentStop` appends one line (timestamp, sub-agent type) to `docs/process/dispatch.local.md`
     in your repo, creating `docs/process/` if needed. It is the only write any hook makes.
+  - **Without Node.js** on `PATH`, no hook's Node logic runs and nothing is blocked: each
+    `PreToolUse` hook prints a one-line skip message, and `SubagentStop` still writes its line,
+    tagged `(fallback: node not on PATH)`.
   - **Network:** two hooks call `gh` (`gh pr list` before a branch delete, `gh pr view` before a
     merge). That is a call to GitHub using your own `gh` login, and nothing else.
   - **Codex runs no hooks.**

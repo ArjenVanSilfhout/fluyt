@@ -3,9 +3,9 @@
 ## What this repo is
 
 A **dual Claude Code + Codex plugin marketplace**. It ships ONE plugin, `fluyt`:
-client-agnostic agentic-development process assets (skills, canonical team roles, a Claude hook, and
-scaffolding templates) that **any project** imports instead of re-implementing the same delivery
-ritual. Nothing in it is specific to one kind of project.
+client-agnostic agentic-development process assets (skills, canonical team roles, five Claude Code
+hooks, and scaffolding templates) that **any project** imports instead of re-implementing the same
+delivery ritual. Nothing in it is specific to one kind of project.
 
 **There is no build step. The git repo IS the artifact.** Both clients install from this repo and
 track `main` (pinned via marketplace ref — **not** the default branch, which is `dev`). Claude's

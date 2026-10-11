@@ -14,9 +14,96 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.0.0**
+Current version: **1.3.1**
 
 ---
+
+## [1.3.1] — 2026-10-11
+
+**Tooling (gate):** the local gate no longer lints or scans git-ignored paths in its two walks from
+the repo root (checks [9] and [10]); CI never sees those files, so a local-only hand-over or scratch
+copy can no longer turn the gate RED on its own.
+
+The ignored set comes from `git check-ignore` run in argv batches per walk (never `--stdin`, which
+from PowerShell on Windows yields no usable match because of CRLF line endings); if git cannot
+answer, the walk scans everything as before and says so with one WARN per walk, never skipping
+silently. Tracked files lint exactly as before, and the green line now counts what it linted and
+skipped. PATCH: scripts only.
+
+## [1.3.0] — 2026-10-11
+
+**Hooks (hooks.json, READMEs):** every shipped hook now checks for `node` first and, when it is
+missing, still lets the work through but says so; Node.js 18 or later is declared as the
+prerequisite for the hooks.
+
+Each `PreToolUse` hook prints a one-line `systemMessage` naming the guard that did not run, and the
+`SubagentStop` feed line is tagged `(fallback: node not on PATH)`. With node present every hook
+produces byte-for-byte the same output as before, verified by running the saved commands from
+`hooks.json` with and without node on PATH, with a blocked commit as the control. The scrum skill
+and the scrum-master role name the new tag; both READMEs and the consumer guide declare the
+prerequisite, and the consumer guide now counts the hooks correctly. MINOR: hook output changes.
+
+## [1.2.4] — 2026-10-11
+
+**CI (dev ruleset):** the `local invariants (validate-local.ps1)` job is now a required status check
+on `dev`, so a merge waits for a green run instead of landing the instant a PR is ready.
+
+The ruleset is renamed `dev: PR-only, CI-green`; the workflow and action comments describe the
+ruleset read instead of classic branch protection. The context had reported on every PR into `dev`
+so far before being required, per the `branch-protection` skill. PATCH: CI configuration.
+
+## [1.2.3] — 2026-10-11
+
+**Tooling (gate, agent-liveness):** the one drive-letter path root in the plugin vocabulary
+allowlist is gone, and the prose example that needed it now uses a placeholder root.
+
+The path signal of the gate keeps only the root segment of a drive-letter path, so that entry
+exempted every path under the root, not just the one example. The example in `agent-liveness` keeps
+its point (a backslash read as a regex escape) without a real drive letter. PATCH: a script asset
+and illustrative wording; no instruction a consumer follows changes.
+
+## [1.2.2] — 2026-10-11
+
+**Docs (README):** "Staying current" now gives the full Claude Code update path: marketplace update,
+`claude plugin update fluyt@fluyt` (with `--scope project` for a project-scoped record), and a
+restart; Codex gets its new-task step.
+
+The old text stopped at the marketplace update, which refreshes the clone but not the installed
+payload, as the `install-refresh-plugin` skill already explains. PATCH: documentation only.
+
+## [1.2.1] — 2026-10-11
+
+**Docs (CLAUDE.md):** the repo description now counts the shipped hooks correctly: five Claude Code
+hooks, not one.
+
+`hooks/hooks.json` registers five (one SubagentStop, four PreToolUse on Bash), as both READMEs already
+said. PATCH: repo-side documentation only.
+
+## [1.2.0] — 2026-10-11
+
+**Fix (test-writer, ship-work-item, orchestrator):** the `test-writer` contract gains a lane-commit
+exception like the one the `developer` contract carries, and the parallel-work recipe cites it.
+
+Step 3 of the parallel-work recipe has the test-writer commit its tests in the developer worktree,
+while the role contract forbade every commit, so a role following its contract could not carry out
+the step. The contract now permits exactly that commit: only `test-dir` files, in the worktree the
+brief names, onto that branch, and only when the brief instructs it; the step says the brief must do
+so. The orchestrator skill reads the same way now: a delegate sharing the working copy does not
+commit. MINOR: a role contract and a ritual step change an instruction a consumer follows.
+
+## [1.1.0] — 2026-10-11
+
+**Fix (adopt-conventions, install-refresh-plugin):** the three shipped instructions that read the
+plugin version now name the `version` in `.codex-plugin/plugin.json`: the installed payload copy for
+the provenance stamps, the marketplace source copy at the release ref for the Codex pin check.
+
+The payload ships no CHANGELOG (its root holds `LICENSE`, `README.md`, `agents/`, `hooks/`, `skills/`
+and the two manifests), so the previous reads could not be followed as written: the provenance-marker
+comment in the Project Facts template, the provenance step of `adopt-conventions`, and the Codex pin
+check of `install-refresh-plugin`. The manifest `version` mirrors this CHANGELOG, and
+`install-refresh-plugin` already names it as the readable installed release. The Codex check now
+compares the installed version with the version in the manifest at the release ref for equality.
+MINOR: an instruction a consumer follows changed.
 
 ## [1.0.0] — 2026-10-11
 

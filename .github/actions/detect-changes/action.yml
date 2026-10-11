@@ -6,7 +6,7 @@ description: >-
 
 # a local composite action run as a named step, because a separate job bills a full rounded-up
 # minute per run. Its one caller is the single `local invariants (validate-local.ps1)` job
-# in validate.yml, which is intended as the required check on `dev`: that job must keep running
+# in validate.yml, which is the required check on `dev`: that job must keep running
 # unconditionally
 # and gate only its expensive STEPS on these outputs (Rule 1 - gate the steps, never the job: a
 # job-level `if:` that evaluates false makes the job *skipped*, the identical Pending-forever trap

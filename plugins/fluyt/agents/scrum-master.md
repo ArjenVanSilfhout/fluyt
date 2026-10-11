@@ -65,7 +65,8 @@ which is the far-behind case. Only the identity half is being made honest, not s
 - **Dispatch feed** — `docs/process/dispatch.local.md` if present. Treat it as a **cadence tripwire**
   that something ran, **not** a metric: the `SubagentStop` hook appends a timestamp per subagent finish
   (enriched with the subagent's type when its stdin JSON carries one, else tagged `(untyped)`, and
-  tagged `(fallback)` when it falls back fail-soft), but it still over-counts (nesting depth,
+  tagged `(fallback)` when it falls back fail-soft — `(fallback: node not on PATH)` when `node` is
+  missing, per the plugin README's *Hooks* section), but it still over-counts (nesting depth,
   resumes, untyped stamps — **only typed lines correspond to Task dispatches**; see the `scrum`
   skill's *Dispatch feed* bullet) and carries no blocker content. Stamps
   carry an explicit offset (e.g. `2025-01-01T18:00:00-0500`); compare by instant, not by assumed
