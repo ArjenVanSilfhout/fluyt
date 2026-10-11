@@ -88,9 +88,3 @@ AgentRouting
 # NAME or path alongside them still trips the other two signals.
 node
 npm
-
-# --- illustrative, non-machine-specific paths --------------------------------------------------
-# A generic Windows path root used to explain why -match mis-reads backslashes. It names no repo,
-# no machine and no consumer; a real machine path (e.g. a full C:\...\<project> checkout) produces a
-# DIFFERENT matched root and is still flagged.
-C:\Repos\
