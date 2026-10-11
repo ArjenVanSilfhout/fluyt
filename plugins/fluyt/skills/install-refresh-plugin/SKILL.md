@@ -97,6 +97,23 @@ in-place cache overwrite leaves the recorded SHA asserting contents it no longer
 `update` mints a new correctly-named directory instead. Prefer `update` wherever it exists; the
 paths below are the fallback for clients or states where it does not.
 
+**One `--scope project` record per session folder: `update` moves only ONE** (measured on Claude
+Code 2.1.296). A `.claude/settings.json` per folder gives each its own record, and `update` from a
+later folder resolved to the **first** folder's, reporting "already at the latest". Stale records
+differ in `gitCommitSha` from the refreshed one (`<folder>` below: its `projectPath`). **The agent
+hands these steps to the user and never runs the apply;** restart afterwards.
+
+```sh
+F=~/.claude/plugins/installed_plugins.json; cp "$F" "$F.bak"   # a
+S='const fs=require("fs"),[f,k,p]=process.argv.slice(1),j=JSON.parse(fs.readFileSync(f,"utf8")),
+r=j.plugins[k].find(x=>x.projectPath==p);for(const x of j.plugins[k])if(x.scope=="project"&&
+x.gitCommitSha!=r.gitCommitSha)for(const c of["installPath","version","gitCommitSha"])
+{console.log(x.projectPath,c,x[c],"->",r[c]);x[c]=r[c]}
+if(process.env.APPLY)fs.writeFileSync(f,JSON.stringify(j,null,2))'
+node -e "$S" "$F" <plugin>@<marketplace> <folder>   # b: dry run
+APPLY=1 node -e "$S" "$F" <plugin>@<marketplace> <folder>   # c: apply
+```
+
 **Fallback — overwrite the cache from the source clone** (when the client cannot refresh through
 its own CLI), without deleting unrelated state. Paths below are relative to the client state root
 above; `<installPath>` is the absolute path recorded in the install record:
