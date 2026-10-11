@@ -24,9 +24,9 @@ jobs:
   # the bill. `claude plugin validate`, `markdownlint` and `PSScriptAnalyzer` are named steps below;
   # `detect changed paths` is the composite action .github/actions/detect-changes.
   #
-  # The job `name:` is intended as the required status check on `dev` once branch protection is set
-  # (classic branch protection; read it with `gh api repos/{owner}/{repo}/branches/dev/protection
-  # --jq .required_status_checks.contexts`). Treat it as an API surface: renaming it makes the
+  # The job `name:` IS the required status check on `dev`, via the ruleset named
+  # "dev: PR-only, CI-green" (read it with `gh api repos/{owner}/{repo}/rulesets/<id>` and look at
+  # its required_status_checks rule). Treat it as an API surface: renaming it makes the
   # required context never report, which deadlocks every PR. Splitting a step back out into its own
   # job does NOT make it required unless its name is added to that set.
   #
