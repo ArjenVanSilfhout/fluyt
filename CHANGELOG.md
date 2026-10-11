@@ -21,14 +21,16 @@ Current version: **1.1.0**
 ## [1.1.0] — 2026-10-11
 
 **Fix (adopt-conventions, install-refresh-plugin):** the three shipped instructions that read the
-plugin version now point at `.codex-plugin/plugin.json` in the installed payload.
+plugin version now name the `version` in `.codex-plugin/plugin.json`: the installed payload copy for
+the provenance stamps, the marketplace source copy at the release ref for the Codex pin check.
 
 The payload ships no CHANGELOG (its root holds `LICENSE`, `README.md`, `agents/`, `hooks/`, `skills/`
 and the two manifests), so the previous reads could not be followed as written: the provenance-marker
 comment in the Project Facts template, the provenance step of `adopt-conventions`, and the Codex pin
 check of `install-refresh-plugin`. The manifest `version` mirrors this CHANGELOG, and
-`install-refresh-plugin` already names it as the readable installed release. MINOR: an instruction a
-consumer follows changed.
+`install-refresh-plugin` already names it as the readable installed release. The Codex check now
+compares the installed version with the version in the manifest at the release ref for equality.
+MINOR: an instruction a consumer follows changed.
 
 ## [1.0.0] — 2026-10-11
 
