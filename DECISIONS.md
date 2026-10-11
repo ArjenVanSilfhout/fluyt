@@ -4,6 +4,21 @@ Short entries, newest first. Format: date · decision · why · reversibility.
 
 ---
 
+**2026-10-11 · Second budget cut, tiered by how cheaply each file trims · reversible.**
+The user's calls in the session chat, after a read-only per-skill review of what a 15% cut would
+cost:
+
+- "lower the budget by 15% on skills where it's easy to achieve it", then "also" `backlog` and the
+  handover skill;
+- "lower closing-keyword-grep, install-refresh-plugin, ship-work-item, release, hub, hook-authoring,
+  versioning-and-changelog by 9%";
+- "adopt-conventions by 6%".
+
+The agents, `agent-liveness`, `branch-protection` and `forge-azure-devops` keep their budgets. The
+review found 15% only borderline for them. Trims still land 2% under each new budget. Every removed
+span had an adversarial check for dropped logic ("for everything that was cut, do an adversarial
+check"), and its findings were restored.
+
 **2026-10-11 · Release notes are a written summary, never pasted CHANGELOG sections · reversible.**
 The user's call in the session chat: the v1.0.0 "Maiden Voyage" notes are concise and clear, while
 the v1.3.1 and v1.6.0 notes "just show the changelog for each version". Notes now summarise

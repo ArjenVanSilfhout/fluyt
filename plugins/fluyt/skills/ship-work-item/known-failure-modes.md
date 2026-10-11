@@ -14,15 +14,11 @@ and *Section* references point into that `SKILL.md`.
   closes that PR instead of merging it and takes both refs with it; hence the observed-`MERGED`
   gate on §4's cleanup step.
 - **Stale or drifted worktree agents** - an isolated agent can load ancient code (its base was the
-  release branch, far behind) or a pre-change agent definition (the change was committed too late),
-  and a base check that only confirms file existence cannot tell "based on the integration branch"
-  from "based on a feature branch that happens to contain the same files", so a worktree can sit on
-  the right commit of the *wrong* branch undetected. Hence commit-first +
-  spawn-from-synced-integration-branch + a fail-fast base check that asserts commit identity, not
-  just file existence.
+  release branch, far behind) or a pre-change agent definition (committed too late), and a base
+  check that only confirms file existence cannot tell the integration branch from a feature branch
+  that happens to contain the same files; hence §1's worktree-agent hygiene, including the
+  commit-identity base check.
 - **A shared checkout with only one of its two actors guarded** - §3's commit-guard protects the
-  *committer* from a `HEAD` that has already moved, and nothing addresses the *mover*. Running
-  `git checkout` to inspect a file while a non-isolated `developer` is live can collide with it
-  (harmless only if the agent has not written yet), and so can committing mid-flight on paths that
-  merely happen to be disjoint. Hence §1's *While a non-isolated agent is live* - `HEAD` frozen,
-  disjoint paths **checked** rather than assumed.
+  *committer*, and nothing addresses the *mover*: a `git checkout` or a commit on merely-disjoint
+  paths can collide with a live non-isolated `developer`; hence §1's *While a non-isolated agent is
+  live* (`HEAD` frozen, disjoint paths **checked** rather than assumed).
