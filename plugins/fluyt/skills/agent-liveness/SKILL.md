@@ -1,14 +1,13 @@
 ---
 name: agent-liveness
 description: >-
-  Decide whether a dispatched background sub-agent is still working, has silently died, or has already
-  handed back - without reading its transcript, and without killing a healthy one. Use when an agent
-  has been quiet longer
-  than its slice should take, when parallel worktree lanes look identical between two checks, before
-  re-dispatching a suspected-killed agent, or when deciding whether to resume a returned agent or
-  spawn fresh. Also states the two standing spawn defaults the diagnosis rests on - dispatch
-  detached, and never watch what is running - so read it before spawning, not only when a lane has
-  gone quiet.
+  Decide whether a dispatched background sub-agent is still working, has silently died, or has
+  already handed back - without reading its transcript, and without killing a healthy one. Use when
+  an agent has been quiet longer than its slice should take, when parallel worktree lanes look
+  identical between two checks, before re-dispatching a suspected-killed agent, or when deciding
+  whether to resume a returned agent or spawn fresh. Also states the two standing spawn defaults the
+  diagnosis rests on - dispatch detached, and never watch what is running - so read it before
+  spawning, not only when a lane has gone quiet.
 ---
 
 # Agent liveness - is it working, is it dead, or has it already handed back?
@@ -20,28 +19,28 @@ orchestrator is blind, and the two states look identical from outside:
   it already created; or
 - the agent is **gone** - killed at the platform level, or dead on a terminal API error after retries.
 
-Guessing wrong is expensive in both directions. Kill a working agent and you throw away its context
-and its half-finished slice; a clean `git status` is not a stall. Wait on a dead one and the lane
-stalls indefinitely - and in a parallel drain, so does everything chained behind it.
+Guessing wrong is expensive both ways. Kill a working agent and you throw away its context and its
+half-finished slice; a clean `git status` is not a stall. Wait on a dead one and the lane stalls
+indefinitely - and in a parallel drain, so does everything chained behind it.
 
-There is a **third** state, and it is not a silence at all: the agent has **already handed back**, and
-you are holding a report rather than diagnosing a gap. It is diagnosed differently - see *A returned
-agent is not a running one* - and it is the costliest of the three to misread, because no signal in this
-file can *confirm* it.
+There is a **third** state, and it is not a silence at all: the agent has **already handed back**,
+and you are holding a report rather than diagnosing a gap. It is diagnosed differently - see *A
+returned agent is not a running one* - and it is the costliest of the three to misread, because no
+signal in this file can *confirm* it.
 
 This is the **orchestrator's** half of the problem. The agent's half lives in `agents/developer.md`:
 `developer` emits a one-line checkpoint before its first edit, and its report is terminal - it never
-arms a wake-up intending to continue alone. Use that checkpoint when it exists; use this procedure when
-it does not (`test-writer`, `preflight-reviewer`, custom spawns) or when it arrived and the agent then
-went quiet.
+arms a wake-up intending to continue alone. Use that checkpoint when it exists; use this procedure
+when it does not (`test-writer`, `preflight-reviewer`, custom spawns) or when it arrived and the
+agent then went quiet.
 
 ## Dispatch detached, and never watch - the two defaults this skill owns
 
-Both rules are **stated here, once**, because both govern the same blind window this skill diagnoses.
-`ship-work-item` §1 keeps the operative default under its *Dispatch in the background* and *Do not watch
-a background agent* headings and points here for the full rule; its §4 auto-merge and approval-wait
-steps, and every other place that leans on either rule, are **applications** of them rather than
-separate rules.
+Both rules are **stated here, once**, because both govern the same blind window this skill
+diagnoses. `ship-work-item` §1 keeps the operative default under its *Dispatch in the background*
+and *Do not watch a background agent* headings and points here for the full rule; its §4 auto-merge
+and approval-wait steps, and every other place that leans on either rule, are **applications** of
+them rather than separate rules.
 
 - **Dispatch in the BACKGROUND, detached rather than blocking - that is the default, and it includes
   preflight.** A synchronous dispatch makes the orchestrator unreachable for as long as the agent
@@ -56,14 +55,14 @@ separate rules.
   watch loop orphans on session teardown, burns a turn per pass against unchanged state, and - the
   reason that outranks both - makes you unreachable for as long as it runs, which is the very cost
   backgrounding exists to remove. **The prohibition is on *watching*, not on *waiting*** - **what
-  occupies you**, not elapsed time. This is worth stating precisely because the previous bullet calls a
-  synchronous dispatch costly: a *blocking dispatch* holds the orchestrator for the agent's entire run
-  (that bullet's concern, and why background is the default), while *elapsed time* on something you are
-  simply not checking occupies nobody - different acts, not a contradiction, so this rule never forbids
-  a synchronous dispatch. Check a background result when something specific needs it - the next turn
-  that consumes it, or a silence out of proportion to the slice - never on a timer. **That second
-  trigger is what the rest of this skill is for**: everything below is how to read a silence once one
-  is worth a look.
+  occupies you**, not elapsed time. This needs stating precisely because the previous bullet calls a
+  synchronous dispatch costly: a *blocking dispatch* holds the orchestrator for the agent's entire
+  run (that bullet's concern, and why background is the default), while *elapsed time* on something
+  you are simply not checking occupies nobody - different acts, not a contradiction, so this rule
+  never forbids a synchronous dispatch. Check a background result when something specific needs it -
+  the next turn that consumes it, or a silence out of proportion to the slice - never on a timer.
+  **That second trigger is what the rest of this skill is for**: everything below is how to read a
+  silence once one is worth a look.
 - **A corollary of the second default, not a third: one bounded wait that ends your turn is
   *collecting*, not *watching*.** When a result has no next turn to land in - an orchestrator arming
   a merge as its last act, nothing else queued - start **one** background command that exits at the
@@ -85,12 +84,12 @@ diagnosing a silence - you are holding a **handback**. None of the liveness sign
 *When it returned - resume rather than re-dispatch*. Once you resume it, it is working again, and a
 fresh silence after that is diagnosed with the signals below as normal.
 
-The trap: an agent finishes a long step, arms itself a wake-up - a monitor, a poll, a "check back when
-the run lands" - and returns its interim findings. **Nothing it scheduled can bring it back.** Once an
-agent returns, its turn is over and only the orchestrator can re-enter that lane. The wake-up it armed
-is not pending work and it is not evidence that the agent is working; it is a handback with a follow-up
-attached, waiting on **you**. Left alone it produces a stall that reads exactly like liveness - the
-agent believes it is waiting, you believe it is working, and nothing is running.
+The trap: an agent finishes a long step, arms itself a wake-up - a monitor, a poll, a "check back
+when the run lands" - and returns its interim findings. **Nothing it scheduled can bring it back.**
+Once an agent returns, its turn is over and only the orchestrator can re-enter that lane. The
+wake-up it armed is not pending work and not evidence that the agent is working; it is a handback
+with a follow-up attached, waiting on **you**. Left alone it produces a stall that reads exactly
+like liveness - the agent believes it is waiting, you believe it is working, and nothing is running.
 
 Two things make it hard to spot:
 
@@ -121,7 +120,7 @@ Rank all of these **below** the next two sections. Each looks like death and is 
   subagent dispatched via `dispatch-role` exposes no such artifact. The rule below is the part that
   holds everywhere.)
 - **Never read that file to find out.** It is the full transcript; reading it will overflow your
-  context and convert a cheap diagnostic question into a lost session. Where the harness warns about
+  context and turn a cheap diagnostic question into a lost session. Where the harness warns about
   this at spawn, the warning is literal.
 - **An unchanged `git status`.** It reports *which* files differ, not *when* they changed. An agent
   refining files it already created, running a build, or sitting in a long test run produces
@@ -151,18 +150,18 @@ Two ways to get this wrong:
 
 - **Do not sweep the tree.** A tree-wide "modified in the last N minutes" search is useless in a
   fresh worktree: the checkout stamps *every* file with the checkout time, so the sweep returns the
-  entire source tree and buries the signal in noise. It reads as furious activity when there is
-  none. Narrow to the files the brief actually named.
+  entire source tree and reads as furious activity when there is none. Narrow to the files the brief
+  named.
 - **Do not read build output as work.** The build-output directories your project declares (Project
   Facts, or its `.gitignore`) are stamped by builds - including builds the agent ran long ago, and
   builds *you* ran. They are not its work product.
 
 ## When mtimes are structurally silent
 
-Mtimes answer only once the agent has started writing. A slice whose long pole runs *before* its first
-write - a baseline test run during recon, a measurement its brief told it to take, a long build to
-establish a starting point - leaves the mtime signal with nothing to report for as long as that command
-lasts. That window is precisely when a slow agent is most likely to be mistaken for a dead one.
+Mtimes answer only once the agent has started writing. A slice whose long pole runs *before* its
+first write - a baseline test run during recon, a measurement its brief told it to take, a long
+build to establish a starting point - leaves the mtime signal nothing to report while that command
+lasts. That window is when a slow agent is most likely to be mistaken for a dead one.
 
 There, and only there, a second signal exists: **is the long command the brief named actually running?**
 
@@ -182,25 +181,24 @@ segments start with `s`, `w`, `d`, `b` or `a` silently matches nothing at all.
 Four constraints, all load-bearing:
 
 - **Match the worktree path, never the program name.** In a parallel drain every lane runs the same
-  program - and so do you. A match on the program name finds a sibling lane, or your own test run, and
-  reports it as the lane you asked about. The path in the command line is what attributes a process to
-  a lane - but only when the invocation carries the path (an absolute path, or a `-C`-style path
-  argument). An agent that changes directory into its lane and runs a bare command leaves nothing to
-  match, and the check is simply silent. Where your lanes share one checkout there is nothing to
-  attribute against at all: skip this signal.
-- **Discount your own query.** The check itself contains the path, so the shell running it matches - a
-  naive command reports itself as proof of life every single time, including for a lane where nothing
-  of the agent's is running. Exclude the querying process, and discard any row that is your own shell
-  or editor; only the long command the brief named counts.
-- **It proves the command is alive, not the agent.** A command an agent launched detached outlives that
-  agent's return, so a parked lane can still show a running process. A match ends the enquiry only once
-  you have confirmed no report arrived - check that first, per *A returned agent is not a running one*.
+  program - and so do you. A match on the program name finds a sibling lane, or your own test run,
+  and reports it as the lane you asked about. The path in the command line is what attributes a
+  process to a lane - but only when the invocation carries the path (an absolute path, or a
+  `-C`-style path argument). An agent that changes directory into its lane and runs a bare command
+  leaves nothing to match, and the check is silent. Where your lanes share one checkout there is
+  nothing to attribute against: skip this signal.
+- **Discount your own query.** The check contains the path, so the shell running it matches - a
+  naive command reports itself as proof of life every time, even where nothing of the agent's is
+  running. Exclude the querying process, and discard any row that is your own shell or editor; only
+  the long command the brief named counts.
+- **It proves the command is alive, not the agent.** A command an agent launched detached outlives
+  that agent's return, so a parked lane can still show a running process. A match ends the enquiry
+  only once you have confirmed no report arrived - per *A returned agent is not a running one*.
 - **Its absence proves nothing** - the command may have finished a second ago, or never been reached.
   Absence returns you to the pair in *What death actually looks like*; it does not substitute for it.
 
-The signal answers for **the command the brief actually named**, not a fixed list. Plenty of projects
-declare no build and no test runner, and the long pole is as often a script handed to the agent in its
-brief.
+The signal answers for **the command the brief actually named**, not a fixed list: plenty of
+projects declare no build and no test runner, and the long pole is as often a script from the brief.
 
 ## What death actually looks like
 
@@ -227,15 +225,15 @@ acting. Either one alone does not.
 
 ## When it returned - resume rather than re-dispatch
 
-Re-dispatching fresh (*When it really is dead*, above) is the rule for a **killed** agent; it does not
-carry across to one that **completed**. A returned agent still holds its context. Spawning a fresh
-one to follow up on the slice it just did discards that, and invites the replacement to re-derive a
-result the first agent already established - a real hazard anywhere the convention is that a
-figure gets re-measured rather than carried forward.
+Re-dispatching fresh (*When it really is dead*, above) is the rule for a **killed** agent; it does
+not carry across to one that **completed**. A returned agent still holds its context. Spawning a
+fresh one to follow up on the slice it just did discards that, and invites the replacement to
+re-derive a result the first agent already established - a real hazard anywhere the convention is
+that a figure gets re-measured rather than carried forward.
 
-Where your client can re-enter a completed agent's context, do that instead of spawning. (On Claude Code
-that is `SendMessage`, addressed to the agent's name or ID; the capability is the rule, the tool is the
-instance.)
+Where your client can re-enter a completed agent's context, do that instead of spawning. (On Claude
+Code that is `SendMessage`, addressed to the agent's name or ID; the capability is the rule, the
+tool is the instance.)
 
 When it cannot - no resume capability in the session (on Claude Code, `SendMessage` absent from the tool
 set), or the agent's id gone after a context reset - spawn a fresh agent of the same role
@@ -265,12 +263,12 @@ one*). Don't watch a running agent - see *Dispatch detached, and never watch* ab
 rule.
 
 Check liveness when you have a **specific reason** - a silence out of proportion to the slice, or a
-dependent lane you cannot start without knowing. Then stop; the rule above already gives the cost of not
-stopping. Two checks a few minutes apart tell you exactly what one did.
+dependent lane you cannot start without knowing. Then stop; the rule above gives the cost of not
+stopping. Two checks a few minutes apart tell you what one did.
 
-Resuming is not free either - it grows that agent's transcript, so a long chain of follow-ups eventually
-costs more than the fresh spawn it saved. Prefer it for fidelity, where the context is the point; not as
-a habit.
+Resuming is not free either - it grows that agent's transcript, so a long chain of follow-ups
+eventually costs more than the fresh spawn it saved. Prefer it for fidelity, where the context is
+the point; not as a habit.
 
 If nothing is landable and nothing is dispatchable, **say so and end the turn** rather than
 re-verifying. Idle re-checks feel like progress and are not.

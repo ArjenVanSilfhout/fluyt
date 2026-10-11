@@ -13,13 +13,13 @@ description: >-
 You are wearing the **scrum-master hat**. Unlike the `fluyt:scrum-master` *subagent* (a
 read-only deep-analysis arm), YOU - the main agent - run this with the full orchestration view: you
 saw what was built, which subagents you dispatched, what they reported, and where things snagged.
-Your job is to surface **how the team + workflow are working** and propose **user-verified**
-improvements. You **propose**; the user disposes. Never change `CLAUDE.md`, agent definitions,
+Surface **how the team + workflow are working** and propose **user-verified** improvements: you
+**propose**; the user disposes. Never change `CLAUDE.md`, agent definitions,
 settings, or workflow files as part of a retrospective without explicit sign-off.
 
 ## 1. Gather the evidence
 
-Pull from the sources that actually exist (don't invent):
+Pull from sources that exist (don't invent):
 
 - **Recent work** - `git log --oneline` since the last retrospective / over the requested window,
   the merged PRs, and the CHANGELOG entries they produced (Project Facts `changelog`).
@@ -34,49 +34,48 @@ Pull from the sources that actually exist (don't invent):
   right skills), and has any skill drifted from the code or workflow it documents? Contradictions
   between skills, agent defs, and `CLAUDE.md` are process debt - **unless the `CLAUDE.md` states the
   divergence deliberately, with its reason**, which is a resolved contradiction rather than debt.
-  (A divergence that narrows a shared **gate** is the exception to the exception: that stays debt, and
+  (A divergence that narrows a shared **gate** is the exception to the exception: that stays debt;
   name the gate it narrows.)
 - **Dispatch feed** - `docs/process/dispatch.local.md` if present. The `SubagentStop` hook appends
   one line per subagent finish: a timestamp, enriched with the subagent's type when the hook's stdin
   JSON carries one (a portable `node` parse; it falls back to a `(fallback)` stamp when the stdin is
   unparsable, or a `(fallback: node not on PATH)` one when `node` is missing - fail-soft is
-  absolute, see the plugin README's *Hooks* section). Treat it as
-  a *cadence tripwire* that something ran, **not** a metric. It still **over-counts**: every Task-tool
+  absolute, see the plugin README's *Hooks* section). Treat it as a *cadence tripwire* that
+  something ran, **not** a metric. It still **over-counts**: every Task-tool
   spawn stamps at any nesting depth (delegates' own subagents included), and every *resume* stamps
   again, not just the first completion. Since dispatch → findings → fix → resume is the *recommended*
-  review loop, one reviewer resumed once already stamps twice - the inflation is systematic, not
-  incidental. Untyped stamps are a third over-count source: an `(untyped)` line is a finish event
-  with no subagent type, and such events can fire with no Task subagent behind them,
-  so **only typed lines correspond to Task dispatches**. A worktree-isolated spawn's stamp survives
+  review loop, one reviewer resumed once already stamps twice - the inflation is systematic. Untyped
+  stamps are a third over-count source: an `(untyped)` line is a finish event with no subagent type,
+  and such events can fire with no Task subagent behind them, so **only typed lines correspond to
+  Task dispatches**. A worktree-isolated spawn's stamp survives
   worktree cleanup (the hook always writes into the *session's* project dir, not the isolated
-  checkout), but a ratio built on this feed still divides mismatched
-  populations (a cheap recon probe counts the same as a real implementation dispatch). Stamps carry
+  checkout), but a ratio built on this feed still divides mismatched populations (a cheap recon
+  probe counts the same as a real implementation dispatch). Stamps carry
   an explicit offset (e.g. `2025-01-01T18:00:00-0500`); compare by instant, not by assumed zone.
 - **Friction notes** - `docs/process/retro-log.local.md` if present. This file is separate from
   the dispatch counter, so it is **100% friction signal**: every line is a one-line note a human or
   an agent appended about something that snagged, never a hook stamp - orchestrator-side snags, and,
   since `ship-work-item`'s wrap-up also prompts for it, report-side lessons a delegate's report taught
   you that you never acted on (that step owns *when* each is captured; this bullet only reads what
-  lands). That makes "the file is empty" directly meaningful - a session that captured nothing live,
-  not a hook that never fired. **One
-  under-count is structural, not incidental**: a note appended *inside* a
-  worktree-isolated spawn's own checkout lands in that worktree's copy of the file, which is discarded
-  when the worktree is cleaned up after merge - unlike the dispatch hook (above), which always targets
-  the session's project dir and so is never lost this way. For actual blockers, see the fallback below.
+  lands). So "the file is empty" is directly meaningful - a session that captured nothing live, not
+  a hook that never fired. **One under-count is structural, not incidental**: a note appended
+  *inside* a worktree-isolated spawn's own checkout lands in that worktree's copy of the file, which
+  is discarded when the worktree is cleaned up after merge - unlike the dispatch hook (above), which
+  always targets the session's project dir. For actual blockers, see the fallback below.
 - **Workflow friction** - `CLAUDE.md` / branching rules that were hard to follow, repeated mistakes,
   rework, or ordering gotchas (e.g. an agent-definition change that had to land before a worktree
   spawn to take effect).
 
 **Keep the friction file honest as you work:** the dispatch feed carries no blocker content even
-enriched, so real blocker evidence comes from one-line friction notes appended *during* each work item -
-the `ship-work-item` wrap-up prompts this, positioned before branch cleanup / pick-next so it
+enriched, so real blocker evidence comes from one-line friction notes appended *during* each work
+item - the `ship-work-item` wrap-up prompts this, positioned before branch cleanup / pick-next so it
 can't be skipped by moving on first (create `docs/process/retro-log.local.md` and its directory if
-absent, then append what snagged + where). It's git-ignored, costs nothing, and is what makes this
-retro's evidence real rather than a bare dispatch count. If it wasn't captured live, reconstruct from
-memory here - but treat a recurring empty friction file as its own finding **only after confirming a
-run actually spawned subagents** (check `dispatch.local.md` for the same window) - a solo or
-orchestration-script session that spawns no Task subagents legitimately leaves both feeds empty with
-nothing wrong, which is not a process problem.
+absent, then append what snagged + where). It's git-ignored, costs nothing, and makes this retro's
+evidence real rather than a bare dispatch count. If it wasn't captured live, reconstruct from memory
+here - but treat a recurring empty friction file as its own finding **only after confirming a run
+actually spawned subagents** (check `dispatch.local.md` for the same window) - a solo or
+orchestration-script session that spawns no Task subagents legitimately leaves both feeds empty,
+which is not a process problem.
 
 ## 2. Analyse (optionally delegate the deep read)
 
@@ -89,9 +88,9 @@ install cache, not the working tree, and it has no Skill tool), and the blocker 
 can't see from outside the session.
 
 Look for: what went **well** (keep doing), what caused **friction** (rework, confusion, wasted
-passes), **blockers** agents hit and whether they were surfaced or silently worked around (the
-latter is a process smell), and whether a small change to a `CLAUDE.md` rule, an agent definition, a
-tool/permission, or the workflow would remove the friction.
+passes), **blockers** agents hit and whether they were surfaced or silently worked around (a process
+smell), and whether a small change to a `CLAUDE.md` rule, an agent definition, a tool/permission, or
+the workflow would remove the friction.
 
 ## 3. Propose (small, concrete, verifiable)
 
@@ -105,16 +104,15 @@ Return a short retrospective the user can act on:
   **A proposal that targets a shared plugin component belongs UPSTREAM** - file it via
   `/fluyt:report-upstream` (its gates apply: main session, user-approved draft), not as a
   **locally re-implemented copy** of the shared component, which will drift from the plugin (see
-  `report-upstream`'s own warning). A
-  divergence the consumer's `CLAUDE.md` records as a deliberate deviation with its reason is not that -
-  it is the sanctioned form.
+  `report-upstream`'s own warning). A divergence the consumer's `CLAUDE.md` records as a deliberate
+  deviation with its reason is not that - it is the sanctioned form.
 - If useful, offer to file accepted proposals as GitHub issues once approved.
 
 ## 4. Optionally record it
 
 If the user wants a durable record, write the retrospective to `docs/process/retro-<YYYY-MM-DD>.md`.
-Otherwise present it in chat. Keep the `retro-log.local.md` and `dispatch.local.md` breadcrumbs as-is -
-they are the raw feeds, not the report.
+Otherwise present it in chat. Keep the `retro-log.local.md` and `dispatch.local.md` breadcrumbs
+as-is - they are the raw feeds, not the report.
 
 ## Guardrails
 
@@ -124,4 +122,4 @@ they are the raw feeds, not the report.
 - Stay on **process / collaboration**. Defer code-health findings to `fluyt:tech-debt-reviewer`
   and feature scoping to `fluyt:product-owner`; if you notice one, name it and point at the
   right agent.
-- Keep it lean: lead with the highest-leverage one or two changes.
+- Keep it lean: lead with the one or two highest-leverage changes.

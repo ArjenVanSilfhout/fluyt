@@ -15,11 +15,11 @@ description: >-
 # The Azure DevOps forge adapter
 
 The canonical rituals - `ship-work-item`, `backlog`, `release`, `versioning-and-changelog`,
-`report-upstream`, `branch-protection` - stay **authoritative for the process** on every forge - what
-to do, in what order, with which stops - unchanged; this skill supplies only the per-step
-translation for a consumer whose Project Facts declares `forge: azure-devops`: where a
-canonical step names GitHub or a `gh` command, do the Azure DevOps equivalent below, then return to
-the canonical skill for the next step. A canonical step with no translation here is forge-neutral -
+`report-upstream`, `branch-protection` - stay **authoritative for the process** on every forge (what
+to do, in what order, with which stops); this skill supplies only the per-step translation for a
+consumer whose Project Facts declares `forge: azure-devops`: where a canonical step names GitHub or
+a `gh` command, do the Azure DevOps equivalent below, then return to the canonical skill for the
+next step. A canonical step with no translation here is forge-neutral -
 follow it unchanged (`versioning-and-changelog` is the clean example: CHANGELOG and version live in
 the repo, not the forge). Two deliberate non-translations:
 
@@ -59,11 +59,10 @@ selection order reads whichever fields this forge exposes. Only the nouns transl
 | `gh issue list` / `gh issue view` | `az boards query --wiql "<query>"` / `az boards work-item show --id <work-item-id>` |
 | `gh issue close` (manual-close fallback) | `az boards work-item update --id <work-item-id> --state <done-state>` |
 
-Two traps in that last row and the link row:
+Two traps in the last row and the link row:
 
 - **The done-state name is process-template-specific** (`Done`, `Closed`, and `Completed` all exist
-  in the wild). Read the project's own states off an existing completed work item before writing
-  one; never assume a name.
+  in the wild). Read the project's states off an existing completed work item; never assume a name.
 - **Link direction matters.** `az boards work-item relation add --id <work-item-id>
   --relation-type predecessor --target-id <blocking-work-item-id>` is the recipe shape; confirm
   with `-h` which side the flags treat as the predecessor before linking, because a reversed link
@@ -82,8 +81,7 @@ fire-and-forget. The command translation:
   <pr-id> --auto-complete true`. Auto-complete fires when every branch policy passes - the same
   fire-and-forget semantics. Its completion options include **"complete linked work items"**, the
   closing half of the translation; the exact flag spelling for that option is not in this
-  mapping - read it off `az repos pr update -h` - and it is armed only after the pre-arm check
-  below.
+  mapping - read it off `az repos pr update -h` - and arm it only after the pre-arm check below.
 - **Merge-method vocabulary: a plain merge commit is called "no fast-forward" here.** GitHub's
   per-branch merge-method limits translate to a **merge-strategy branch policy** per branch
   (`az repos policy merge-strategy create`), squash → allow squash, merge commit → allow
@@ -147,9 +145,9 @@ needed:
   organization administrator may not be fully deniable, so this posture binds members, not
   necessarily the org owner.
 - **Deferred:** the exact `az devops security permission` invocations for those denies (security
-  namespace and token syntax) and any reviewer-count policy mapping are beyond this
-  mapping. Apply them through the forge's own UI, or extend the mapping and file it via
-  `report-upstream` - do not improvise security-namespace syntax from here.
+  namespace and token syntax) and any reviewer-count policy mapping are beyond this mapping. Apply
+  them through the forge's own UI, or extend the mapping and file it via `report-upstream` - do not
+  improvise security-namespace syntax from here.
 
 ## Auth: an ephemeral bearer token for git over HTTPS
 

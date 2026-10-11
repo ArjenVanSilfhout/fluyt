@@ -52,33 +52,30 @@ always squash.)
    that rides in this cut, and do not cut until the user ratifies or reverts it.**
 
 **Milestone completeness is not one of these preconditions.** A promotion carries whatever has landed
-on the integration branch; an open **planning** milestone (the `backlog` skill's `milestones` key) with
-unfinished items or an unanswered question inside it does not gate the cut. Promoting and closing a
-milestone are separate acts - treating the silence as a gate holds the cut open indefinitely,
-costing consumers time on older behaviour for a reason unrelated to them. A
-**release** milestone (`release-milestones: yes`) cannot block a cut either - see *The ritual* step 5, which creates *and*
-closes it at the cut, so it cannot be incomplete beforehand. If a consumer genuinely wants a cut
-gated on something beyond the four preconditions above, that belongs in their own `CLAUDE.md` as a
-stated rule, not inferred from this skill's silence.
+on the integration branch; an open **planning** milestone (the `backlog` skill's `milestones` key)
+with unfinished items or an unanswered question inside it does not gate the cut. Promoting and
+closing a milestone are separate acts - treating the silence as a gate holds the cut open
+indefinitely, costing consumers time on older behaviour for a reason unrelated to them. A
+**release** milestone (`release-milestones: yes`) cannot block a cut either - see *The ritual*
+step 5, which creates *and* closes it at the cut, so it cannot be incomplete beforehand. If a
+consumer genuinely wants a cut gated on something beyond the four preconditions above, that belongs
+in their own `CLAUDE.md` as a stated rule, not inferred from this skill's silence.
 
 **Optional - offer a pre-release tech-debt / doc-drift scan.** A release is a natural checkpoint for
-the drift accumulated across the shipped items: *offer* - not gate - a run of
-`fluyt:tech-debt-reviewer` (with its doc-drift lens - skills/`CLAUDE.md` that contradict the
-code) over the release range before promoting, since that drift is exactly what accumulated across
-the items being promoted. The `backlog` skill's
-hygiene pass carries the same offer, so declining here is not the last chance; take it when the cut is
-substantial and skip freely for a small or docs-only one. **If you
-run it, hand it the open-issue snapshot** in the spawn prompt - `tech-debt-reviewer` has no `gh` and
-reviews blind without it.
+drift accumulated across the shipped items: *offer* - not gate - a run of `fluyt:tech-debt-reviewer`
+(with its doc-drift lens - skills/`CLAUDE.md` that contradict the code) over the release range
+before promoting. The `backlog` skill's hygiene pass carries the same offer, so declining here is
+not the last chance; take it when the cut is substantial and skip freely for a small or docs-only
+one. **If you run it, hand it the open-issue snapshot** in the spawn prompt - `tech-debt-reviewer`
+has no `gh` and reviews blind without it.
 
 ## The ritual
 
 **Trunk-based repos (`integration-branch == release-branch`):** there is no branch to promote - a
 main→main PR is empty and errors. **Skip steps 1–2 entirely** and run the rest (tag if
 `release-tags: yes`, restore-branch is moot, milestone, publish if `release-publish` is set, verify)
-on the single branch. The "release" is
-just tagging / publishing what the branch already is. The numbered steps below assume the two branches
-**differ**.
+on the single branch. The "release" is just tagging / publishing what the branch already is. The
+numbered steps below assume the two branches **differ**.
 
 **Unversioned repos (`changelog: none`):** a declared value, not a missing key, so the required-key
 STOP above does not fire - it means the repo has no version. Skip Pre-flight 2 and the CHANGELOG
@@ -91,9 +88,9 @@ step runs as written, **including step 4's re-alignment**; a hotfix skips its CH
    ```
    gh pr create --base <release-branch> --head <integration-branch> --title "Release vX.Y.Z" --fill
    ```
-   `--fill` takes the PR body from the commits. If you want a richer release-notes body, write it to a
-   temp file and pass `--body-file <file>` - never inline `--body "…"`, which quotes badly across
-   shells (PowerShell vs POSIX).
+   `--fill` takes the PR body from the commits. For a richer release-notes body, write it to a temp
+   file and pass `--body-file <file>` - never inline `--body "…"`, which quotes badly across shells
+   (PowerShell vs POSIX).
 2. **Merge it with a merge commit** (`gh pr merge <n> --merge`, or the "Create a merge commit"
    button - **NOT** "Squash and merge"). Work-item PRs are squash-merged by convention, so GitHub
    may preselect either method depending on repo settings - **always double-check the button**.
@@ -112,8 +109,7 @@ step runs as written, **including step 4's re-alignment**; a hotfix skips its CH
    ```sh
    gh release create vX.Y.Z --title "vX.Y.Z" --notes-file <changelog-excerpt>
    ```
-   The tag and Release are **human-facing markers**; consumers still pin the branch tip, so this adds a
-   visible release history without changing the consumer model.
+   The tag and Release are **human-facing markers**; consumers still pin the branch tip.
 4. **Restore the integration branch - GitHub may have just auto-deleted it.** If the repo has
    *Automatically delete head branches* enabled and the integration branch is **not** the default
    branch (Project Facts: `default-branch != integration-branch`), the step-2 merge deletes the
@@ -126,9 +122,9 @@ step runs as written, **including step 4's re-alignment**; a hotfix skips its CH
    ```
    **Push the *fetched* tip, never a stale local ref** - step 2 merges on GitHub, so local
    `<release-branch>` still points at the *previous* release until `fetch`; pushing the stale SHA
-   regresses the integration branch (git's non-fast-forward check catches it, but don't lean on the
-   safety net). Push `origin/<release-branch>` (the fetched remote-tracking ref) or the
-   merge commit's SHA. Optionally gate it first:
+   regresses the integration branch (git's non-fast-forward check catches it, but don't lean on it).
+   Push `origin/<release-branch>` (the fetched remote-tracking ref) or the merge commit's SHA.
+   Optionally gate it first:
    `git merge-base --is-ancestor origin/<integration-branch> origin/<release-branch>` must exit 0 -
    that is the fast-forward guarantee.
 
@@ -197,12 +193,11 @@ step runs as written, **including step 4's re-alignment**; a hotfix skips its CH
    empty-diff check below still starts from your own read of the PR's state.
 
    (If the repo has not enabled auto-merge: never watch the check run - `agent-liveness` owns that
-   rule (dispatch-detached / never-watch) and states it in full. A CI run is minutes, not one command -
-   that's a wait, not a check. Instead, run a **bounded check** - `gh pr checks <n>`, no
-   `--watch` - at the top of the next turn that needs the result, and once it reports green,
-   `gh pr merge <n> --merge`. If no next turn is coming, report "back-sync checks pending; merge to
-   do" to whoever coordinates the lane instead. `adopt-conventions` §2's *Repo merge settings* step
-   offers `allow_auto_merge`.)
+   rule (dispatch-detached / never-watch). A CI run is minutes, not one command - that's a wait, not
+   a check. Instead, run a **bounded check** - `gh pr checks <n>`, no `--watch` - at the top of the
+   next turn that needs the result, and once it reports green, `gh pr merge <n> --merge`. If no next
+   turn is coming, report "back-sync checks pending; merge to do" to whoever coordinates the lane
+   instead. `adopt-conventions` §2's *Repo merge settings* step offers `allow_auto_merge`.)
 
    **Squashing a back-sync is the one thing that breaks this.** It replaces the release history with a
    single new commit, so the integration branch *diverges* from the release branch instead of
@@ -212,8 +207,8 @@ step runs as written, **including step 4's re-alignment**; a hotfix skips its CH
    exactly this reason (the release branch is the opposite: merge only).
 
    **Expect the PR to read "1 commit, 0 files changed."** The promotion merge commit already carries
-   the integration branch's exact tree, so there is nothing to diff - that is the proof it worked, not
-   a sign it failed. Don't abandon it.
+   the integration branch's exact tree, so there is nothing to diff - proof it worked, not a sign it
+   failed. Don't abandon it.
 
    After a PR back-sync the two branches are **content-identical but not SHA-identical**: the
    integration branch carries one extra merge commit. That is correct and expected - verify with
@@ -237,8 +232,8 @@ step runs as written, **including step 4's re-alignment**; a hotfix skips its CH
    this release's CHANGELOG section(s) (their `Closes #N` lines) or from
    `git log <previous-release>..<release-branch> --oneline` subjects. **If that set is empty, skip
    this step entirely - create no milestone.** A cut that closed zero issues (a tooling-only / "no
-   issue" release) gets no milestone; an empty `vX.Y.Z` milestone is noise that reads as "a release
-   with nothing in it". Only when the set is **non-empty**, create → populate → close in one pass (a
+   issue" release) gets none; an empty `vX.Y.Z` milestone reads as "a release with nothing in it".
+   Only when the set is **non-empty**, create → populate → close in one pass (a
    track-main repo has no open planning milestone to work within):
    ```sh
    # Only if the shipped-issue set derived above is non-empty:
@@ -275,8 +270,8 @@ path that does not drag that unreleased work along - so don't cut a normal promo
 
 **Split topology only (`integration-branch != release-branch`).** A trunk-based repo has no
 unreleased-work problem to route around and no branch to back-merge into - fix it as a normal work
-item, squash-merged onto the single branch like any other, then tag/publish if the release keys say so.
-Every step below assumes the two branches differ.
+item, squash-merged onto the single branch, then tag/publish if the release keys say so. Every step
+below assumes the two branches differ.
 
 1. Branch off the **release branch**, not integration:
    `git checkout <release-branch> && git pull && git checkout -b fix/<slug>`.
@@ -290,8 +285,7 @@ Every step below assumes the two branches differ.
    the `release` **role's** ruleset from the `branch-protection` skill (`allowed_merge_methods:
    ["merge"]`),
    a squash is rejected at the button - so reaching for it mid-hotfix costs a round trip on the change
-   that is in a hurry. (The `trunk` role is the opposite - `["squash"]` - which is why this whole
-   section is split-topology only.)
+   that is in a hurry. (The `trunk` role is the opposite - `["squash"]` - hence split-topology only.)
 4. If `release-tags: yes` / `github-releases: yes`, tag + publish the Release as in *The ritual* step 3.
 5. **Merge the release branch back down into the integration branch** so the next promotion doesn't
    revert the fix:
@@ -310,5 +304,5 @@ Every step below assumes the two branches differ.
 If this repo is itself a plugin marketplace whose consumers pin to the release branch tip, every
 merge onto that branch is a live update to all of them - treat a release as a publish, and lean on
 CI being green on the release branch before promoting. Tags aren't required here - but the repo MAY
-still set `release-tags: yes` + `github-releases: yes` to publish human-facing GitHub Releases for
-visibility (the tag / Release is a marker, not the pin).
+set `release-tags: yes` + `github-releases: yes` for human-facing GitHub Releases (a marker, not the
+pin).

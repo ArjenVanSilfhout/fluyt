@@ -17,8 +17,8 @@ description: >-
 This is the repo-configuration half of adopting the process: protecting the `integration-branch` and
 `release-branch`, deciding what CI must report before a merge, and auditing the workflow triggers
 while you are in there. Onboarding routes here from `adopt-conventions` §5; drift-checking, from its
-Pass D. A consumer can also invoke it directly whenever a branch needs protecting or an existing rule
-needs reading. Every `gh` call below resolves the repo from the **current directory's** git remote -
+Pass D. A consumer can also invoke it directly whenever a branch needs protecting or a rule needs
+reading. Every `gh` call below resolves the repo from the **current directory's** git remote -
 run from inside the target clone, or it silently targets the wrong repo.
 
 **When Project Facts `forge` is not `github`, only the principles below carry over.** Per the
@@ -38,11 +38,11 @@ deadlocks the branch permanently.
 plan gating: public repos on the free tier, public *or* private on paid tiers. On a free account a
 private repo enforces **neither**, and a ruleset POSTed there is **accepted and silently unenforced** -
 worse than an error. Read `gh api repos/{owner}/{repo} --jq '{private, visibility}'` and say so
-plainly rather than applying a rule that will not bind.
+rather than applying a rule that will not bind.
 
 Independent of plan: `GET /repos/{owner}/{repo}/branches/{branch}/protection` returning **404** means
-*not protected* - not *unsupported*. Reading that as "nothing to do here" is how a branch ends up
-unprotected with nobody noticing.
+*not protected* - not *unsupported*. Reading it as "nothing to do here" leaves a branch unprotected
+unnoticed.
 
 ## 2. Prefer a ruleset over classic protection
 
@@ -103,18 +103,18 @@ The three roles differ in exactly three places; everything else in the template
 **The `release` role carries a `pull_request` rule too, and that is the point of this step.** The
 `/fluyt:release` ritual's *one rule that matters* - the release PR merges with a regular
 **merge commit, never squash** - is unenforceable any other way: GitHub's default button is squash,
-repo-wide toggles can't forbid it on one branch, and that per-branch gap is exactly §2's reason to
-prefer a ruleset at all. Leave it out and the single mistake the release
-skill exists to prevent is guarded by nothing but human vigilance, on the ref consumers pin. The
-release ruleset covers both the **auto-delete** hazard (the back-sync PR's head *is* the release
-branch, answered by the `deletion` rule) and the merge method.
+repo-wide toggles can't forbid it on one branch, and that per-branch gap is §2's reason to prefer a
+ruleset at all. Leave it out and the single mistake the release skill exists to prevent is guarded
+by nothing but human vigilance, on the ref consumers pin. The release ruleset covers both the
+**auto-delete** hazard (the back-sync PR's head *is* the release branch, answered by the `deletion`
+rule) and the merge method.
 
 **Never put `required_status_checks` on the release branch until you have watched a context report on a
 PR *into the release branch*.** At onboarding no such PR has ever existed - the first one is the
 promotion PR of the first release - and transplanting a context observed on an integration PR is
 exactly the guess this step forbids: a workflow triggered on `push` to the integration branch never
 runs on the release PR, GitHub holds the never-arriving check as **Pending forever**, and with
-`bypass_actors: []` there is no way through. That deadlocks the release permanently, on the ref
+`bypass_actors: []` there is no way through - the release deadlocks permanently, on the ref
 consumers pin. **So the safe default is explicit: on the release branch `required_status_checks` stays
 unset** - the `release` row omits the rule, and `deletion` + `non_fast_forward` + `pull_request` still
 bind. Its absence there is a deliberate end state, **not** a gap for a later re-sync to close.
@@ -165,20 +165,20 @@ bind. Its absence there is a deliberate end state, **not** a gap for a later re-
 - **If neither read returns anything**, the branch has no reporting CI - drop the
   `required_status_checks` rule entirely; the other three still buy real enforcement.
 
-**State the bypass consequence in the offer, before applying.** With `bypass_actors: []` the rule binds
-the maintainer too, for every push and merge - that is a good default, but it should not be a surprise.
-Bypass only gates getting **past** the rule; it does not gate **administering** it, so an admin can
+**State the bypass consequence in the offer, before applying.** With `bypass_actors: []` the rule
+binds the maintainer too, for every push and merge - a good default, but it should not be a
+surprise. Bypass only gates getting **past** the rule, not **administering** it, so an admin can
 still edit or clear a broken one. If a required context turns out never to report, or CI otherwise
 breaks in a way that blocks its own fix, recovery is the same `gh api -X PUT
-"repos/{owner}/{repo}/rulesets/<id>" --input "<file>"` call used to update a ruleset above (`-X DELETE`
-on the same URL removes it outright) - not a force-push, which was never a route past a check that
-never arrives. Say so.
+"repos/{owner}/{repo}/rulesets/<id>" --input "<file>"` call used to update a ruleset above (`-X
+DELETE` on the same URL removes it outright) - not a force-push, which was never a route past a
+check that never arrives. Say so.
 
 ## 5. Audit the CI triggers while you are here
 
 Skip this unless the consumer's CI runs on GitHub Actions. A workflow triggered on both an
-unfiltered `push` and an unfiltered `pull_request` runs every job **twice** on every PR, which
-doubles CI minutes. The two runs are not identical, which is what decides the fix: `pull_request`
+unfiltered `push` and an unfiltered `pull_request` runs every job **twice** on every PR, doubling
+CI minutes. The two runs are not identical, which is what decides the fix: `pull_request`
 builds GitHub's synthetic merge commit - what the integration branch will actually become -
 while `push` builds the branch head in isolation. So keep `pull_request` unfiltered and **scope
 `push` to the branches no PR covers**:
@@ -205,12 +205,12 @@ the submodule's own URL, never the whole host.**
 
 ## 6. Offer a docs-only fast path for the expensive steps
 
-The `<ci-job-name>` bullet above already covers the Pending-forever trap a `paths:`-filtered
-workflow springs; what it doesn't cover is the cost of avoiding it blind: a workflow that installs
-a toolchain on every push pays that cost even for a one-line docs edit, tempting the
-batch-unrelated-changes workaround this ritual exists to prevent. Two rules carry the remedy, and
-both are non-obvious enough that a consumer inventing this locally is likely to get one wrong in a way
-that reopens a skip trap (Pending forever, or a silent pass):
+The `<ci-job-name>` bullet above covers the Pending-forever trap a `paths:`-filtered workflow
+springs; not the cost of avoiding it blind: a workflow that installs a toolchain on every push pays
+that cost even for a one-line docs edit, tempting the batch-unrelated-changes workaround this ritual
+exists to prevent. Two rules carry the remedy, and both are non-obvious enough that a consumer
+inventing this locally is likely to get one wrong in a way that reopens a skip trap (Pending
+forever, or a silent pass):
 
 - **Rule 1 - gate the STEPS, never the JOB.** A job-level `if:` that evaluates false makes the job
   *skipped*, and GitHub reports a skipped job as Success - a required check then **passes with
@@ -220,29 +220,28 @@ that reopens a skip trap (Pending forever, or a silent pass):
   expensive **steps** inside the job instead: the job itself still runs, reports success in seconds,
   and stays safe under any required-set.
 - **Rule 2 - scope the fast path by PATH, not by file extension.** For a prose-asset plugin, markdown
-  IS the product - a `.md` file under the plugin payload is the artifact, not documentation about it -
-  so an extension-based "only `.md` changed → do less" rule would disable validation on the highest-risk
-  changes in the repo. Docs-only means: nothing under the consumer's **declared protected path
-  prefixes** changed - the paths that hold whatever this consumer ships (for a plugin repo, its own
-  plugin-payload and manifest directories). Stated generically: the fast path is defined by what the
-  change can break, not by its file type. The consumer names the protected prefixes; this step supplies
-  the rule and the trap.
+  IS the product (a `.md` file under the plugin payload is the artifact, not documentation about it),
+  so an extension-based "only `.md` changed → do less" rule would disable validation on the
+  highest-risk changes in the repo. Docs-only means: nothing under the consumer's **declared
+  protected path prefixes** changed - the paths that hold whatever this consumer ships (for a plugin
+  repo, its own plugin-payload and manifest directories). Stated generically: the fast path is
+  defined by what the change can break, not by its file type. The consumer names the protected
+  prefixes; this step supplies the rule and the trap.
 
 Offer it the same way as the ruleset above - proposed here, applied only on an explicit yes - but
-editing a consumer's existing workflow file is a materially bigger intervention than POSTing a ruleset,
-so it carries obligations the ruleset offer does not:
+editing a consumer's existing workflow file is a materially bigger intervention than POSTing a
+ruleset, so it carries obligations the ruleset offer does not:
 
 1. **Show the diff before asking** - the actual proposed change to the actual workflow file, not a
    description of it; the consumer approves a diff, not a summary.
 2. **Never edit a workflow file this audit did not parse successfully** - if you cannot confidently
    locate the job and trigger blocks you would modify, report the recommendation and stop. A
-   partially-understood workflow is not a candidate for automated editing at any confidence level.
+   partially-understood workflow is no candidate for automated editing at any confidence level.
 3. **One confirmation buys one file** - the yes covers the workflow shown, not "workflows" generally;
    a repo with several jobs worth gating this way gets several diffs and several yeses.
-4. **Scoped by path, not extension** - the substance above, unchanged by the offer/document choice.
+4. **Scoped by path, not extension** - Rule 2 above, unchanged by the offer/document choice.
 
 **This is an audit, not a scaffold.** The plugin ships no CI workflow and deliberately does not write
-one - a workflow is stack- and provider-shaped, which is exactly what a shared asset must not carry.
-Read what the consumer already has, show the diff, let them apply it. The fast-path offer above is the
-same posture applied to an existing job: it edits what is there, on confirmation, and never invents a
-job the consumer doesn't have.
+one - a workflow is stack- and provider-shaped, which a shared asset must not carry. Read what the
+consumer already has, show the diff, let them apply it. The fast-path offer is the same posture: it
+edits what is there, on confirmation, and never invents a job the consumer doesn't have.
