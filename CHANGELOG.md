@@ -14,9 +14,17 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.2.0**
+Current version: **1.2.1**
 
 ---
+
+## [1.2.1] — 2026-10-11
+
+**Docs (CLAUDE.md):** the repo description now counts the shipped hooks correctly: five Claude Code
+hooks, not one.
+
+`hooks/hooks.json` registers five (one SubagentStop, four PreToolUse on Bash), as both READMEs already
+said. PATCH: repo-side documentation only.
 
 ## [1.2.0] — 2026-10-11
 
