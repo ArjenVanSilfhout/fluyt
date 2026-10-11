@@ -4,6 +4,22 @@ Short entries, newest first. Format: date · decision · why · reversibility.
 
 ---
 
+**2026-10-11 · Correction: the installed payload carries no CHANGELOG; a version citation resolves
+through the payload manifest and the public CHANGELOG · reversible.**
+The citation entry below says "the CHANGELOG ships". The payload consumers install holds the two
+manifests, skills, agents, hooks, README and LICENSE only; the 1.1.0 CHANGELOG entry recorded that
+and redirected the three plugin-version reads to `.codex-plugin/plugin.json`. A version still
+resolves for a consumer: the manifest `version` names the installed release, and the public
+CHANGELOG explains it. The rule stands; its rationale is corrected in CLAUDE.md (Invariants).
+
+**2026-10-11 · The three Project Facts marked `provenance: chosen` are ratified by the user ·
+reversible.**
+The nautical-codename release titles, the git-ignored hand-over at `docs/process/HANDOVER.local.md`,
+and the `<type-or-id>: <summary> (vX.Y.Z)` commit subject: the user's call ("Keep all three"),
+relayed by the hub. The markers in CLAUDE.md stay `chosen` until the user confirms that edit in the
+session chat; when flipped they read `ratified @v<the installed payload's .codex-plugin/plugin.json
+version at that moment>`. `agent-routing` was not part of the call and stays `chosen`.
+
 **2026-10-11 · The consumer `.gitignore` fragment no longer ignores `.mcp.json` · reversible.**
 On Claude Code a root `.mcp.json` is the project-scoped, shareable MCP configuration; ignoring it hid
 a new consumer setup from teammates and CI, since a plain `git add` skips an ignored file. The
