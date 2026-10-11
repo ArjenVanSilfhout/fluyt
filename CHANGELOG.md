@@ -25,9 +25,10 @@ its comment now says secrets never go into a committed one (environment-variable
 plugin `userConfig` with `sensitive: true`).
 
 On Claude Code that file is the shareable, project-scoped MCP configuration, so ignoring it hid a
-consumer setup from teammates and CI and un-tracked an existing file on adoption. The user chose
-this over documenting the trade-off or adding a Project Facts key (DECISIONS.md, 2026-10-11). MINOR:
-a shipped template changes what a consumer gets.
+new consumer setup from teammates and CI (a plain `git add` skips an ignored file). A consumer that
+adopted earlier keeps the old ignore line, since adoption only appends; a re-sync surfaces it. The
+user chose this over documenting the trade-off or adding a Project Facts key (DECISIONS.md,
+2026-10-11). MINOR: a shipped template changes what a consumer gets.
 
 ## [1.3.1] — 2026-10-11
 
