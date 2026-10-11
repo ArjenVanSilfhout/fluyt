@@ -4,6 +4,14 @@ Short entries, newest first. Format: date · decision · why · reversibility.
 
 ---
 
+**2026-10-11 · Budgets cut 5%, trims land 2% under, prose em dashes leave `plugins/` · reversible.**
+The user's call in the session chat: "reduce all budgets by 5%", then "Cut and trim"; a 2% target
+under each new budget so a later improvement fits "without having to debate budget"; em dashes
+swapped in `plugins/` only ("plugins/ only"), arrows kept. Em dashes inside code spans and fenced
+blocks stay: they are literal formats a consumer writes or a re-sync matches (the CHANGELOG heading,
+the `<pending — …>` placeholder). The ratchet formula itself is unchanged; this was a one-off cut.
+Not taken: cutting only the budgets that already fit; a byte-floor margin instead of 2%.
+
 **2026-10-11 · Correction: the installed payload carries no CHANGELOG; a version citation resolves
 through the payload manifest and the public CHANGELOG · reversible.**
 The citation entry below says "the CHANGELOG ships". The payload consumers install holds the two
