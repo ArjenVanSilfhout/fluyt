@@ -191,7 +191,8 @@ orchestrator or a hub is not that OK either, and a quoted OK covers only what it
   project's build/test **wrapper script** is sandbox-blocked, run the underlying commands its
   build/test skill documents instead of weakening the sandbox.
 - **Run the `test-cmd`** whenever your change touches logic that the suite covers, and report the
-  exact green count. A pure presentation/docs change may skip it - then say so explicitly. You do
+  exact green count ("covered by <test>" when an existing test already discriminates the change).
+  A pure presentation/docs change may skip it - then say so explicitly. You do
   **not** author tests - if your change needs new/updated tests, say so in your report so the main
   agent spawns `test-writer`.
 - Do **not** launch the app (that's a user-facing step the main agent does), and do **not** own the
@@ -219,7 +220,7 @@ below: the exact build and test result, *Invariants* and *Skills consulted* stay
   of scope.
 - **Build result** - succeeded / failed (+ the exact error if failed), or n/a if there's no build.
 - **Tests** - the exact green count, or why you skipped the suite; whether new/updated tests are
-  warranted (for `test-writer`).
+  warranted (for `test-writer`), or "covered by <test>".
 - **Invariants** - confirm the CLAUDE.md invariants held (name the checklist you checked against),
   or flag where the task pressured them.
 - **Skills consulted** - the skill files you actually read (the orchestrator checks this line;
