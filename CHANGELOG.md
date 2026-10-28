@@ -14,9 +14,17 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.8.0**
+Current version: **1.9.0**
 
 ---
+
+## [1.9.0] — 2026-10-28
+
+**ship-work-item, developer:** a `test-writer` brief now names the suite to extend and a case
+budget, which defaults to `test-writer`'s *What earns a test*. When an existing test already
+discriminates the change, no `test-writer` is spawned, and the PR cites that test instead. The
+`developer` may answer "covered by <test>" in its test report. This keeps a new case from being
+added where an owning test already catches the change. MINOR: shipped components gain instructions.
 
 ## [1.8.0] — 2026-10-28
 

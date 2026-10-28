@@ -289,6 +289,9 @@ authoritative on every forge.
   `test-dir`, and **self-verifies** its drafts by running `test-cmd` - self-clearing its own test
   bugs, escalating product-looking reds). You **re-run the suite once as the integration gate**,
   adjudicate any escalated blocker, and fold its tests into this same PR.
+  Its brief **names the suite (existing test file/subject) to extend and a case budget**
+  (default: test-writer's *What earns a test*). **When an existing test already discriminates the
+  change, spawn no test-writer: cite that test** in the PR body.
 - **Build + verify after the change:** run the `build-cmd` and `test-cmd` from Project Facts; if
   there's a `run-cmd`, launch so the change can be seen. Launching is fine; driving or capturing the
   desktop follows the `developer` contract's *Never act on the user's desktop*, and a live-only
