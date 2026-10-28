@@ -363,7 +363,11 @@ authoritative on every forge.
   measured is marked as inferred; and a verdict with no captured evidence is a **prediction**, which
   the report must label as one and the adjudicator must weigh as one. When the pass runs delegated,
   this requirement travels **in the spawn brief**, not only here - a doctrine line binds nobody who
-  runs the pass from a condensed brief.
+  runs the pass from a condensed brief. **Classify each surviving mutant, and a survivor is not a
+  new test by default:** **redundant** (an existing test, golden or digest kills it once named - add
+  nothing; the verdict names that test and cites the captured kill), **gap** (extend the nearest
+  owning test with a row or an assertion), or **new** (a new test only when nothing owns it; the
+  `test-writer` "What earns a test" section decides). The classes travel in the same brief.
 - **Project Facts `adversarial-coverage` decides whether the pass above is optional or required -
   read it before you decide RUN vs SKIP.** Absent, or set to `on-demand` (the shipped default, and
   what an absent key reads as): the pass above stays optional, its own RUN/SKIP criteria deciding.
