@@ -14,9 +14,16 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.7.2**
+Current version: **1.7.3**
 
 ---
+
+## [1.7.3] — 2026-10-28
+
+**Fix (CI):** the per-plugin `claude plugin validate --strict` step tolerates the new "Plugin
+directory checks" block that CLI 2.1.312 prints. The block is verdict-neutral by its own wording,
+but the step's fail-closed rule turned every PR red because of it. The skip still fails closed when
+the block changes shape. PATCH: CI only.
 
 ## [1.7.2] — 2026-10-11
 

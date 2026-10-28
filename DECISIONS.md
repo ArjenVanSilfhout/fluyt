@@ -4,6 +4,16 @@ Short entries, newest first. Format: date · decision · why · reversibility.
 
 ---
 
+**2026-10-28 · Per-plugin `claude plugin validate` also tolerates the "Plugin directory checks"
+block · reversible.**
+The user's call in the session chat, choosing "Tolerate the block" over adding a plugin icon or
+pinning the CLI. CLI 2.1.312 added a catalog-submission section (first warning: `ICON_MISSING`) that
+calls itself verdict-neutral ("These plugin directory checks do not change the result below"), and
+the 2026-10-11 tolerate-only-known-output rule turned every PR red because of it. The skip is
+fail-closed: the span is dropped only when its closing line arrives, any unexpected un-indented line
+inside it ends the skip, and an unclosed span is kept. A future directory-check warning will not
+fail CI. That is the accepted cost.
+
 **2026-10-11 · Second budget cut, tiered by how cheaply each file trims · reversible.**
 The user's calls in the session chat, after a read-only per-skill review of what a 15% cut would
 cost:
