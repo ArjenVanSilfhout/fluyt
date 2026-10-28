@@ -14,9 +14,22 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.10.0**
+Current version: **1.11.0**
 
 ---
+
+## [1.11.0] — 2026-10-28
+
+**ship-work-item:** the Adversarial coverage pass now sorts each surviving mutant into one of three
+classes, so a survivor no longer turns into a new test by default:
+
+- **redundant:** an existing test, golden or digest kills it once named. Nothing is added, and the
+  verdict names that test and cites the captured kill.
+- **gap:** the nearest owning test is extended with a row or an assertion.
+- **new:** a new test is written, but only when nothing owns the mutant. `test-writer`'s *What
+  earns a test* decides.
+
+A delegated pass carries the classes in its spawn brief. MINOR: a shipped skill gains instructions.
 
 ## [1.10.0] — 2026-10-28
 
