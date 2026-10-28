@@ -14,9 +14,18 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.7.2**
+Current version: **1.7.3**
 
 ---
+
+## [1.7.3] — 2026-10-28
+
+**Design (docs only):** `docs/design/affected-tests.md` proposes an opt-in, stack-neutral recipe for
+running only the tests a change affects. It covers a default-off Project Facts sub-block, a decision
+procedure that falls back to a full run whenever it cannot prove a test unaffected, a full-run safety
+net, and a shadow period that measures savings before a consumer keeps the recipe. Three forks are
+left for the maintainer, among them whether fluyt should ever ship a reusable workflow
+(recommendation: no). PATCH: docs only, and no shipped file changes.
 
 ## [1.7.2] — 2026-10-11
 
