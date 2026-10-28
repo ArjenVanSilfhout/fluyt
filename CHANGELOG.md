@@ -30,7 +30,7 @@ reads the diff's test files for five redundancy tells:
 - a new file for a regression whose subject already has a suite.
 
 Findings are Advisory. They FAIL only under the new Project Facts key `test-budget: strict` (absent
-or `advisory` means Advisory), and the lens never flags what `test-writer`'s keep list protects.
+or `advisory` means Advisory), and the lens never flags what `test-writer` marks "never thinned".
 Until now, no reviewer read the test diff for redundancy. The `preflight-reviewer` budget line rose
 from 25300 to 26800 for the lens. MINOR: a shipped agent and the template gain instructions.
 

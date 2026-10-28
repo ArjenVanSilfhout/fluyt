@@ -333,7 +333,7 @@ node -e 'for(const f of process.argv.slice(1))require("fs").readFileSync(f,"utf8
 
 Findings go to the **Advisory** list; **FAIL only when Project Facts declares `test-budget:
 strict`** (absent or `advisory` = advisory). Never flag what `test-writer`'s *What earns a test*
-Keep list protects.
+marks "never thinned".
 
 ## Step 8 - adversarial-coverage gate (only when Project Facts declares `adversarial-coverage: default`)
 
