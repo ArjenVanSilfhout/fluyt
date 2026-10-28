@@ -14,9 +14,23 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.7.4**
+Current version: **1.8.0**
 
 ---
+
+## [1.8.0] — 2026-10-28
+
+**test-writer:** a new "What earns a test" bar. A test earns its place only when it guards a declared
+invariant, a public contract, a regression that happened, or logic whose wrong answer would be
+silent. Duplicates, restated constants, interior rows on a covered branch, implementation-detail
+pins and library behaviour don't qualify. An owning test is extended before a new one is added,
+within a case budget: the brief's, else one per acceptance criterion plus one per touched
+invariant. A keep list (digests, goldens, round-trips, contract tests, one case per real bug, and
+others) is never thinned. The companion-oracle and twin-fixture rules can now be met by a row on
+the owning test. The edge-case list becomes "cover the boundaries the logic branches on, in one
+table", and the report counts cases added, extended and declined against the budget. Suites had
+grown only by adding. Budget line raised from 13900 to 15800 for the new section. MINOR: a shipped
+agent gains instructions.
 
 ## [1.7.4] — 2026-10-28
 
