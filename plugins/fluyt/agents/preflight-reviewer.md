@@ -322,6 +322,19 @@ node -e 'for(const f of process.argv.slice(1))require("fs").readFileSync(f,"utf8
 .test(l)&&console.log(f+":"+(i+1)))' <changed-instruction-files>
 ```
 
+**Test diff lens - skip when the diff touches no file under Project Facts `test-dir`, or it is
+`none`.** Read the diff's test files for these tells:
+
+- three or more facts/cases in one file differing only by a literal;
+- more than two rows per branch under test;
+- an expected value built by the same expression as the actual;
+- a new test matching an existing one's name and assertions;
+- a new file for a regression whose subject already has a suite.
+
+Findings go to the **Advisory** list; **FAIL only when Project Facts declares `test-budget:
+strict`** (absent or `advisory` = advisory). Never flag what `test-writer`'s *What earns a test*
+Keep list protects.
+
 ## Step 8 - adversarial-coverage gate (only when Project Facts declares `adversarial-coverage: default`)
 
 **No `adversarial-coverage` key, or `on-demand` → skip this step** - `ship-work-item` §1's

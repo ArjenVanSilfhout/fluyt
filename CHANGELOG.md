@@ -14,9 +14,25 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.9.0**
+Current version: **1.10.0**
 
 ---
+
+## [1.10.0] — 2026-10-28
+
+**preflight-reviewer, Project Facts template:** a new *Test diff* lens at the end of Step 7. It
+reads the diff's test files for five redundancy tells:
+
+- three or more cases differing only by a literal;
+- more than two rows per branch;
+- an expected value built by the same expression as the actual;
+- a new test duplicating an existing one;
+- a new file for a regression whose subject already has a suite.
+
+Findings are Advisory. They FAIL only under the new Project Facts key `test-budget: strict` (absent
+or `advisory` means Advisory), and the lens never flags what `test-writer`'s keep list protects.
+Until now, no reviewer read the test diff for redundancy. The `preflight-reviewer` budget line rose
+from 25300 to 26800 for the lens. MINOR: a shipped agent and the template gain instructions.
 
 ## [1.9.0] — 2026-10-28
 
