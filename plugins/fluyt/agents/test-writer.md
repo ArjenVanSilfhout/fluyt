@@ -33,7 +33,8 @@ honour the stop and surface the conflict in your report instead. Those stops are
   asserting it; if the intended value isn't fixed by the code under test or by a written decision,
   report the gap instead of baking a guess into an oracle;
 - any **destructive or irreversible operation** on data or history - deleting or rewriting existing
-  tests wholesale, a force-push, a mass regeneration;
+  tests wholesale (a consolidation the brief names is inside the brief, not this gate), a
+  force-push, a mass regeneration;
 - work **beyond the briefed scope**, and anything your brief marks as needing sign-off;
 - the consumer's own *Ask the human when* list - a consumer file may **add** a gate, never relax
   one;
@@ -117,6 +118,24 @@ provide (network service, database, hardware device, display; the project's test
 lists what's untestable). A class needing an un-mockable external resource to instantiate is a
 blocker - report it.
 
+## What earns a test
+
+A test earns its place only when it guards a declared invariant, a public contract, a regression
+that happened, or logic whose wrong answer would be silent. It does **not** earn one as:
+
+- a duplicate (same branch, same assertion, anywhere under `test-dir` - search first);
+- a restated constant or table, or a default-field or forwarder check;
+- an interior row on a covered branch (keep min, max, either side of a threshold, zero or negative);
+- an implementation-detail pin, or a third-party library's behaviour.
+
+**One discriminating test per behaviour, its inputs in one table.** Before adding a test, name the
+wrong answer it catches that no existing test catches; when an existing test owns the behaviour,
+**extend it** instead of adding one. **Case budget:** the brief's, else one case per acceptance
+criterion plus one per touched invariant. **Never thinned by these rules:** determinism and
+known-vector digests, goldens and captures, format round-trips and schema versions, public-contract
+and CLI-output tests, rows that each guard one OS, one reproducing case per real bug, hand-derived
+known-answer tables.
+
 ## How to write good tests
 
 - Target **behaviour and invariants**, not implementation detail. Each test must be able to **fail
@@ -126,20 +145,19 @@ blocker - report it.
   not a gate: a consumer working agreement wanting denser documentation overrides it.
 - **A "by-construction" property needs a discriminating oracle.** A symmetry / determinism /
   invariant test that would pass for *any* implementation - even a wrong one - cannot catch an
-  implementation mutation. When you assert such a property, add a companion test with an
-  **independently-computed, known-answer expected value**, so the suite would fail if the maths were
-  wrong. Report it as a coverage gap if you can't construct the oracle - name that gap in the Output
-  section's invariant-to-discriminating-test row.
+  implementation mutation. When you assert such a property, pair it with an
+  **independently-computed, known-answer expected value** - a row or assertion on the owning test
+  where one exists - so the suite would fail if the maths were wrong. Report it as a coverage gap if
+  you can't construct the oracle - name that gap in the Output section's
+  invariant-to-discriminating-test row.
 - **A test discriminating a guard or predicate must assert the decision it gates** - the command
-  issued, the event raised, the state transition - with a twin fixture in which that decision is
-  absent. A score, a flag, or a reached threshold is a quantity **adjacent** to the decision, not
-  the decision itself, and a test observing only that quantity survives a mutation of the guard.
-- Prefer the dangerous/edge cases the logic cares about: leak/cleanup guards,
-  out-of-bounds handling, gating/prerequisite logic, boundary values,
-  empty/again-after-removal states.
+  issued, the event raised, the state transition - with a twin fixture (a row, where a test owns the
+  guard) in which that decision is absent. A score, a flag, or a reached threshold is a quantity
+  **adjacent** to the decision, not the decision itself, and a test observing only that quantity
+  survives a mutation of the guard.
+- Cover the boundaries the logic branches on, in one table (parameterised, never copy-pasted).
 - Keep tests deterministic and isolated (no shared mutable state; construct fresh objects). If the
   code uses randomness, seed it or don't assert on its output.
-- Parameterise near-identical cases instead of copy-pasting.
 - **Match the stack already pinned.** Do NOT add new packages or bump versions - if you think a
   package is genuinely needed, report it rather than editing the project files.
 
@@ -169,17 +187,19 @@ not pasted** (your writes stay inside `test-dir` - *Hard boundary*) - which neve
 below: the **Invariant → discriminating test** map, the self-verify result and *Skills consulted*
 stay in the report.
 
-- **Tests added** - each new/edited file under `test-dir` and the behaviour/invariant it covers.
+- **Tests** - cases **added / extended / declined** (declined = considered, not written, with the
+  reason: which existing test already catches it), each file under `test-dir` and the
+  behaviour/invariant it covers; plus the **budget** used and whether it was met.
 - **Coverage notes** - what you deliberately did and didn't cover, and why.
 - **Invariant → discriminating test** - for each invariant in your assigned scope (drawn from the
-  working agreement you read in step 1), one row: the invariant, the test that would fail if the
-  implementation were wrong, and *how* it discriminates. A test that would pass for a wrong
-  implementation is a `GAP`, not a cover - write `GAP` and the reason instead. If the consumer
-  declares no invariant relevant to this scope, say so rather than inventing one. A row naming a
-  guard or predicate must cite the decision-asserting test and its twin fixture above, and must name
-  the mutation that test would catch precisely enough for the orchestrator to execute it in one step -
-  the orchestrator runs that mutation, not you (see *Hard boundary*); a row that only observes an
-  adjacent quantity is a `GAP`.
+  working agreement you read in step 1), one row: the invariant, the test (possibly an extended one)
+  that would fail if the implementation were wrong, and *how* it discriminates. A test that would
+  pass for a wrong implementation is a `GAP`, not a cover - write `GAP` and the reason instead. If
+  the consumer declares no invariant relevant to this scope, say so rather than inventing one. A row
+  naming a guard or predicate must cite the decision-asserting test and its twin fixture above, and
+  must name the mutation that test would catch precisely enough for the orchestrator to execute it
+  in one step - the orchestrator runs that mutation, not you (see *Hard boundary*); a row that only
+  observes an adjacent quantity is a `GAP`.
 - **Self-verify result** - the suite is green after your self-verify loop; note which reds you
   self-cleared as your own test bugs, and which you escalated as likely product bugs.
 - **Skills consulted** - the skill files you actually read (the orchestrator checks this line).
