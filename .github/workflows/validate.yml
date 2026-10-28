@@ -175,6 +175,15 @@ jobs:
       # Every plugin is validated before the step exits, so one failure does not hide another.
       # Still manifest-only: it does NOT read SKILL.md or agent frontmatter. Do NOT add a
       # version field to plugin.json, and do NOT drop --strict here.
+      # PLUGIN DIRECTORY BLOCK (DECISIONS.md, 2026-10-28): newer CLIs (seen on 2.1.312) print a
+      # "Plugin directory checks for <path>." section - catalog-submission checks such as
+      # ICON_MISSING - closed by the line "These plugin directory checks do not change the result
+      # below." and a fixed note about the safety scan. Verdict-neutral by its own wording, so the
+      # awk drops it like the Advice block, but FAIL-CLOSED: the span is buffered and dropped only
+      # when that closing line arrives; any un-indented line inside it other than a blank or the
+      # "Found N plugin directory warning(s):" header ends the span and prints the buffer, and an
+      # unclosed span is printed at END - so a renamed or reshaped block still fails the build.
+      # Seen only on the per-plugin call, so the marketplace step above does not carry it.
       - name: Validate each plugin (strict)
         if: ${{ !cancelled() && steps.changes.outputs.plugin_relevant != 'false' }}
         run: |
@@ -189,9 +198,17 @@ jobs:
             fi
             normalized=$(printf '%s\n' "$output" \
               | awk '
+                  /^Plugin directory checks for / { pd = 1; buf = $0; next }
+                  pd && /^These plugin directory checks do not change the result below\.[[:space:]]*$/ { pd = 0; buf = ""; note = 1; next }
+                  pd && (/^[[:space:]]*$/ || /^[[:space:]]/ || /^[^[:space:]]+ Found [0-9]+ plugin directory warnings?:[[:space:]]*$/) { buf = buf "\n" $0; next }
+                  pd { print buf; pd = 0 }
+                  note && /^[[:space:]]*$/ { next }
+                  note && /^The directory also runs a safety scan and a policy review that this command does not\.[[:space:]]*$/ { note = 0; next }
+                  { note = 0 }
                   /^[^[:space:]]+ Advice \(does not change the verdict\):[[:space:]]*$/ { skip = 1; next }
                   skip && /^[^[:space:]]/ { skip = 0 }
                   !skip { print }
+                  END { if (pd) print buf }
                 ' \
               | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')
             remainder=$(printf '%s\n' "$normalized" \

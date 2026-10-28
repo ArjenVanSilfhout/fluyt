@@ -14,11 +14,11 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.7.3**
+Current version: **1.7.4**
 
 ---
 
-## [1.7.3] — 2026-10-28
+## [1.7.4] — 2026-10-28
 
 **Design (docs only):** `docs/design/affected-tests.md` proposes an opt-in, stack-neutral recipe for
 running only the tests a change affects. It covers a default-off Project Facts sub-block, a decision
@@ -26,6 +26,13 @@ procedure that falls back to a full run whenever it cannot prove a test unaffect
 net, and a shadow period that measures savings before a consumer keeps the recipe. Three forks are
 left for the maintainer, among them whether fluyt should ever ship a reusable workflow
 (recommendation: no). PATCH: docs only, and no shipped file changes.
+
+## [1.7.3] — 2026-10-28
+
+**Fix (CI):** the per-plugin `claude plugin validate --strict` step tolerates the new "Plugin
+directory checks" block that CLI 2.1.312 prints. The block is verdict-neutral by its own wording,
+but the step's fail-closed rule turned every PR red because of it. The skip still fails closed when
+the block changes shape. PATCH: CI only.
 
 ## [1.7.2] — 2026-10-11
 
