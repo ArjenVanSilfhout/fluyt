@@ -29,11 +29,11 @@
 # file is read on PowerShell 5.1 hosts too - see plugin-vocabulary-allowlist.txt's ENCODING note).
 
 plugins/fluyt/agents/developer.md 18800
-plugins/fluyt/agents/preflight-reviewer.md 26800
-plugins/fluyt/agents/product-owner.md 8600
-plugins/fluyt/agents/scrum-master.md 9400
-plugins/fluyt/agents/tech-debt-reviewer.md 8800
-plugins/fluyt/agents/test-writer.md 15800
+plugins/fluyt/agents/preflight-reviewer.md 26100
+plugins/fluyt/agents/product-owner.md 8400
+plugins/fluyt/agents/scrum-master.md 9300
+plugins/fluyt/agents/tech-debt-reviewer.md 8500
+plugins/fluyt/agents/test-writer.md 15400
 plugins/fluyt/skills/adopt-conventions/SKILL.md 39100
 plugins/fluyt/skills/agent-liveness/SKILL.md 18300
 plugins/fluyt/skills/backlog/SKILL.md 11700

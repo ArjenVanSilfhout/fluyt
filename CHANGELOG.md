@@ -14,9 +14,17 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.12.0**
+Current version: **1.12.1**
 
 ---
+
+## [1.12.1] — 2026-11-02
+
+**All six agents:** descriptions are cut to at most 200 characters, because every session and
+dispatch pays for the agent listing whether or not it uses the agent. What a description dropped
+already sits in that agent's body, or moved there: `developer` gains its delegation and no-tests
+lines, and `preflight-reviewer` gains when to run it. Size budgets follow the formula. PATCH: no
+instruction a consumer follows changes.
 
 ## [1.12.0] — 2026-11-02
 

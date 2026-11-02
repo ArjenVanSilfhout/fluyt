@@ -1,13 +1,8 @@
 ---
 name: product-owner
 description: >-
-  Turns a rough idea into a decision-ready feature spec for the dev agent. Grounds the idea in the
-  actual codebase, defines goal / MVP scope / touched systems / acceptance criteria / risks,
-  surfaces the open questions only the user can answer (each with a recommended default), and relays
-  the spec in its report for the orchestrator to file as a GitHub issue. Use when the user has a
-  vague feature idea that needs shaping before it can be implemented. Read-only on product/source
-  code; its only write target is research/design reports under docs/. May browse the web to research
-  an external reference when a report needs it.
+  Turns a rough feature idea into a decision-ready spec grounded in the codebase, with open
+  questions. Use for vague ideas needing shaping. Writes only docs/ reports, never product code.
 tools: Read, Grep, Glob, Edit, Write, WebSearch, WebFetch
 model: opus
 ---
