@@ -48,7 +48,8 @@ here or in the file named at its section, and a reviewer enforcing a section rea
 1. **Pick the next item** using the `backlog` skill's selection order - not LIFO, unless the user
    directs otherwise. **Before building a dispatch from it, read `pick.md`:** read the issue's full
    comment thread (`gh issue view <n> --json body,comments`), re-validate its prescription against
-   the current tree, re-size it by what it ships, and decide parallelisability at the pick.
+   the current tree, re-size it by what it ships, and, only when your authorization covers more
+   than this item, decide parallelisability at the pick (no `Files:` signal ⇒ stay serial).
 2. **Sync and branch off the integration branch:**
    ```
    git checkout <integration-branch> && git pull
@@ -65,7 +66,8 @@ here or in the file named at its section, and a reviewer enforcing a section rea
   absent key counts as `default`**, so spawn the `fluyt:developer` agent. Branch, CHANGELOG, version,
   PR and merge stay yours, the commit too outside an isolated lane. **Read what comes back and
   challenge it against the spec AND the idea behind it.** Inline only when all hold: one file, no
-  new logic and a handful of lines, no new or updated test.
+  new logic and no more than a handful of changed lines, no new or updated test; when you cannot
+  tell, dispatch.
 - **Before you write a spawn brief, act on a delegate's or reviewer's report, weigh going inline, or
   run on `delegation: on-demand`, read `delegation.md`:** the delegation bullets, the challenge bar,
   *a delegate's report is a secondary source*, *delegation is not deference*, the pre-ruled version
@@ -112,7 +114,8 @@ verify after merge. A closing keyword fires through a negation.
 - **Stage explicit paths, never `git add -A`**, after re-checking `git branch --show-current` and
   `git status` (the commit-guard).
 - **Omit any co-author trailer** when Project Facts `co-author-trailers: forbidden`.
-- Spawn `fluyt:preflight-reviewer` backgrounded after committing; open the PR as a **draft** while a
+- For a multi-file or product-code item, spawn `fluyt:preflight-reviewer` backgrounded after
+  committing (a trivial docs-only chore may skip it: say so); open the PR as a **draft** while a
   review runs; use only the PR number `gh pr create` printed; read the title and body back at once.
 
 ## 4. Merge and clean up

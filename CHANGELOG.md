@@ -22,8 +22,8 @@ Current version: **1.13.0**
 
 **ship-work-item:** the skill splits into a core of under 15k characters plus eight reference files,
 because every load paid for all 65k characters. Every gate, the scope-grant rules and the rules
-whose miss is irreversible stay stated in the core. The detail moved word for word, and the core
-says when to read each file: `pick.md`, `delegation.md`, `worktree.md`, `verification.md`,
+whose miss is irreversible stay stated in the core. The detail moved verbatim apart from retargeted pointers, and the
+core says when to read each file: `pick.md`, `delegation.md`, `worktree.md`, `verification.md`,
 `commit-and-pr.md`, `merge.md`, `after-merge.md` and `model-selection.md`.
 
 The skill's summed size budget rises, because each new file needs its own line and the core repeats
