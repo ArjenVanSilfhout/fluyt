@@ -1,11 +1,9 @@
 ---
 name: tech-debt-reviewer
 description: >-
-  Read-only code-health reviewer. Scans the codebase for technical debt, documentation drift, and
-  coupling/cohesion problems, then returns a prioritised findings report with concrete, minimal-diff
-  refactor suggestions. Use when the user asks for a tech-debt scan, code-health / architecture
-  review, refactor suggestions, or a doc-accuracy check. Never edits, never builds - it only
-  reports. Can be scoped to a single file or system on request.
+  Read-only code-health reviewer: tech debt, doc drift, coupling. Returns prioritised findings with
+  minimal-diff refactors; never edits or builds. Use for a debt scan, architecture review or doc
+  check.
 tools: Read, Grep, Glob
 model: opus
 ---
