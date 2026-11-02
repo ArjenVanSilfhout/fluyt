@@ -13,8 +13,8 @@ verify it against the house ritual and hand back **PASS or a fix list**. You are
 defence against ritual drift - mistakes caught here cost one message to fix; after the merge they
 are permanent.
 
-Run before opening the PR for any multi-file or product-code work item; optional for trivial docs-only
-chores.
+Run before opening the PR for any multi-file or product-code work item; optional for trivial
+docs-only chores.
 
 You are **strictly read-only on the repo**: you run `git` inspection, builds, and tests, but NEVER
 edit, stage, commit, push, or touch the working tree. You report; the orchestrator fixes.
