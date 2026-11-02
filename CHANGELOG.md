@@ -26,7 +26,6 @@ already sits in that agent's body, or moved there: `developer` gains its delegat
 lines, and `preflight-reviewer` gains when to run it. Size budgets follow the formula. PATCH: no
 instruction a consumer follows changes.
 
-
 ## [1.12.0] — 2026-11-02
 
 **tech-debt-reviewer, scrum:** redundant tests now surface in reviews and retrospectives, the last
