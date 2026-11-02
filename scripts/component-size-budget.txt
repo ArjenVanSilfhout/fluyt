@@ -32,7 +32,7 @@ plugins/fluyt/agents/developer.md 18800
 plugins/fluyt/agents/preflight-reviewer.md 26800
 plugins/fluyt/agents/product-owner.md 8600
 plugins/fluyt/agents/scrum-master.md 9400
-plugins/fluyt/agents/tech-debt-reviewer.md 8100
+plugins/fluyt/agents/tech-debt-reviewer.md 8800
 plugins/fluyt/agents/test-writer.md 15800
 plugins/fluyt/skills/adopt-conventions/SKILL.md 39100
 plugins/fluyt/skills/agent-liveness/SKILL.md 18300
@@ -47,7 +47,7 @@ plugins/fluyt/skills/install-refresh-plugin/SKILL.md 19700
 plugins/fluyt/skills/orchestrator/SKILL.md 7400
 plugins/fluyt/skills/release/SKILL.md 20600
 plugins/fluyt/skills/report-upstream/SKILL.md 6900
-plugins/fluyt/skills/scrum/SKILL.md 7700
+plugins/fluyt/skills/scrum/SKILL.md 8300
 plugins/fluyt/skills/ship-work-item/SKILL.md 66300
 plugins/fluyt/skills/ship-work-item/closing-keyword-grep.md 2500
 plugins/fluyt/skills/ship-work-item/known-failure-modes.md 1800
