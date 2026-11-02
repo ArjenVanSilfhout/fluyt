@@ -57,7 +57,7 @@ are the highest-signal findings. (This agent carries NO built-in architecture ru
 CLAUDE.md is the sole source. If it declares none, note that gap and review against general
 engineering principles.)
 
-## What to scan for - three lenses
+## What to scan for - four lenses
 
 **A) Technical debt**
 
@@ -90,6 +90,12 @@ engineering principles.)
 - Leaky abstractions; places where depending on a seam/interface would decouple callers.
 - Propose concrete moves that **raise cohesion / lower coupling** - name the refactoring (Extract
   Method, Extract Class, Move Method, Introduce Parameter Object, etc.).
+
+**D) Test redundancy** (scope: Project Facts `test-dir`; absent or `none` ⇒ skip)
+
+- Cases duplicating a behaviour another test already discriminates. Each finding names the cases to
+  merge and what still catches their target. The bar and the keep list are `test-writer`'s *What
+  earns a test*. A finding is a report only.
 
 ## Rules of engagement
 

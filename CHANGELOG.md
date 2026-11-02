@@ -14,9 +14,22 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.11.0**
+Current version: **1.12.0**
 
 ---
+
+## [1.12.0] — 2026-11-02
+
+**tech-debt-reviewer, scrum:** redundant tests now surface in reviews and retrospectives, the last
+of the five changes that stop test suites growing only by adding.
+
+- **tech-debt-reviewer** gains lens D, *Test redundancy*, scoped to `test-dir`. Each finding names
+  the cases to merge and what still catches their target. It is a report only.
+- **scrum** reads cases added and removed per item, and the ratio of test lines to product lines,
+  as evidence. An item with no record is reported as unknown, never as zero.
+
+Size budgets for both files rise by the formula, because the new text does not fit. MINOR: a shipped
+agent and skill gain instructions.
 
 ## [1.11.0] — 2026-10-28
 

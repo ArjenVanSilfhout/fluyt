@@ -57,6 +57,9 @@ Pull from sources that exist, never invented:
   spawn's own checkout lands in that worktree's copy of the file, discarded when the worktree is
   cleaned up after merge - unlike the dispatch hook (above). For actual blockers, see the fallback
   below.
+- **Test growth** - per item, cases added and removed plus test lines against product lines where
+  measurable, from `test-writer`'s report (added/extended/declined), the PR body, a CHANGELOG line
+  or the diff (the only source for removals). No record ⇒ unknown, never zero.
 - **Workflow friction** - `CLAUDE.md` / branching rules that were hard to follow, repeated mistakes,
   rework, or ordering gotchas.
 
