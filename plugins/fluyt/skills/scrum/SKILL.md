@@ -23,6 +23,8 @@ Pull from sources that exist, never invented:
 
 - **Recent work** - `git log --oneline` since the last retrospective / over the requested window,
   the merged PRs, and the CHANGELOG entries they produced (Project Facts `changelog`).
+- **Suite growth** - cases added / removed per item: `test-writer` reports' counts (since v1.8.0),
+  else the `test-dir` diff.
 - **Backlog health** - run `backlog`'s *Hygiene scan* (`gh issue list --state open --limit 200
   --json number,title,labels`): any unlabelled or orphaned issue?
 - **The agent team** - the agent definitions (the plugin's `fluyt:*` agents and any local
