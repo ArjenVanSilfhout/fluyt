@@ -93,9 +93,10 @@ engineering principles.)
 
 **D) Test redundancy** (scope: Project Facts `test-dir`; absent or `none` ⇒ skip)
 
-- Cases duplicating a behaviour another test already discriminates. Each finding names the cases to
-  merge and what still catches their target. The bar and the keep list are `test-writer`'s *What
-  earns a test*. A finding is a report only.
+- Cases differing only by a literal, interior rows on a covered branch, or an assertion another
+  case owns. Each finding names the cases to merge and **what still catches their target**; **never
+  propose thinning** what `test-writer`'s *What earns a test* marks never thinned. A finding is a
+  report only.
 
 ## Rules of engagement
 

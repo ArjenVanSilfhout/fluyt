@@ -32,7 +32,7 @@ plugins/fluyt/agents/developer.md 18800
 plugins/fluyt/agents/preflight-reviewer.md 26800
 plugins/fluyt/agents/product-owner.md 8600
 plugins/fluyt/agents/scrum-master.md 9400
-plugins/fluyt/agents/tech-debt-reviewer.md 8700
+plugins/fluyt/agents/tech-debt-reviewer.md 8800
 plugins/fluyt/agents/test-writer.md 15800
 plugins/fluyt/skills/adopt-conventions/SKILL.md 39100
 plugins/fluyt/skills/agent-liveness/SKILL.md 18300
