@@ -14,9 +14,20 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.12.1**
+Current version: **1.13.0**
 
 ---
+
+## [1.13.0] — 2026-11-02
+
+**ship-work-item:** the skill splits into a core of under 15k characters plus eight reference files,
+because every load paid for all 65k characters. Every gate, the scope-grant rules and the rules
+whose miss is irreversible stay stated in the core. The detail moved verbatim apart from retargeted pointers, and the
+core says when to read each file: `pick.md`, `delegation.md`, `worktree.md`, `verification.md`,
+`commit-and-pr.md`, `merge.md`, `after-merge.md` and `model-selection.md`.
+
+The skill's summed size budget rises, because each new file needs its own line and the core repeats
+what it must keep in view. MINOR: a consumer now reads the detail at named triggers.
 
 ## [1.12.1] — 2026-11-02
 
