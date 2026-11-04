@@ -92,7 +92,7 @@ its `§N` and *Section* references point into that `SKILL.md`.
 ## *Dispatch in the background*
 
 - **Dispatch in the BACKGROUND - that is the default, and it includes preflight.** Spawn a subagent
-  detached rather than blocking on it: a blocking spawn holds you unreachable for its whole run,
+  detached rather than blocking on it: a blocking spawn holds you unreachable for its whole run.
   **A backgrounded preflight obliges a draft PR** (§4).
   The full rule - the trade it makes, and what to do on a client that cannot dispatch detached -
   lives in the `agent-liveness` skill, which owns this concern.

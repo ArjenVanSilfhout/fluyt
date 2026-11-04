@@ -14,9 +14,15 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.13.0**
+Current version: **1.13.1**
 
 ---
+
+## [1.13.1] — 2026-11-04
+
+**ship-work-item:** the *Dispatch in the background* sentence in `delegation.md` ends at "for its
+whole run" again. The 1.13.0 split dropped the clause that followed the comma and left two
+sentences joined. PATCH: wording only, no instruction changes.
 
 ## [1.13.0] — 2026-11-02
 
