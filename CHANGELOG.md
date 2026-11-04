@@ -14,9 +14,15 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.13.1**
+Current version: **1.13.2**
 
 ---
+
+## [1.13.2] — 2026-11-04
+
+**README:** the two Status lines no longer name a version (they said 1.0.0 while the current
+version was 1.13.1) and point to `CHANGELOG.md` for the current version instead, so the README
+cannot go stale again at a release. PATCH: docs only.
 
 ## [1.13.1] — 2026-11-04
 
