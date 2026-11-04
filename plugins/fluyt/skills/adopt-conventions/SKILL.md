@@ -1,16 +1,9 @@
 ---
 name: adopt-conventions
 description: >-
-  Scaffold a Claude Code, Codex, or dual-client repo to adopt the fluyt process - instantiate
-  the Project Facts block, client routing, settings/gitignore/gitattributes fragments and the
-  CHANGELOG/DECISIONS skeletons non-destructively, interview for the repo's own invariants and other
-  consumer-owned sections, then propose retiring shadowed local process components.
-  Use right after installing the plugin in a new consumer repo, or
-  when the user says "adopt the conventions", "set up fluyt here", or "onboard this repo".
-  Also the **from-scratch** entry point (repo does not exist yet - "start a new project", "from
-  scratch", "greenfield") and the **re-sync** (drift-check) entry point for a repo ALREADY on
-  fluyt - "re-sync the conventions", "check for convention drift", "after updating the fluyt
-  plugin".
+  Adopt the fluyt process in a repo. Use after installing the plugin, or on "adopt the
+  conventions", "set up fluyt here", "onboard this repo", "start a new project", or "re-sync the
+  conventions".
 ---
 
 # Adopt fluyt conventions
@@ -76,7 +69,7 @@ repo's contract files - do it in the open.
      branch, re-sync **Pass D** re-offers the required-check half.
 
 - **First-time adopt** - the full flow below (survey → instantiate → retire shadows → verify → land).
-- **Re-sync (drift check)** - for a repo *already* on fluyt. The Project Facts template, the
+- **Re-sync (drift check)** - for a repo *already* on fluyt, e.g. after updating the plugin. The Project Facts template, the
   plugin's shipped **guidance** (the routing paragraph, the autonomy rule in "Ask the human when"),
   and the settings / gitignore / gitattributes **fragments** all gain content over time, and an
   instantiate-once copy silently lacks anything added later. Run a re-sync to catch that drift. It

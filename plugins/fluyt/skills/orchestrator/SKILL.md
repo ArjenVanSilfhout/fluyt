@@ -1,20 +1,15 @@
 ---
 name: orchestrator
 description: >-
-  The top-level session posture for the main agent: you orchestrate and delegate, you do not
-  implement. Use at the START of a working session, when the user says run the project, work the
-  backlog, drive the work, or you are the orchestrator, and when resuming after a context reset.
-  Names the ritual chain - read the hand-over, pick from the backlog, ship one item, keep dispatched
-  agents live, loop, write the hand-over before any pause - and the posture at each link: what
-  stays yours versus dispatched, how to challenge and verify a report, and what to capture when one
-  lands. It ROUTES to the skills that own each step; only rules 2 and 13 are its own. Do NOT load
-  it for one named item (ship-work-item), a quiet agent (agent-liveness), or writing a hand-over
-  (handover).
+  The top-level session posture: you orchestrate and delegate, you do not implement. Use at the
+  START of a session, on "run the project", "work the backlog", "drive the work", or after a
+  context reset.
 ---
 
 # Orchestrator - the session posture and the ritual chain
 
-A **skill, not a dispatchable role**: it installs the posture for a session and names which skill
+Loads on "run the project", "work the backlog", "drive the work", or a resume after a context
+reset. A **skill, not a dispatchable role**: it installs the posture for a session and names which skill
 takes over at each step. It states itself only the chain below, rules 2 and 13, and the precedence
 line; everything else points to its owner.
 
