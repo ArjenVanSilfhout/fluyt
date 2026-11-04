@@ -28,8 +28,8 @@ beside each pointer. Core bytes, before → after: release 19,299 → 11,809 (+ 
 `hotfix.md`); adopt-conventions 37,719 → 21,994 (+ `re-sync.md`, `from-scratch.md`);
 install-refresh-plugin 19,049 → 9,799 (+ `claude-code-repair.md`, which also holds the
 session-root settings check); agent-liveness 17,479 → 14,376 (+ `process-check.md`); handover
-8,731 → 8,234 and orchestrator 6,913 → 6,642 (trimmed, not split). Across the six, the core a
-session loads drops from 109,190 to 72,854 bytes. No skill folder's summed budget lines rise. The
+8,731 → 8,234 and orchestrator 6,913 → 6,672 (trimmed, not split). Across the six, the core a
+session loads drops from 109,190 to 72,884 bytes. No skill folder's summed budget lines rise. The
 `CLAUDE-skeleton.md` template's precedence paragraph becomes a pointer to `ship-work-item`,
 *Precedence*, so a re-sync no longer re-proposes plugin-owned text. Its scope-grant guardrails
 stay in full. Cross-references updated in `branch-protection`, `ship-work-item/worktree.md`,
