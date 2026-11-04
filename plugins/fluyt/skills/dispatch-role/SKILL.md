@@ -2,10 +2,8 @@
 name: dispatch-role
 description: >-
   Codex adapter for Fluyt's six specialist roles. Use when a Codex task should delegate to the
-  developer, product-owner, preflight-reviewer, tech-debt-reviewer, test-writer, or scrum-master
-  contract, or when verifying those roles in read-only smoke mode. Loads the canonical role file
-  from this plugin and dispatches it through Codex subagents; never substitutes an unscoped generic
-  prompt or a copied local role definition.
+  developer, product-owner, preflight-reviewer, tech-debt-reviewer, test-writer or scrum-master
+  role.
 ---
 
 # Dispatch a Fluyt role in Codex

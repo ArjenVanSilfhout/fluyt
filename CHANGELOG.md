@@ -14,9 +14,18 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.14.0**
+Current version: **1.14.1**
 
 ---
+
+## [1.14.1] — 2026-11-04
+
+**All sixteen skills:** descriptions are cut to at most 200 characters (folded), because every
+session pays for the skill listing whether or not it uses the skill: 9,295 characters of listing
+become 3,041. Each description opens with its trigger; three trigger phrases that lived only in a
+description ("work the backlog", "after updating the plugin", raw ideas to be filed) moved into
+the body of `orchestrator`, `adopt-conventions` and `backlog`. Nine size budgets ratchet down with
+the files. PATCH: no instruction a consumer follows changes.
 
 ## [1.14.0] — 2026-11-04
 

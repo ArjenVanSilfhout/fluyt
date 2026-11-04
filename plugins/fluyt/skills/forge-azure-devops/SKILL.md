@@ -1,15 +1,8 @@
 ---
 name: forge-azure-devops
 description: >-
-  Azure DevOps forge adapter for the fluyt delivery ritual. Use when Project Facts declares
-  forge: azure-devops and a core skill's step speaks GitHub or gh - this skill translates that step
-  to the az CLI: Azure Boards work items for the backlog (Priority for tiers, tags for labels,
-  predecessor links for blocked-by), az repos pr create and update --auto-complete for PR and
-  merge, work-item linking in place of Closes #N (with the inverted over-close trap), a
-  build-validation branch policy as the CI gate, branch policies plus branch security for
-  protection, and an ephemeral Entra ID bearer token for git over HTTPS. Triggers on "Azure
-  DevOps", "ADO", "az repos", "az boards", "work item", "branch policy". The canonical rituals stay
-  authoritative for the process; this skill supplies only the per-step forge translation.
+  Azure DevOps forge adapter. Use when Project Facts declares forge: azure-devops and a ritual step
+  speaks GitHub or gh; also on "Azure DevOps", "ADO", "az repos", "az boards", "branch policy".
 ---
 
 # The Azure DevOps forge adapter

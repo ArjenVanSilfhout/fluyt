@@ -1,13 +1,8 @@
 ---
 name: agent-liveness
 description: >-
-  Decide whether a dispatched background sub-agent is still working, has silently died, or has
-  already handed back - without reading its transcript, and without killing a healthy one. Use when
-  an agent has been quiet longer than its slice should take, when parallel worktree lanes look
-  identical between two checks, before re-dispatching a suspected-killed agent, or when deciding
-  whether to resume a returned agent or spawn fresh. Also states the two standing spawn defaults the
-  diagnosis rests on - dispatch detached, and never watch what is running - so read it before
-  spawning, not only when a lane has gone quiet.
+  Decide whether a dispatched background sub-agent is working, dead, or already handed back. Use
+  when an agent is quiet too long, before re-dispatching or resuming one, and before spawning.
 ---
 
 # Agent liveness - is it working, is it dead, or has it already handed back?

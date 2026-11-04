@@ -1,9 +1,8 @@
 ---
 name: versioning-and-changelog
 description: >-
-  The CHANGELOG-as-single-source-of-truth discipline and the MINOR-vs-PATCH version-bump rule. Use
-  whenever you add a CHANGELOG entry, pick a version bump, write a version-stamped commit subject, or
-  need to settle whether a change is MINOR or PATCH.
+  CHANGELOG discipline and the MINOR-vs-PATCH bump rule. Use whenever you add a CHANGELOG entry,
+  pick a version bump, write a version-stamped commit subject, or settle MINOR or PATCH.
 ---
 
 # Versioning & the CHANGELOG

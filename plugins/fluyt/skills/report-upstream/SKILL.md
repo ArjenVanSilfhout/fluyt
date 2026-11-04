@@ -1,13 +1,9 @@
 ---
 name: report-upstream
 description: >-
-  File a bug or feature request UPSTREAM about the fluyt plugin itself - a shared skill, agent,
-  hook, or template - rather than the consumer's own backlog. Use whenever a shared component is
-  broken, crashes, contradicts its own docs, assumes a Project Facts key that isn't in the contract,
-  or is missing a capability that would help more than one project. Files to the plugin's home repo,
-  provenance stripped by default and only after the user approves the draft;
-  main session only; refuses when Project Facts `report-upstream` is `off`; falls back to the web
-  issue form when `gh` cannot reach it.
+  File a bug or feature request UPSTREAM about the fluyt plugin itself. Use when a shared skill,
+  agent, hook or template is broken, contradicts its docs, or lacks a capability other projects
+  need.
 ---
 
 # Report upstream - file a bug or feature request against fluyt

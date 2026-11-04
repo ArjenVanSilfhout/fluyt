@@ -1,12 +1,8 @@
 ---
 name: ship-work-item
 description: >-
-  The end-to-end delivery ritual for landing ONE work item - pick an issue, branch off the
-  integration branch, implement, test, update the CHANGELOG + version, put `Closes #N` in the PR
-  body, commit, open a PR, arm fire-and-forget auto-merge, and verify the issue closed. Use whenever
-  you start OR finish a backlog issue, are about to commit or open a PR, need to pick the version
-  bump, or are waiting on an auto-merge. Skipping this ritual is how mis-versioned releases and
-  silently-unclosed issues happen.
+  End-to-end ritual for landing ONE work item: branch, implement, CHANGELOG + version, PR,
+  auto-merge, verify close. Use whenever you start or finish a backlog issue or commit or open a PR.
 ---
 
 # Ship a work item (branch → PR → merge)
