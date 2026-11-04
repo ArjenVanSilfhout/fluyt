@@ -1,6 +1,6 @@
-<!-- CLAUDE.md skeleton - merge into an existing CLAUDE.md, don't overwrite. The routing
-     paragraph below is load-bearing: the plugin's own prose is NOT auto-loaded, so these pointers must
-     live HERE, in the consumer's CLAUDE.md, to make the shared skills trigger. -->
+<!-- CLAUDE.md skeleton - merge into an existing CLAUDE.md, don't overwrite. The short routing
+     paragraph below is load-bearing: it sends every session to the plugin before work starts; each
+     skill then loads from its own description in the skill listing. -->
 
 # <Project name> - working agreement
 
@@ -8,54 +8,16 @@
 
 ## Agentic process (fluyt plugin)
 
-This repo uses the **fluyt** plugin for its delivery process. The shared playbooks live in the
-plugin; this file stays the compact, client-neutral contract + the routing that points at them.
-**Consult the matching skill before working in its area** instead of working from memory. Claude Code
-invokes namespaced skills as `/fluyt:<name>`; Codex uses `$fluyt:<name>` (or triggers
-from its description). Below, swap `/` for `$` when working in Codex:
+This repo uses the **fluyt** plugin for its delivery process. **Consult the matching skill before
+working in its area**, not memory. Start or resume a session with `/fluyt:orchestrator`; it routes
+the ritual chain. Each skill loads from its description: `orchestrator`, `hub`, `ship-work-item`,
+`backlog`, `release`, `versioning-and-changelog`, `scrum`, `report-upstream`, `adopt-conventions`,
+`branch-protection`, `install-refresh-plugin`, `agent-liveness`, `handover`, `hook-authoring`,
+`dispatch-role`, `forge-azure-devops`. In Codex, swap `/` for `$`.
 
-- **Starting a working session, or resuming after a context reset** - "run the project", "work the
-  backlog", "drive the work", "you are the orchestrator" - the session posture and the ritual chain
-  it routes to: `/fluyt:orchestrator`
-- **Running ONE cross-project hub session** that coordinates several project sessions (each still the
-  orchestrator of its own repo) - the hub repo, the message protocol, relaying decisions, and the
-  authority boundary: `/fluyt:hub`
-- **Delivering a work item** (branch → PR → merge, version bump, close the issue):
-  `/fluyt:ship-work-item`
-- **Picking / filing / re-tiering backlog issues**: `/fluyt:backlog`
-- **Cutting a release** (integration → release branch): `/fluyt:release`
-- **Version + CHANGELOG discipline**: `/fluyt:versioning-and-changelog`
-- **Retrospective on the agent team + workflow**: `/fluyt:scrum`
-- **Found a bug in / want a feature for the shared plugin itself**: `/fluyt:report-upstream`
-- **Starting a brand-new project from scratch** (interview the shape, offer to create the repo and
-  branches, then onboard it): `/fluyt:adopt-conventions` (from-scratch mode)
-- **After updating the fluyt plugin - re-sync conventions** (pull in new Project Facts keys +
-  changed shipped guidance): `/fluyt:adopt-conventions` (re-sync mode)
-- **Protecting a branch** (a ruleset or classic protection on the integration or release branch,
-  required status checks, which merge methods a branch allows) - or auditing the CI triggers that go
-  with it: `/fluyt:branch-protection`
-- **Plugin won't load / update on an embedded client, or checking which version is loaded**:
-  `/fluyt:install-refresh-plugin`
-- **About to dispatch a sub-agent** (detached or blocking? watch it or collect it?), **or a background
-  one has gone quiet** - is it working, dead, or already handed back? Resume it or re-dispatch?:
-  `/fluyt:agent-liveness`
-- **Ending a session, or a context reset is coming** (an auto-compaction threshold, a manual reset, a
-  long pause, handing off to another person or agent) - write a hand-over a successor can act on
-  without reconstructing state from the transcript: `/fluyt:handover`. On resuming after one,
-  read it before acting on anything a prior turn appears to have told you.
-- **About to write or change a Claude Code hook** (a `hooks.json` entry, or any event hook that
-  writes a file, stamps a time, or resolves a path) - read the authoring discipline BEFORE authoring,
-  not once at onboarding: `/fluyt:hook-authoring`
-- **Dispatching a canonical specialist role from Codex**: `/fluyt:dispatch-role`
-- **The repo lives on Azure DevOps** (Project Facts `forge: azure-devops`) and a ritual step names
-  GitHub or `gh` - translate that step, not the ritual: `/fluyt:forge-azure-devops`
-
-Claude Code loads the team subagents directly as `fluyt:developer`,
-`fluyt:product-owner`, `fluyt:preflight-reviewer`,
-`fluyt:tech-debt-reviewer`, `fluyt:test-writer`, and `fluyt:scrum-master`.
-Codex dispatches the same canonical role files through `$fluyt:dispatch-role`. Every role's
-substantive report ends with a **"Skills consulted"** line naming what it read; a missing line is
-worth questioning ("none" is legitimate only for a trivial mechanical task).
+Team roles load as `fluyt:<role>` subagents in Claude Code and through `$fluyt:dispatch-role` in
+Codex. Every role's report ends with a **"Skills consulted"** line naming what it read; a missing
+line is worth questioning ("none" is legitimate only for a trivial mechanical task).
 
 Notation in fluyt skills and agent files: `⇒` = implies (what follows, or what a system does); `→` =
 then (the next step, or the action you take).
