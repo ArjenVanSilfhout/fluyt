@@ -7,24 +7,24 @@ description: >-
 
 # Hand-over - leaving a session a successor can act on
 
-A hand-over is a deliberate, reviewable state capture - the answer to a **context reset**: the
-*conversation* survives in some form while orchestration state - which lane holds what, which
-grants are still live, which decisions are waiting on the human - does not.
+A hand-over is a state capture for a **context reset**: the *conversation* may survive, but
+orchestration state - which lane holds what, which grants are still live, which decisions wait on
+the human - does not.
 
 This is the **predecessor's** half; the successor's half is `ship-work-item`'s *Continue
 autonomously across a scope*.
 
 ## When to write one
 
-Use it whenever the user asks (the phrasings in the description), and on your OWN
-initiative before a foreseeable context reset: a client threshold you can see coming, a long pause
-about to start, or stopping for the day mid-drain. Also consult it the moment you **resume** after
+Use it whenever the user asks (the phrasings in the description), and on your OWN initiative
+before a foreseeable context reset: a client threshold you can see coming, a long pause about to
+start, or stopping for the day mid-drain. Also consult it the moment you **resume** after
 one - *Finding one* below states the read-side rule.
 
 ## The questions it must answer - not a fixed schema
 
-Ship the questions a hand-over must answer, not a mandated section list. Answer what applies,
-under whatever heading fits; skip the rest and say so rather than leave a silent gap:
+Answer what applies, under whatever heading fits; skip the rest and say so rather than leave a
+silent gap:
 
 - **What is mid-way, and the one thing not to break.** The single fact a successor needs before
   anything else.
@@ -35,15 +35,12 @@ under whatever heading fits; skip the rest and say so rather than leave a silent
 - **Where the work is, from the TREE** - `git` / `gh` queries run at write time, never recalled: the
   integration branch and its state, open PRs, **uncommitted work flagged loudly** (a tracked
   mid-item edition is itself the loudest case - see *Committing it*), and, where more than one item
-  is queued, the **integration order with its reason** - integration is serial even when
-  implementation is parallel, and the order usually encodes a dependency a successor cannot
-  re-derive from the tree alone.
-- **Live lanes, gated on what you actually OBSERVE, never on a Project Facts key.** Most sessions
-  have no worktree or live agent, and `worktree-isolation` does not predict them. Check `git
-  worktree list` and what you actually dispatched; write the section only when one of them is
-  non-empty. State plainly what a successor must re-derive rather than trust - whether an agent is
-  still working, dead, or has already handed back is a fact about **your own inbox**, which a reset
-  destroys; see `agent-liveness`.
+  is queued, the **integration order with its reason** (`ship-work-item`: integration is
+  serial) - it usually encodes a dependency a successor cannot re-derive from the tree alone.
+- **Live lanes, gated on what you actually OBSERVE, never on a Project Facts key.** Check `git
+  worktree list` and what you actually dispatched; write the section only when one is non-empty. State plainly what a successor must re-derive
+  rather than trust - whether an agent is still working, dead, or has already handed back is a fact
+  about **your own inbox**, which a reset destroys; see `agent-liveness`.
 - **Decisions taken under delegated authority, awaiting the human's review** - each with its
   **reversal cost**, so the human can overrule cheaply. Point at the decisions-log entry where one
   exists rather than restating it; add only the **awaiting-review** state, which the log doesn't
@@ -57,7 +54,7 @@ under whatever heading fits; skip the rest and say so rather than leave a silent
 ## The rules that make it trustworthy
 
 - **Written from the tree, never from memory.** Every fact above is a `git` / `gh` query away; a
-  hand-over assembled from recollection is the failure the exercise exists to catch.
+  hand-over from recollection is the failure this exists to catch.
 - **Cite, don't copy.** Point at `CLAUDE.md`, the decisions file, the CHANGELOG, or an issue rather
   than restating their content - a copy drifts the moment its source changes.
 - **Refresh it, never append.** Each edition **replaces** the last in full; an appended trail leaves
@@ -69,13 +66,12 @@ under whatever heading fits; skip the rest and say so rather than leave a silent
   (decisions to the `decisions` file, traps to a local skill), never into the hand-over.
 - **Stamp its own freshness, self-describing.** Record the branch **and the CHANGELOG version** (or,
   where the repo keeps no CHANGELOG, a UTC date-time), never a commit SHA or the artifact's own PR
-  number - the artifact's own commit moves the tip a SHA would have named, and its own PR number
-  does not exist until the PR is opened; the version is neither. A successor may arrive with no
-  other context, so it must tell how fresh the file is from the file itself.
+  number - its own commit moves the tip a SHA would have named, and its PR number does not exist
+  until the PR is opened. The file must show its own freshness.
 - **Never a second source of truth.** The CHANGELOG is the single source of truth for completed work
   and versions, and the `backlog` skill's selection order for what's next - this file **cites**
   both and never restates either as authority. Where it does record a queue (the integration order
-  above), mark it a **snapshot to re-derive, not an instruction** (a new `bug` jumps any tier).
+  above), mark it a **snapshot to re-derive, not an instruction**.
 - **No full-CI-wait.** Writing - and, at a seam, committing - a hand-over must never become gated on
   watching a CI round-trip go green; land it and move on.
 
@@ -95,8 +91,8 @@ Discovery is a **pointer**, not a search: the consumer's `CLAUDE.md` (and, on Co
 routing to it) carries a one-line pointer to this skill and the Project Facts key naming the
 artifact's location - added at onboarding by `adopt-conventions`. On **resuming** after a context
 reset, read that pointer, then the file it names before acting on anything a prior turn appears to
-have told you. If no pointer exists, there is nothing to find - proceed as on any fresh session, and
-consider offering to set one up.
+have told you. If no pointer exists, proceed as on any fresh session, and consider offering to set
+one up.
 
 ## Committing it - only for a tracked hand-over
 
@@ -111,9 +107,9 @@ both.
   whatever this repo already does). **Defer to the consumer's own `version-rules`** for whether that
   commit needs a version bump - this skill hardcodes no tier, PATCH included.
 - **Mid-item** - a work branch, a dirty tree, an item genuinely in flight - **write it and leave it
-  uncommitted.** There is no legal commit path here: the ritual's own commit-guard forbids staging
-  anything but the item's own files, and a hand-over committed here would ride into that item's own
-  squash merge. Do not look for a legal commit; do not commit.
+  uncommitted.** No legal commit path exists: the ritual's commit-guard forbids staging anything
+  but the item's own files, and a hand-over committed here would ride into its squash merge. Do not look
+  for a legal commit; do not commit.
 
 Four constraints on the mid-item case (tracked), all load-bearing:
 
@@ -122,7 +118,7 @@ Four constraints on the mid-item case (tracked), all load-bearing:
 2. **State plainly that this edition is expected to be discarded or rewritten, not merged.** It is a
    hand-off for the next turn, not a record for the repo.
 3. **Never `git add` it, and never `git add` its directory, mid-item.** A directory-level add breaks
-   the moment an ignore rule changes - and mid-item the rule is stronger still: no add of any kind.
+   the moment an ignore rule changes - and mid-item no add of any kind.
 4. **Write only from the main checkout, never from inside a worktree.** A file written into an
    isolated worktree's copy of the path (ignored or tracked) is destroyed when that worktree is
    cleaned up - `ship-work-item` removes them with `--force` once their commits are integrated. If
