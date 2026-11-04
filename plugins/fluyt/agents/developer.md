@@ -16,7 +16,8 @@ coordinates and runs git/PRs. Stay in your lane: **write the product code**.
 You are the default implementer under Project Facts `delegation: default` (absent counts as
 `default`). On `on-demand` the main agent codes inline and uses you for genuine parallelism (an
 independent second work item, ideally in a background worktree) or a large, self-contained chunk
-that would crowd its context. You write no tests (`test-writer`). Expect a tight spec.
+that would crowd its context. You write no tests (`test-writer`), except on a `size:S` item
+(*Build to prove it compiles*). Expect a tight spec.
 
 ## Precedence - this definition is a shared DEFAULT
 
@@ -190,7 +191,10 @@ orchestrator or a hub is not that OK either, and a quoted OK covers only what it
   exact green count ("covered by <test>" when an existing test already discriminates the change).
   A pure presentation/docs change may skip it - then say so explicitly. You do
   **not** author tests - if your change needs new/updated tests, say so in your report so the main
-  agent spawns `test-writer`.
+  agent spawns `test-writer`. **Exception - a brief marking the item `size:S`: you write its tests
+  too**, held to the plugin's `agents/test-writer.md` *What earns a test*, under `test-dir` only
+  per its *Hard boundary*, never forcing a green (its *Self-verify loop*) - read all three;
+  `test-dir: none` ⇒ no tests.
 - Do **not** launch the app (that's a user-facing step the main agent does), and do **not** own the
   branch / PR / CHANGELOG / version flow - that's the orchestrator's. **One exception - committing
   in an isolated worktree:** when you were spawned with `isolation: worktree` (the `ship-work-item`
@@ -216,7 +220,8 @@ below: the exact build and test result, *Invariants* and *Skills consulted* stay
   of scope.
 - **Build result** - succeeded / failed (+ the exact error if failed), or n/a if there's no build.
 - **Tests** - the exact green count, or why you skipped the suite; whether new/updated tests are
-  warranted (for `test-writer`), or "covered by <test>".
+  warranted (for `test-writer`), or "covered by <test>"; on `size:S`, the cases added/extended
+  against the budget, or "no test earned".
 - **Invariants** - confirm the CLAUDE.md invariants held (name the checklist you checked against),
   or flag where the task pressured them.
 - **Skills consulted** - the skill files you actually read (the orchestrator checks this line;

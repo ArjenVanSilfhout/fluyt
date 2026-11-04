@@ -67,7 +67,8 @@ here or in the file named at its section, and a reviewer enforcing a section rea
   PR and merge stay yours, the commit too outside an isolated lane. **Read what comes back and
   challenge it against the spec AND the idea behind it.** Inline only when all hold: one file, no
   new logic and no more than a handful of changed lines, no new or updated test; when you cannot
-  tell, dispatch.
+  tell, dispatch. **A `size:S` item takes the fast path** - one `developer` writes the code and its
+  tests, no `test-writer` spawn; the rule is in `verification.md`.
 - **Before you write a spawn brief, act on a delegate's or reviewer's report, weigh going inline, or
   run on `delegation: on-demand`, read `delegation.md`:** the delegation bullets, the challenge bar,
   *a delegate's report is a secondary source*, *delegation is not deference*, the pre-ruled version

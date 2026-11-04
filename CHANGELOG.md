@@ -14,9 +14,19 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.13.2**
+Current version: **1.14.0**
 
 ---
+
+## [1.14.0] — 2026-11-04
+
+**ship-work-item, developer:** a `size:S` item takes a fast path: the one `developer` spawn writes
+the code and its tests, held to `test-writer`'s *What earns a test* bar, and no `test-writer` is
+spawned; preflight runs as before. A comment-only or rename-only slice is one PR with the
+`developer` at `haiku`; an issue's `model:*` routing label still wins over that rule. The
+covered-by rule stays on top of both paths, and `size:M` / `size:L` keep the `test-writer` spawn.
+The reason: a small item paid for a second spawn and a second hand-off that its test budget never
+needed. MINOR: a skill and an agent gain an instruction a consumer follows.
 
 ## [1.13.2] — 2026-11-04
 
