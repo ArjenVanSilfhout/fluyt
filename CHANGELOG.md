@@ -23,12 +23,12 @@ Current version: **1.14.2**
 **CLAUDE.md:** the working agreement drops from 23.3k to about 19.2k bytes (314 to 262 lines)
 after a read-only review: two contradictions fixed (the work-branch pattern now matches
 `ship-work-item` §0's `<type>/i<N>-<slug>`, and the bug rule no longer claims to cross tiers),
-five restatements of the `main`-pin fact collapsed to one, the precedence and scope-grant
-paragraphs replaced by pointers to `ship-work-item`, the two long invariants cut to rule plus a
-`DECISIONS.md` pointer, and the client-specific sandbox and shell chatter removed from `test-cmd`
-and `notes`. Three Project Facts keys the template defines are now stated explicitly:
-`test-budget: advisory`, `git-identity: none`, `report-upstream: on`. No gate, invariant, key or
-value is dropped. PATCH: a repo-side file.
+five restatements of the `main`-pin fact collapsed to one, the precedence paragraph replaced by a
+pointer to `ship-work-item` (the scope-grant guardrails stay stated in full), the two long
+invariants cut to rule plus a `DECISIONS.md` pointer, and the client-specific sandbox and shell
+chatter removed from `test-cmd` and `notes`. Three Project Facts keys the template defines are
+now stated explicitly: `test-budget: advisory`, `git-identity: none`, `report-upstream: on`. No
+gate, invariant, key or value is dropped. PATCH: a repo-side file.
 
 ## [1.14.1] — 2026-11-04
 
