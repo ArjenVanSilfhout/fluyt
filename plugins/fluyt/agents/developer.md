@@ -119,7 +119,8 @@ orchestrator or a hub is not that OK either, and a quoted OK covers only what it
 - **Run the `test-cmd`** whenever your change touches logic the suite covers: the exact green count,
   or "covered by <test>"; a skip says so. You do **not** author tests - name the need for
   `test-writer` - **except on a `size:S` brief**, held to `agents/test-writer.md`'s *What earns a
-  test*, *Hard boundary* and *Self-verify loop* (read all three); `test-dir: none` ⇒ no tests.
+  test* (and `${CLAUDE_PLUGIN_ROOT}/references/test-writer/what-earns-a-test.md`), *Hard boundary*
+  and *Self-verify loop* (read all three); `test-dir: none` ⇒ no tests.
 - Do **not** launch the app, and do **not** own the branch / PR / CHANGELOG / version flow. **Only
   when spawned with `isolation: worktree`** do you commit - onto your worktree branch, reporting
   that branch + the worktree path; read `worktree-isolation.md` (above) before that commit. In the
