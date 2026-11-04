@@ -26,7 +26,9 @@ spawned; preflight runs as before. A comment-only or rename-only slice is one PR
 `developer` at `haiku`; an issue's `model:*` routing label still wins over that rule. The
 covered-by rule stays on top of both paths, and `size:M` / `size:L` keep the `test-writer` spawn.
 The reason: a small item paid for a second spawn and a second hand-off that its test budget never
-needed. MINOR: a skill and an agent gain an instruction a consumer follows.
+needed. One rationale sentence in `model-selection.md` ("searching code is never a heavy-model
+task") is cut to fit the file's budget; its instruction stays. MINOR: a skill and an agent gain an
+instruction a consumer follows.
 
 ## [1.13.2] — 2026-11-04
 
