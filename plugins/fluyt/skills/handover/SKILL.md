@@ -1,12 +1,8 @@
 ---
 name: handover
 description: >-
-  Write a session hand-over so a successor - the same agent after a context reset, a fresh session,
-  or a different person or agent - can act without reconstructing state from a transcript. Use when
-  the user says hand over, handover, end the session, write the handover, prepare a successor, or a
-  context reset is coming (an auto-compaction threshold, a manual reset, a long pause, the day
-  ending). Also consult it on RESUMING after one, to find the artifact at the location Project
-  Facts `handover` names.
+  Write a session hand-over a successor can act on. Use on "hand over", "handover", "end the
+  session", "prepare a successor", or when a context reset is coming; also consult it when resuming.
 ---
 
 # Hand-over - leaving a session a successor can act on

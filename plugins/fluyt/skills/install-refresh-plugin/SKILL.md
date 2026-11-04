@@ -1,11 +1,8 @@
 ---
 name: install-refresh-plugin
 description: >-
-  Install, refresh, and diagnose a Fluyt-style marketplace plugin on Claude Code or
-  Codex. Use when a plugin will not load, a marketplace update did not reach the installed cache,
-  the loaded version is unclear, or a newly installed skill/role adapter is missing. Keeps the two
-  clients' manifests, caches, enablement records, refresh commands, and restart/new-task boundaries
-  explicit instead of applying one client's repair steps to the other.
+  Install, refresh and diagnose a Fluyt-style plugin on Claude Code or Codex. Use when a plugin
+  will not load or update, the loaded version is unclear, or a new skill or role adapter is missing.
 ---
 
 # Install / refresh / diagnose a plugin by client

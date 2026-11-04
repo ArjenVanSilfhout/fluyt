@@ -1,11 +1,8 @@
 ---
 name: scrum
 description: >-
-  Run a scrum-master / retrospective pass on the AGENT TEAM and workflow (not the product code). Use
-  when the user types /scrum or /retro, asks for a retrospective, a "how are the agents working
-  together" review, a process/workflow health check, or wants suggestions for improving how the
-  team's agents collaborate. The main agent runs this because only it has the full orchestration
-  view; every suggestion is PROPOSED for the user to verify - nothing is applied automatically.
+  Run a retrospective on the AGENT TEAM and workflow, not the product code. Use on /scrum, /retro,
+  "retrospective", or a process health check; every suggestion is proposed, never auto-applied.
 ---
 
 # Scrum-master / retrospective pass

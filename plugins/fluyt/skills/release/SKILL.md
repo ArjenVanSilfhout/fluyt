@@ -1,12 +1,9 @@
 ---
 name: release
 description: >-
-  The integration-branch → release-branch promotion ritual - merge-commit (NEVER squash), optional
-  version tag, pre-flight checks, restoring the integration branch if GitHub auto-deletes it on
-  merge, and recording a release-version milestone when the project uses one. Use whenever promoting
-  to the release branch, cutting/tagging a release or version, or when the user says "release",
-  "ship to main", or "tag it". GitHub's default merge button is squash, destroying per-item history -
-  this skill exists to prevent that.
+  Integration-to-release branch promotion ritual (merge-commit, NEVER squash). Use whenever
+  promoting to the release branch, cutting or tagging a release, or on "release", "ship to main",
+  "tag it".
 ---
 
 # Release: promote integration branch → release branch
