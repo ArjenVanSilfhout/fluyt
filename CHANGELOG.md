@@ -14,9 +14,27 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.15.2**
+Current version: **1.16.0**
 
 ---
+
+## [1.16.0] — 2026-11-04
+
+**release, adopt-conventions, install-refresh-plugin, agent-liveness, handover, orchestrator:**
+the six heaviest skills after `ship-work-item` are cut and split. Rarely needed detail moves to
+reference files in each skill's own directory, one Read away, and each core gains a "Read
+`<file>` when ..." step. Every gate, stop and safety rule stays in the core, with marked repeats
+beside each pointer. Core bytes, before → after: release 19,299 → 11,809 (+ `back-sync-pr.md`,
+`hotfix.md`); adopt-conventions 37,719 → 21,994 (+ `re-sync.md`, `from-scratch.md`);
+install-refresh-plugin 19,049 → 9,799 (+ `claude-code-repair.md`, which also holds the
+session-root settings check); agent-liveness 17,479 → 14,376 (+ `process-check.md`); handover
+8,731 → 8,234 and orchestrator 6,913 → 6,642 (trimmed, not split). Across the six, the core a
+session loads drops from 109,190 to 72,854 bytes. No skill folder's summed budget lines rise. The
+`CLAUDE-skeleton.md` template's precedence paragraph becomes a pointer to `ship-work-item`,
+*Precedence*, so a re-sync no longer re-proposes plugin-owned text. Its scope-grant guardrails
+stay in full. Cross-references updated in `branch-protection`, `ship-work-item/worktree.md`,
+`CLAUDE-project-facts.md` and `docs/consumer-integration.md`. MINOR: skills gain a
+read-this-file step.
 
 ## [1.15.2] — 2026-11-04
 
