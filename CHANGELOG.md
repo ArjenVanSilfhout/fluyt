@@ -14,9 +14,108 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.7.2**
+Current version: **1.13.0**
 
 ---
+
+## [1.13.0] — 2026-11-02
+
+**ship-work-item:** the skill splits into a core of under 15k characters plus eight reference files,
+because every load paid for all 65k characters. Every gate, the scope-grant rules and the rules
+whose miss is irreversible stay stated in the core. The detail moved verbatim apart from retargeted pointers, and the
+core says when to read each file: `pick.md`, `delegation.md`, `worktree.md`, `verification.md`,
+`commit-and-pr.md`, `merge.md`, `after-merge.md` and `model-selection.md`.
+
+The skill's summed size budget rises, because each new file needs its own line and the core repeats
+what it must keep in view. MINOR: a consumer now reads the detail at named triggers.
+
+## [1.12.1] — 2026-11-02
+
+**All six agents:** descriptions are cut to at most 200 characters, because every session and
+dispatch pays for the agent listing whether or not it uses the agent. What a description dropped
+already sits in that agent's body, or moved there: `developer` gains its delegation and no-tests
+lines, and `preflight-reviewer` gains when to run it. Size budgets follow the formula. PATCH: no
+instruction a consumer follows changes.
+
+## [1.12.0] — 2026-11-02
+
+**tech-debt-reviewer, scrum:** redundant tests now surface in reviews and retrospectives, the last
+of the five changes that stop test suites growing only by adding.
+
+- **tech-debt-reviewer** gains lens D, *Test redundancy*, scoped to `test-dir`. Each finding names
+  the cases to merge and what still catches their target. It is a report only.
+- **scrum** reads cases added and removed per item, and the ratio of test lines to product lines,
+  as evidence. An item with no record is reported as unknown, never as zero.
+
+Size budgets for both files rise by the formula, because the new text does not fit. MINOR: a shipped
+agent and skill gain instructions.
+
+## [1.11.0] — 2026-10-28
+
+**ship-work-item:** the Adversarial coverage pass now sorts each surviving mutant into one of three
+classes, so a survivor no longer turns into a new test by default:
+
+- **redundant:** an existing test, golden or digest kills it once named. Nothing is added, and the
+  verdict names that test and cites the captured kill.
+- **gap:** the nearest owning test is extended with a row or an assertion.
+- **new:** a new test is written, but only when nothing owns the mutant. `test-writer`'s *What
+  earns a test* decides.
+
+A delegated pass carries the classes in its spawn brief. MINOR: a shipped skill gains instructions.
+
+## [1.10.0] — 2026-10-28
+
+**preflight-reviewer, Project Facts template:** a new *Test diff* lens at the end of Step 7. It
+reads the diff's test files for five redundancy tells:
+
+- three or more cases differing only by a literal;
+- more than two rows per branch;
+- an expected value built by the same expression as the actual;
+- a new test duplicating an existing one;
+- a new file for a regression whose subject already has a suite.
+
+Findings are Advisory. They FAIL only under the new Project Facts key `test-budget: strict` (absent
+or `advisory` means Advisory), and the lens never flags what `test-writer` marks "never thinned".
+Until now, no reviewer read the test diff for redundancy. The `preflight-reviewer` budget line rose
+from 25300 to 26800 for the lens. MINOR: a shipped agent and the template gain instructions.
+
+## [1.9.0] — 2026-10-28
+
+**ship-work-item, developer:** a `test-writer` brief now names the suite to extend and a case
+budget, which defaults to `test-writer`'s *What earns a test*. When an existing test already
+discriminates the change, no `test-writer` is spawned, and the PR cites that test instead. The
+`developer` may answer "covered by <test>" in its test report. This keeps a new case from being
+added where an owning test already catches the change. MINOR: shipped components gain instructions.
+
+## [1.8.0] — 2026-10-28
+
+**test-writer:** a new "What earns a test" bar. A test earns its place only when it guards a declared
+invariant, a public contract, a regression that happened, or logic whose wrong answer would be
+silent. Duplicates, restated constants, interior rows on a covered branch, implementation-detail
+pins and library behaviour don't qualify. An owning test is extended before a new one is added,
+within a case budget: the brief's, else one per acceptance criterion plus one per touched
+invariant. A keep list (digests, goldens, round-trips, contract tests, one case per real bug, and
+others) is never thinned. The companion-oracle and twin-fixture rules can now be met by a row on
+the owning test. The edge-case list becomes "cover the boundaries the logic branches on, in one
+table", and the report counts cases added, extended and declined against the budget. Suites had
+grown only by adding. Budget line raised from 13900 to 15800 for the new section. MINOR: a shipped
+agent gains instructions.
+
+## [1.7.4] — 2026-10-28
+
+**Design (docs only):** `docs/design/affected-tests.md` proposes an opt-in, stack-neutral recipe for
+running only the tests a change affects. It covers a default-off Project Facts sub-block, a decision
+procedure that falls back to a full run whenever it cannot prove a test unaffected, a full-run safety
+net, and a shadow period that measures savings before a consumer keeps the recipe. Three forks are
+left for the maintainer, among them whether fluyt should ever ship a reusable workflow
+(recommendation: no). PATCH: docs only, and no shipped file changes.
+
+## [1.7.3] — 2026-10-28
+
+**Fix (CI):** the per-plugin `claude plugin validate --strict` step tolerates the new "Plugin
+directory checks" block that CLI 2.1.312 prints. The block is verdict-neutral by its own wording,
+but the step's fail-closed rule turned every PR red because of it. The skip still fails closed when
+the block changes shape. PATCH: CI only.
 
 ## [1.7.2] — 2026-10-11
 

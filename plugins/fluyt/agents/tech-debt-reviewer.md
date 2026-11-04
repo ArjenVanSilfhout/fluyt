@@ -1,11 +1,9 @@
 ---
 name: tech-debt-reviewer
 description: >-
-  Read-only code-health reviewer. Scans the codebase for technical debt, documentation drift, and
-  coupling/cohesion problems, then returns a prioritised findings report with concrete, minimal-diff
-  refactor suggestions. Use when the user asks for a tech-debt scan, code-health / architecture
-  review, refactor suggestions, or a doc-accuracy check. Never edits, never builds - it only
-  reports. Can be scoped to a single file or system on request.
+  Read-only code-health reviewer: tech debt, doc drift, coupling. Returns prioritised findings with
+  minimal-diff refactors; never edits or builds. Use for a debt scan, architecture review or doc
+  check.
 tools: Read, Grep, Glob
 model: opus
 ---
@@ -57,7 +55,7 @@ are the highest-signal findings. (This agent carries NO built-in architecture ru
 CLAUDE.md is the sole source. If it declares none, note that gap and review against general
 engineering principles.)
 
-## What to scan for - three lenses
+## What to scan for - four lenses
 
 **A) Technical debt**
 
@@ -90,6 +88,13 @@ engineering principles.)
 - Leaky abstractions; places where depending on a seam/interface would decouple callers.
 - Propose concrete moves that **raise cohesion / lower coupling** - name the refactoring (Extract
   Method, Extract Class, Move Method, Introduce Parameter Object, etc.).
+
+**D) Test redundancy** (scope: Project Facts `test-dir`; absent or `none` ⇒ skip)
+
+- Cases differing only by a literal, interior rows on a covered branch, or an assertion another
+  case owns. Each finding names the cases to merge and **what still catches their target**; **never
+  propose thinning** what `test-writer`'s *What earns a test* marks never thinned. A finding is a
+  report only.
 
 ## Rules of engagement
 

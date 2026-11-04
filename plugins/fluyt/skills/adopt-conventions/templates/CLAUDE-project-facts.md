@@ -139,6 +139,10 @@
   `preflight-reviewer`, not CI) can detect its absence; the key asks for an honest attestation, not
   something it can verify. `on-demand` is the recommended default - the cost is per-item and
   recurring, unlike `delegation`'s default, which has a reachability argument.
+- `test-budget`: <advisory | strict> - how hard `preflight-reviewer`'s *Test diff* lens bites.
+  Default `advisory` (absent → `advisory`): its redundancy tells in the diff's test files are
+  non-blocking Advisory findings. Set `strict` to make them FAIL. The case budget itself is
+  `test-writer`'s, not this key's.
 - `visual-verification`: <none | a sub-block declaring how rendering changes are visually verified>.
   Default `none` (absent → `none`): no visual gate - non-GUI consumers are unaffected.
   Set it for a GUI / visualization product, where build + tests + a launch can't prove the
