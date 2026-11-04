@@ -48,9 +48,10 @@
      `ratified @vX.Y.Z` key whose definition below carries a `recommendation-changed` version NEWER
      than its own `@vX.Y.Z` gets re-presented; everything else - every `inferred` key regardless, and
      every `ratified` key with no newer tell - is left exactly as `adopt-conventions`' existing
-     Pass A rules already treat it. Today no key below carries a `recommendation-changed` annotation:
-     the mechanism ships ahead of any actual change, and the first key whose recommendation
-     materially changes is the first to carry one. -->
+     `re-sync.md` Pass A rules already treat it. Today no key below carries a
+     `recommendation-changed` annotation: the
+     mechanism ships ahead of any actual change, and the first key whose recommendation materially
+     changes is the first to carry one. -->
 
 ## Project Facts (Fluyt contract v1)
 
