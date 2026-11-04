@@ -126,7 +126,7 @@ step runs as written, **including step 4's re-alignment**; a hotfix skips its CH
    readback, the bounded wait, and the ancestry / empty-diff verify. Deliberate repeat: **its head
    is the RELEASE branch** - confirm `delete_branch_on_merge` is `false` (or a ruleset carrying
    `deletion` protects it) **before** opening it, or merging it deletes the branch consumers pin;
-   and **merge it with a merge commit, never squash**.
+   and **merge it with a merge commit, never squash** - the auto-merge readback must print `MERGE`.
 
 5. **Record the release milestone** - only if Project Facts `release-milestones: yes` (absent counts
    as `no`, default `no`). Group the items that shipped in this release under a GitHub Milestone
@@ -165,8 +165,9 @@ step 3's summary.
 
 A critical bug on the **release branch** while the integration branch holds unreleased work: read
 `hotfix.md` in this skill's directory. It branches off the release branch, confirms the cut with
-the user, merges with a merge commit (never squash), and MUST back-merge into the integration
-branch - **never leave a hotfix only on the release branch**.
+the user (Pre-flight 4's unratified-call check applies here too), merges with a merge commit
+(never squash), and MUST back-merge into the integration branch - **never leave a hotfix only on
+the release branch**.
 
 ## Note for marketplace-style repos
 
