@@ -52,45 +52,39 @@ claude plugin update <plugin>@<marketplace>      # re-point the install record a
                                                  # cache dir (prints old → new); restart to apply
 ```
 
-Two traps beside them: `claude plugin install` **no-ops** when the plugin already shows installed,
-reporting success while changing nothing; and where the install cache is **keyed by commit SHA**
+Two traps: `claude plugin install` **no-ops** when the plugin already shows installed, reporting
+success while changing nothing; and where the install cache is **keyed by commit SHA**
 (`cache/<marketplace>/<plugin>/<sha>/`), an in-place overwrite leaves the recorded SHA asserting
-contents it no longer has, where `update` mints a new correctly-named directory. Prefer `update`
+contents it no longer has. Prefer `update`
 wherever it exists; the fallbacks are in `claude-code-repair.md`.
 
 **Which release is installed: read it out of the payload.** The Claude `.claude-plugin/plugin.json`
-is deliberately versionless for a track-release-branch marketplace, and you must still never add a
-version to it. The release is readable anyway: `.codex-plugin/plugin.json` ships in the **same
-installed payload both clients receive**, its `version` mirrors the package's CHANGELOG, and one
-grep names the installed release outright:
+is versionless and you must never add a version to it. `.codex-plugin/plugin.json` ships in the
+**same installed payload both clients receive** and its `version` mirrors the package's CHANGELOG:
 
 ```sh
 grep '"version"' <installPath>/.codex-plugin/plugin.json
 ```
 
-Answer that first: a stale cache behaves correctly by older rules, so only the version surfaces
-the gap.
+Answer that first: a stale cache behaves correctly by older rules.
 
 **Source/cache equality answers a different question - keep both.** It is a payload **integrity**
-check: it proves the cache mirrors the clone, not *which release* either is, and says nothing about
-the ref the clone tracks, which is the pin itself. Read the resolved ref back: the `<marketplace>`
+check: it proves the cache mirrors the clone, not *which release* either is, nor the ref the clone
+tracks, which is the pin itself. Read the resolved ref back: the `<marketplace>`
 entry's `source` object in `plugins/known_marketplaces.json` needs a `ref` that matches Project
 Facts `release-branch` - not absent, and not `integration-branch` - then cross-check the clone with
-`git -C plugins/marketplaces/<marketplace> branch --show-current`, since the clone reports the
-branch it actually holds regardless of the JSON. Run it on any install; it is routine, not evidence
-of a client defect.
+`git -C plugins/marketplaces/<marketplace> branch --show-current`. Run it on any install.
 
 **Run it again after EVERY marketplace update - an update can silently un-pin you.** A client
 version may rewrite the entry from the pinned `github` shape to a bare `git` + `url` shape,
 **dropping both `ref` and `autoUpdate`**, and re-create the clone as a **shallow, single-branch**
 checkout of the repository's *default* branch - which for any repo following `adopt-conventions` is
-the **integration** branch, so the consumer is one update away from unreleased work. **This is
-invisible to every check except the ref check:** right after a release the two branches are
-content-identical, so the version reads correct and a source/cache diff comes back clean. **A
-correct version is not evidence of a correct pin.**
+the **integration** branch, so the consumer is one update away from unreleased work. **Only the ref
+check shows it:** the version reads correct and a source/cache diff comes back clean. **A correct
+version is not evidence of a correct pin.**
 
 **`lastUpdated` is a cheap trigger for whether to re-run the ref check - never a health signal for
-the pin itself.** It records when the client last rewrote the marketplace entry (`grep -o
+the pin itself.** It records the client's last rewrite of the marketplace entry (`grep -o
 '"lastUpdated"[^,}]*' plugins/known_marketplaces.json`). Record it whenever you repair or verify the
 pin (the three commands in `claude-code-repair.md`, *Repairing a broken pin*). On a later visit read
 it first: unmoved means no update ran - skip the three-command check; moved means it is owed. Only
