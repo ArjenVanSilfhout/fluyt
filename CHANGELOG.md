@@ -14,9 +14,17 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.15.1**
+Current version: **1.15.2**
 
 ---
+
+## [1.15.2] — 2026-11-04
+
+**orchestrator, hub:** two routing triggers the v1.14.1 description cut dropped instead of
+moving are back in the skill bodies: "you are the orchestrator" and "you are the hub" on each
+skill's *Loads on* line (the hub skill gains that line), and the orchestrator's do-not-load rule
+(one named item, a quiet agent, a hand-over each load their own skill). Descriptions stay at most
+200 characters. PATCH: restored routing text; no instruction a consumer follows changes.
 
 ## [1.15.1] — 2026-11-04
 

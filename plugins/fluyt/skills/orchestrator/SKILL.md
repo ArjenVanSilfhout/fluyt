@@ -8,11 +8,11 @@ description: >-
 
 # Orchestrator - the session posture and the ritual chain
 
-Loads on "run the project", "work the backlog", "drive the work", or a resume after a context
-reset. A **skill, not a dispatchable role**: it installs the posture for a session and names which
-skill
-takes over at each step. It states itself only the chain below, rules 2 and 13, and the precedence
-line; everything else points to its owner.
+Loads on "run the project", "work the backlog", "drive the work", "you are the orchestrator", or a
+resume after a context reset. **Do not load it for one named item (`ship-work-item`), a quiet agent
+(`agent-liveness`), or writing a hand-over (`handover`).** A **skill, not a dispatchable role**: it
+installs the posture for a session and names which skill takes over at each step. It states itself
+only the chain below, rules 2 and 13, and the precedence line; everything else points to its owner.
 
 **Where this file and an owning skill disagree, the OWNER wins.** This file is a map.
 

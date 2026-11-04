@@ -8,6 +8,9 @@ description: >-
 
 # Hub - one session coordinating many orchestrators
 
+Loads on "run the hub", "coordinate my sessions", "relay this to the sessions", "you are the hub",
+or when setting up the hub repo or protocol.
+
 A hub is a session the user talks to *instead of* each project session. Every project session stays
 the orchestrator of its own repo (`orchestrator`, `ship-work-item`); the hub coordinates three
 things only: **what is running or blocked, which decisions need the user, and who needs to talk to
