@@ -20,7 +20,7 @@ Current version: **1.14.2**
 
 ## [1.14.2] — 2026-11-04
 
-**CLAUDE.md:** the working agreement drops from 23.3k to about 18.7k bytes (314 to 257 lines)
+**CLAUDE.md:** the working agreement drops from 23.3k to about 19.2k bytes (314 to 263 lines)
 after a read-only review: two contradictions fixed (the work-branch pattern now matches
 `ship-work-item` §0's `<type>/i<N>-<slug>`, and the bug rule no longer claims to cross tiers),
 five restatements of the `main`-pin fact collapsed to one, the precedence and scope-grant

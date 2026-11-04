@@ -132,7 +132,8 @@ rules, so a reader sees the value, not an inference.
   72 characters including the stamp and the squash merge's `(#<PR>)` suffix (the shipped
   default). <!-- provenance: ratified @v1.3.1 -->
 - `co-author-trailers`: forbidden (maintainer identity only — no Co-Authored-By lines, ever)
-- `git-identity`: none — no identity check; the maintainer's git identity is the only one in use.
+- `git-identity`: none — the `orchestrator` *Enter* link's identity confirmation is skipped (one
+  maintainer, one identity); gate check `[11]` still checks every commit's identity and trailers.
 - `pr-approvals`: none — solo maintainer; requiring `1` would deadlock with nobody else to approve.
   <!-- provenance: ratified -->
 - `delegation`: default — the main agent **orchestrates**; a spawned `developer` implements. The
@@ -155,10 +156,9 @@ rules, so a reader sees the value, not an inference.
 - `pinned-deps`: none — no upstream dependency this repo pins to an immutable release.
   <!-- provenance: ratified -->
 - `notes`: Node, npm and the `claude` CLI are expected locally; `markdownlint-cli2` and
-  PSScriptAnalyzer may not be, so those two CI linters have no local equivalent — run
-  `npx --yes markdownlint-cli2 <changed files>` by hand before pushing. `claude plugin validate`
-  checks **manifests only**, not skill or agent frontmatter, so it is no substitute for the gate's
-  own frontmatter checks.
+  PSScriptAnalyzer may not be, so those two CI linters have no local equivalent. `claude plugin
+  validate` checks **manifests only**, not skill or agent frontmatter, so it is no substitute for
+  the gate's own frontmatter checks.
 
 ## Deliberate deviations from the shared playbook
 
@@ -184,10 +184,12 @@ themselves** (e.g. `agent-routing`) and as dated entries in `DECISIONS.md`.
 - **A citation in a shipped asset must resolve for whoever RECEIVES it, not for whoever wrote it.**
   A consumer gets the payload and their own repo — not this tracker and not this `DECISIONS.md` —
   so inside `plugins/` a bare `#<issue>` or a "see the marketplace `DECISIONS.md`" pointer is
-  dangling. **Cite a version instead** (`until v1.2.0`), or state the reasoning without the
+  dangling. **Cite a version instead** (`until v1.2.0`) — it resolves for them through the
+  payload's `.codex-plugin/plugin.json` `version` (the Claude manifest is versionless) and the
+  public CHANGELOG, which the payload itself does not carry — or state the reasoning without the
   pointer. This is an **audience** rule; `versioning-and-changelog`'s resolvability rule is the
-  *timing* half, and both apply. **Illustrative placeholders are exempt** (`- [ ] #18` in an epic
-  template, a worked example). Rationale: DECISIONS.md, 2026-10-11.
+  *timing* half, and both apply. **Illustrative placeholders are exempt** and must stay readable as
+  such (`- [ ] #18` in an epic template, a worked example). Rationale: DECISIONS.md, 2026-10-11.
 - **Every component change updates `CHANGELOG.md`** (newest first) and bumps `Current version:`,
   with the Codex mirror in the same edit (gate checks `[3]` and `[8]`).
 - **Never add a `version` field to `.claude-plugin/plugin.json`.** Claude track-main is deliberate; a
@@ -250,8 +252,11 @@ only possible in an external tool or console — file it as a `question` issue a
 and log durable outcomes in `DECISIONS.md`.
 
 **Otherwise, keep working.** An authorized scope of work — "work the backlog", a named tier, "do
-these N" — is a standing mandate to proceed item-to-item without re-confirming between items, on
-the scope-grant terms `ship-work-item` states under *Continue autonomously across a scope* (a scope
-never widens; a grant lives only for the stretch that opened it). Landing items to the integration
-branch is in-scope; **cutting a release is not** — that keeps its own confirm step
-(`/fluyt:release`), as does filing upstream (`/fluyt:report-upstream`).
+these N" — is a standing mandate to proceed item-to-item without re-confirming between items.
+Guardrails (full doctrine: `ship-work-item`, *Continue autonomously across a scope*): a scope never
+widens — one tier does not roll into the next, a named set does not grow into the backlog; "keep
+going" resumes the scope in flight rather than opening a wider one; and a grant is live only for
+the continuous stretch it opened — re-confirm after a context reset, an intervening instruction,
+or a long gap. Landing items to the integration branch is in-scope; **cutting a release is not** —
+that keeps its own confirm step (`/fluyt:release`), as does filing upstream
+(`/fluyt:report-upstream`).
