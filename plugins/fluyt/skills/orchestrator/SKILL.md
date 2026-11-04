@@ -9,7 +9,8 @@ description: >-
 # Orchestrator - the session posture and the ritual chain
 
 Loads on "run the project", "work the backlog", "drive the work", or a resume after a context
-reset. A **skill, not a dispatchable role**: it installs the posture for a session and names which skill
+reset. A **skill, not a dispatchable role**: it installs the posture for a session and names which
+skill
 takes over at each step. It states itself only the chain below, rules 2 and 13, and the precedence
 line; everything else points to its owner.
 

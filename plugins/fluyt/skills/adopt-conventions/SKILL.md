@@ -69,9 +69,10 @@ repo's contract files - do it in the open.
      branch, re-sync **Pass D** re-offers the required-check half.
 
 - **First-time adopt** - the full flow below (survey → instantiate → retire shadows → verify → land).
-- **Re-sync (drift check)** - for a repo *already* on fluyt, e.g. after updating the plugin. The Project Facts template, the
-  plugin's shipped **guidance** (the routing paragraph, the autonomy rule in "Ask the human when"),
-  and the settings / gitignore / gitattributes **fragments** all gain content over time, and an
+- **Re-sync (drift check)** - for a repo *already* on fluyt, e.g. after updating the plugin. The
+  Project Facts template, the plugin's shipped **guidance** (the routing paragraph, the autonomy
+  rule in "Ask the human when"), and the settings / gitignore / gitattributes **fragments** all
+  gain content over time, and an
   instantiate-once copy silently lacks anything added later. Run a re-sync to catch that drift. It
   only *proposes* changes (adds a missing block, updates a stale one) - non-destructive per the
   opening rule - lands as a `chore/` PR (docs/process → PATCH), and skips the survey / instantiate /
