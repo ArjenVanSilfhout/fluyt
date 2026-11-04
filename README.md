@@ -7,7 +7,7 @@ Fluyt is a plugin marketplace that holds one plugin, `fluyt`, for Claude Code an
 Install it in a repo and your agent sessions follow one tested ritual from issue to merge, instead of
 improvising a new one every session.
 
-> **Status:** version 1.0.0, MIT licensed. `CHANGELOG.md` is the record of what changed.
+> **Status:** MIT licensed. `CHANGELOG.md` holds the current version and every change.
 
 ## Why
 
@@ -278,8 +278,8 @@ instruction loading.**
 
 ## Status
 
-Version 1.0.0; the MIT license is in place. See [`CHANGELOG.md`](CHANGELOG.md) for every change
-and its version, and [`DECISIONS.md`](DECISIONS.md) for the founding decisions.
+The MIT license is in place. See [`CHANGELOG.md`](CHANGELOG.md) for the current version
+and every change, and [`DECISIONS.md`](DECISIONS.md) for the founding decisions.
 
 The plugin name `fluyt` is permanent: it is the plugin ID your clients record, so it will not be
 renamed. If a rename were ever forced, a renames map would be published alongside it.
