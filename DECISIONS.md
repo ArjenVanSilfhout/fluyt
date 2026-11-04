@@ -169,3 +169,13 @@ Commits carry the maintainer identity only, with no `Co-Authored-By` lines; a sh
 them where a consumer forbids them, and gate check `[11]` checks commit identity. With a single
 maintainer, requiring an approving review would deadlock, so branch protection relies on required
 status checks instead.
+
+**2026-11-04 · Agent reference files live under `references/<role>/`, never inside `agents/` · reversible.**
+Claude Code scans a plugin's `agents/` directory recursively and registers every `.md` it finds as
+an agent (a file at `agents/developer/worktree.md` would load as `fluyt:developer:worktree`), so
+the detail a role's body points at and Reads on demand cannot sit beside the role. It lives in a
+plugin-root folder neither client scans, `plugins/fluyt/references/<role>/<topic>.md`; a body cites
+it as `${CLAUDE_PLUGIN_ROOT}/references/<role>/<topic>.md`, the Codex adapter resolves the same
+path as `../../references/…` from its skill directory, and gate check `[12]` budgets the folder
+like a skill's reference files. The user's call in the session chat, over keeping the detail in the
+owning skill's directory (which would spread one role's contract across several skills).
