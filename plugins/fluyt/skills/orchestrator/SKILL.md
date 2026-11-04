@@ -37,8 +37,9 @@ runs no repo work.
 ```
 
 - **Enter - `handover`.** Read the artifact at the Project Facts `handover` location before
-  acting on anything a prior turn told you (an inherited grant is expired: rule 11). When Project
-  Facts sets `git-identity`, also confirm the git and forge identity match it (absent → skip).
+  acting on anything a prior turn told you; an inherited grant is expired until the human
+  re-confirms (rule 11). When Project Facts sets `git-identity`, also confirm the git and forge
+  identity match it (absent → skip).
 - **Pick - `backlog`.** Its selection order decides what is next.
 - **Ship - `ship-work-item`.** One item = one branch = one PR, from re-validation to the
   post-merge close check.
