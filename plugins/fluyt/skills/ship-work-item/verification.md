@@ -3,13 +3,19 @@
 The on-demand part of the `ship-work-item` skill, read when its `SKILL.md` points here;
 its `§N` and *Section* references point into that `SKILL.md`.
 
-- **Tests are authored by the `fluyt:test-writer` agent** (it writes ONLY under the Project Facts
-  `test-dir`, and **self-verifies** its drafts by running `test-cmd` - self-clearing its own test
-  bugs, escalating product-looking reds). You **re-run the suite once as the integration gate**,
-  adjudicate any escalated blocker, and fold its tests into this same PR.
+- **Tests are authored by the `fluyt:test-writer` agent, outside the `size:S` fast path below**
+  (it writes ONLY under the Project Facts `test-dir`, and **self-verifies** its drafts by running
+  `test-cmd` - self-clearing its own test bugs, escalating product-looking reds). You **re-run the
+  suite once as the integration gate**, adjudicate any escalated blocker, and fold its tests into
+  this same PR.
   Its brief **names the suite (existing test file/subject) to extend and a case budget**
-  (default: test-writer's *What earns a test*). **When an existing test already discriminates the
-  change, spawn no test-writer: cite that test** in the PR body.
+  (default: test-writer's *What earns a test*). **`size:S` fast path:** on a `size:S` item (the size
+  your pick settles - `pick.md`, which also decides it where no `size:*` label exists) **spawn no
+  `test-writer`: the one `developer` spawn writes the code AND its tests**, held to `test-writer`'s
+  *What earns a test* bar - its brief names the suite and case budget as above. Preflight then runs
+  as on any item; `size:M` / `size:L` keep the `test-writer` spawn. **On either path, when an
+  existing test already discriminates the change, nobody writes one: cite that test** in the PR
+  body.
 - **Build + verify after the change:** run the `build-cmd` and `test-cmd` from Project Facts; if
   there's a `run-cmd`, launch so the change can be seen. Launching is fine; driving or capturing the
   desktop follows the `developer` contract's *Never act on the user's desktop*, and a live-only

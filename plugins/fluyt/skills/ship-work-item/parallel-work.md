@@ -29,9 +29,10 @@ file-disjoint.
    writing a test; run `test-cmd` from the worktree; then `git -C <worktree> add <test-dir> &&
    commit` so the tests land on the dev's branch - the one commit the `test-writer` contract permits
    (its *Hard boundary* exception), so the brief must instruct it explicitly. Skip for un-testable
-   items or where `test-dir` is `none`. (Alternatively the `developer` can invoke `test-writer`
-   inside its own worktree; the orchestrator-driven form above is preferred: the `developer` never
-   authors its own tests.)
+   items, where `test-dir` is `none`, or on `size:S`: the `developer` already wrote the tests.
+   (Alternatively the `developer` can invoke `test-writer` inside its own worktree; the
+   orchestrator-driven form above is preferred: the `developer` authors its own tests only on the
+   `size:S` fast path, `verification.md`.)
 4. **Hold the integration branch, CHANGELOG, and PR until each item's tests have landed on its
    branch.** The branch you hand to integration must already carry **product + tests** together.
 5. **Integrate SEQUENTIALLY - one PR at a time, onto the CURRENT integration head.** For each item
