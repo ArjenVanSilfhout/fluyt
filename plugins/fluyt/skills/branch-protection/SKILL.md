@@ -10,9 +10,9 @@ description: >-
 This is the repo-configuration half of adopting the process: protecting the `integration-branch` and
 `release-branch`, deciding what CI must report before a merge, and auditing the workflow triggers
 while you are in there. Onboarding routes here from `adopt-conventions` §5; drift-checking, from its
-Pass D. A consumer can also invoke it directly whenever a branch needs protecting or a rule needs
-reading. Every `gh` call below resolves the repo from the **current directory's** git remote -
-run from inside the target clone, or it silently targets the wrong repo.
+`re-sync.md` Pass D. A consumer can also invoke it directly whenever a branch needs protecting or
+a rule needs reading. Every `gh` call below resolves the repo from the **current directory's** git
+remote - run from inside the target clone, or it silently targets the wrong repo.
 
 **When Project Facts `forge` is not `github`, only the principles below carry over.** Per the
 `forge-azure-devops` adapter's own deliberate non-translation, this playbook's rulesets / `gh api`

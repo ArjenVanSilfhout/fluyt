@@ -72,14 +72,10 @@ these keys by name; a missing key makes a skill stop and ask.>
 
 ## Deliberate deviations from the shared playbook
 
-This file **overrides a shared `fluyt` default** - the plugin's skills are the default, not the
-authority. It does **not** override a shared **gate**: the stops `ship-work-item` lists under *Surface
-mid-scope only for a real decision*, together with the scope-grant guardrails restated under **Ask the
-human when** below. Those are what keep an agent from
-deciding alone what only the human can decide. **An entry that narrows a gate is not a deviation and
-does not belong here** - an agent that meets one honours the gate, surfaces the conflict, and does not
-act on the entry. If a project genuinely needs a gate relaxed, raise it upstream via
-`/fluyt:report-upstream`.
+Precedence - what this file may override and what it may not - is `ship-work-item`, *Precedence*: a
+shared **default** bends to this file; a shared **gate** never does, and an entry that narrows one is
+not a deviation (honour the gate, surface the conflict, raise it upstream via
+`/fluyt:report-upstream`).
 
 Record each deliberate divergence below **with its reason**, so an agent that meets the contradiction
 can resolve it instead of guessing, and a future maintainer can re-evaluate it rather than deleting it

@@ -14,7 +14,7 @@ resume after a context reset. **Do not load it for one named item (`ship-work-it
 installs the posture for a session and names which skill takes over at each step. It states itself
 only the chain below, rules 2 and 13, and the precedence line; everything else points to its owner.
 
-**Where this file and an owning skill disagree, the OWNER wins.** This file is a map.
+**Where this file and an owning skill disagree, the OWNER wins.**
 
 A cross-project **hub** session still takes this posture; `hub` adapts the chain for a session that
 runs no repo work.
@@ -29,18 +29,17 @@ runs no repo work.
                                   (while dispatched work runs)
                                              |
   +------------------------------------------+------------------------------------+
-  |  the human calls a cut --> release         (its own confirm gate;               |
-  |                                             a drain never promotes)             |
-  |  the snag is in the SHARED process --> report-upstream / scrum                  |
+  |  the human calls a cut --> release (own confirm gate; a drain never promotes) |
+  |  the snag is in the SHARED process --> report-upstream / scrum                |
   +------------------------------------------+------------------------------------+
                                              |
   EXIT <-- handover (written before any pause, reset, or session end)
 ```
 
 - **Enter - `handover`.** Read the artifact at the Project Facts `handover` location before
-  acting on anything a prior turn told you; treat an inherited grant as expired
-  until the human re-confirms. When Project Facts sets `git-identity`, also confirm the git and
-  forge identity match it (absent → skip).
+  acting on anything a prior turn told you; an inherited grant is expired until the human
+  re-confirms (rule 11). When Project Facts sets `git-identity`, also confirm the git and forge
+  identity match it (absent → skip).
 - **Pick - `backlog`.** Its selection order decides what is next.
 - **Ship - `ship-work-item`.** One item = one branch = one PR, from re-validation to the
   post-merge close check.
@@ -50,10 +49,9 @@ runs no repo work.
 - **Cut - `release`, only when the human calls one.** **A drain never promotes**: emptying a
   scope is no release trigger.
 - **Shared-process snag - `report-upstream`, or `scrum` for a pass over how the team is working.**
-  A shared-process defect is filed upstream, not re-implemented locally; filing has its own
-  confirm step.
-- **Exit - `handover`.** Before any foreseeable pause, reset, or session end; mid-item it is
-  written and left uncommitted.
+  A shared-process defect is filed upstream, not re-implemented locally; filing has its own confirm.
+- **Exit - `handover`.** Before any foreseeable pause, reset, or session end; it owns the
+  uncommitted-mid-item rule.
 
 ## The posture - thirteen rules, eleven owned elsewhere
 
@@ -63,10 +61,10 @@ Each line but 13 names an owner (rule 2 also stated here); read it before a hard
    (absent = `default`); the inline escape hatch still applies. → `ship-work-item` §1, delegation
    bullets.
 2. **What stays yours is settled by OWNERSHIP, not by file type.** Ask who owns the artifact's
-   correctness: recon, the spec, the dispatch, the verification of what returns, the tracker, and
-   branch / CHANGELOG / version / commit / PR / merge are yours (→ `ship-work-item` §1, *Parallel
-   work*). **Config, CI and doc/process edits default to orchestrator work** - a consumer whose CI
-   config is product-shaped may route it to a delegate, recorded in its `CLAUDE.md` as a deviation.
+   correctness: recon, spec, dispatch, verification, tracker and the branch → merge path are yours
+   (→ `ship-work-item` §1, *Parallel work*). **Config, CI and doc/process edits default to
+   orchestrator work** - a consumer whose CI config is product-shaped may route it to a
+   delegate, recorded in its `CLAUDE.md` as a deviation.
 3. **A delegate's report is a secondary source about its own work** - verify a load-bearing claim
    against the tree or primary output before it carries weight. → `ship-work-item` §1,
    secondary-source bullet.
@@ -97,4 +95,4 @@ Each line but 13 names an owner (rule 2 also stated here); read it before a hard
     no closing recap or offer; a tool run gets one line before, one per phase change, one with the
     result. Code, paths, numbers and errors stay verbatim, a negation is never dropped; questions,
     option lists, irreversible steps, security warnings and persisted text (commits, docs, issues,
-    PRs, memory) stay full sentences. → related: `hub`, *Keep `[REPORT]` and `[FYI]` bodies short*.
+    PRs, memory) stay full sentences.
