@@ -14,9 +14,21 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.14.1**
+Current version: **1.15.0**
 
 ---
+
+## [1.15.0] — 2026-11-04
+
+**developer, test-writer, preflight-reviewer:** each body shrinks to about 10k bytes
+(18,584 → 10,367; 14,613 → 10,147; 24,790 → 9,614), because every dispatch paid for the whole
+role whether or not its cases arose. The detail moved verbatim into 24 reference files under
+`references/<role>/`, a plugin-root folder neither client scans as an agent; a body cites each one
+as `${CLAUDE_PLUGIN_ROOT}/references/<role>/<topic>.md` at the trigger where the case arises, and
+`dispatch-role` tells Codex the same path resolves as `../../references/…`. Every gate, hard
+boundary, report field and desktop or identity rule stays in the body. Summed size per role
+grows (body plus references: 25.7k, 19.9k, 32.6k); gate check `[12]` budgets the new folder.
+MINOR: an agent gains read-this-file steps a consumer follows.
 
 ## [1.14.1] — 2026-11-04
 

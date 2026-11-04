@@ -23,6 +23,8 @@ adapter: it reads the same canonical role file and gives its complete contract t
 | `../../agents/scrum-master.md` | deep analysis | read-only |
 
 No other role name is valid. Claude Code dispatches the native `fluyt:<role>` agents instead.
+A role body's `${CLAUDE_PLUGIN_ROOT}/references/<role>/<topic>.md` reads as
+`../../references/<role>/<topic>.md` from this skill's directory; pass the subagent that path.
 
 ## Dispatch procedure
 

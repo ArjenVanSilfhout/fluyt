@@ -1252,7 +1252,7 @@ if (-not $headResolves) {
 # one level deeper than */skills/*/*.md reaches, so a scaffolding template (copied into a consumer,
 # not loaded as skill text) is never budgeted, nor a SKILL.md-named file there mistaken for a skill.
 Write-Output ""
-Write-Output "[12] component size budgets (skill .md + agents)"
+Write-Output "[12] component size budgets (skill .md + agents + references)"
 $budgetPath = Join-Path $RepoRoot "scripts/component-size-budget.txt"
 $budgetEntries = Get-TokenFileEntry $budgetPath
 # Snapshot so the summary Pass prints only when NOTHING in [12] failed - a bad budget line is a
@@ -1274,6 +1274,9 @@ if ($null -eq $budgetEntries) {
     $sizedFiles = @()
     $sizedFiles += Get-ChildItem -Path (Join-Path $RepoRoot "$PayloadRoot/*/skills/*/*.md") -File -ErrorAction SilentlyContinue
     $sizedFiles += Get-ChildItem -Path (Join-Path $RepoRoot "$PayloadRoot/*/agents/*.md") -File -ErrorAction SilentlyContinue
+    # references/<role>/*.md: the detail an agent body points at and Reads on demand (DECISIONS.md,
+    # 2026-11-04). Budgeted like a skill's reference files - a lane pays for the whole file per Read.
+    $sizedFiles += Get-ChildItem -Path (Join-Path $RepoRoot "$PayloadRoot/*/references/*/*.md") -File -ErrorAction SilentlyContinue
     $inScope = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
     $withinBudget = 0
     foreach ($sf in $sizedFiles) {
