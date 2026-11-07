@@ -18,7 +18,8 @@ rules here stay authoritative.
 
 ## Read the scheme from Project Facts FIRST
 
-Read the `backlog` key in the consumer's Project Facts. It declares:
+Read the `backlog` key in the consumer's Project Facts (and the `facts-file` it names, if any -
+lookup per the Project Facts contract). It declares:
 
 - the **repo** the issues live on;
 - the **tier-label scheme** - the MoSCoW label names in use (default: plain

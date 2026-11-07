@@ -14,9 +14,33 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.17.0**
+Current version: **1.18.0**
 
 ---
+
+## [1.18.0] — 2026-11-07
+
+**Project Facts:** a consumer can now keep a small inline core in `CLAUDE.md` and move the other
+keys to a referenced file. The new optional key `facts-file` (default `none`, which keeps every key
+inline exactly as before; suggested path `docs/process/project-facts.md`) names that file.
+`CLAUDE-project-facts.md` lists which keys are core: the build, test and run commands, the three
+branches, `forge`, `handover`, `delegation`, `git-identity`, `facts-file`, and the two keys the
+hooks read, `changelog` and `co-author-trailers`. It also states the lookup rule once:
+
+- Look inline first, then in the file.
+- A key absent from both takes its default, or is a STOP for a required key.
+- A named file that is missing is a STOP.
+- When a key is in both places, the inline value wins.
+- Never `@`-import the file.
+
+Skills and agents that read Project Facts now point to that rule, and `ship-work-item` reads the
+file at most once per run. Onboarding offers the split, and a decline is recorded as
+`facts-file: none` (`chosen`). Re-sync counts a key as missing only when it is absent from both
+places, flags duplicates, and offers the split, asking first. Re-sync step 4 now names confirmed
+removals. Also corrected the 1.17.0 entry: the team-roles note is three lines, not two.
+
+MINOR: shipped skills and templates gain instructions a consumer follows; an all-inline consumer
+needs no change. Closes #74.
 
 ## [1.17.0] — 2026-11-04
 
@@ -25,7 +49,7 @@ section drops from 4,198 to 1,355 bytes. That is the text every consumer's CLAUD
 every turn. The 16-row routing table becomes one paragraph: consult the matching skill, start
 with `/fluyt:orchestrator`, and each skill loads from its own description. A compact list still
 names every skill, so gate check `[4]` keeps catching a deleted skill. The team-roles note
-shrinks to two lines. The notation legend, the "Skills consulted" rule and the
+shrinks to three lines. The notation legend, the "Skills consulted" rule and the
 project-specific-skills fill-in stay. Re-sync now also proposes removing plugin-owned prose the
 skeleton no longer ships, so an onboarded repo's old routing list is flagged. MINOR: a template's
 shipped output changes.

@@ -97,6 +97,11 @@ Merge each template:
    **where-it-implements** decision (`on-demand` → the shared checkout; `default` → an isolated `git
    worktree` per product-code item). Present both AS those decisions, not as settled config lines.
 
+   **Offer the split (`facts-file`)** once the keys are settled: a long block costs every turn, so
+   offer to keep only the inline core in `CLAUDE.md` and write the other keys to a tracked file (the
+   contract suggests a path). A yes writes them there and sets `facts-file`; a decline records
+   `facts-file: none` with `<!-- provenance: chosen -->`. The contract states the core and lookup.
+
    Merge the completed block into `CLAUDE.md`: the shared skills read these keys by name and
    stop-and-ask on a missing one. **A fact that does not exist YET is not
    `none`.** `none` means *this project has no such thing* - a settled answer, and since re-sync

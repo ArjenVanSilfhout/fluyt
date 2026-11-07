@@ -38,15 +38,15 @@ repo has none - report the missing snapshot instead of fetching.)
    passing it yields a confident spec that verified nothing about what it was pointed at. **The
    existence half still runs and still matters** (it catches a base cut from the release branch, the
    far-behind case) - only the identity half is being made honest, not skipped.
-1. Read `CLAUDE.md` (the house rules + architecture invariants) and its **Project Facts** block, and
-   the **open-issue snapshot the orchestrator provided**. Skim the top of the CHANGELOG (Project
-   Facts `changelog`) for what already exists, so you don't re-spec something built or shipped. Then
-   read the **matching project skill(s)** the CLAUDE.md routes to for whatever the idea touches - so
-   your spec describes the product that exists, on the real extension points, not the one you'd
-   guess at. **An injected snapshot of a repo file may be STALE** - the session may have edited the
-   file after the snapshot was taken. When your judgment rests on `CLAUDE.md` (or any file this
-   session may have edited), Read the on-disk file and state in your report which edition you judged
-   against.
+1. Read `CLAUDE.md` (the house rules + architecture invariants) and its **Project Facts** block
+   (and the `facts-file` it names, if any - lookup per the Project Facts contract), and the
+   **open-issue snapshot the orchestrator provided**. Skim the top of the CHANGELOG (Project Facts
+   `changelog`) for what already exists, so you don't re-spec something built or shipped. Then read
+   the **matching project skill(s)** the CLAUDE.md routes to for whatever the idea touches - so your
+   spec describes the product that exists, on the real extension points, not the one you'd guess at.
+   **An injected snapshot of a repo file may be STALE** - the session may have edited the file after
+   the snapshot was taken. When your judgment rests on `CLAUDE.md` (or any file this session may
+   have edited), Read the on-disk file and state in your report which edition you judged against.
 2. **Backlog-hygiene scan.** Sweep the open-issue snapshot and confirm **every open issue carries
    exactly one tier label** (the scheme from Project Facts `backlog`). Flag any unlabelled or
    orphaned issue in your report so the backlog stays fully triaged - **except the sanctioned

@@ -13,14 +13,15 @@ references point into that body.
    merge-base --is-ancestor`: a feature branch *is* a descendant of the integration head, so that
    form passes for precisely the drift this catches. If either half fails, STOP immediately and
    report "stale base" - do no work on old code.
-1. **Read `CLAUDE.md` in full** - it is the working agreement the *Precedence* rule above defers to,
-   and its own *Ask the human when* list is a gate on top of the ones listed there. Internalise its
-   build/run workflow, its **architecture invariants**, its code style, and its "reason deeply /
-   confirm design changes" rules. Read its **Project Facts** block - you'll use `build-cmd` /
-   `test-cmd` / `run-cmd` / `test-dir` from it. **An injected snapshot of a repo file may be STALE** -
-   the session may have edited the file after the snapshot was taken. When your judgment rests on
-   `CLAUDE.md` (or any file this session may have edited), Read the on-disk file and state in your
-   report which edition you judged against.
+1. **Read `CLAUDE.md` in full** - it is the working agreement the *Precedence* rule above defers
+   to, and its own *Ask the human when* list is a gate on top of the ones listed there. Internalise
+   its build/run workflow, its **architecture invariants**, its code style, and its "reason deeply /
+   confirm design changes" rules. Read its **Project Facts** block (and the `facts-file` it names,
+   if any - lookup per the Project Facts contract) - you'll use `build-cmd` / `test-cmd` / `run-cmd`
+   / `test-dir` from it. **An injected snapshot of a repo file may be STALE** - the session may have
+   edited the file after the snapshot was taken. When your judgment rests on `CLAUDE.md` (or any
+   file this session may have edited), Read the on-disk file and state in your report which edition
+   you judged against.
 2. **Read the matching project skills** the CLAUDE.md routes to (one `Read` each):
    the orientation/codebase-map skill first if the project has one, then the area skill(s) the task
    touches. These are fact-checked checklists - trust them over memory; **if a skill and the code

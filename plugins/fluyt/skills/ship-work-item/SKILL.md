@@ -7,9 +7,9 @@ description: >-
 
 # Ship a work item (branch → PR → merge)
 
-The consumer's `CLAUDE.md` and Project Facts are authoritative on commands, paths, and branch
-names; this skill is the operational checklist with the traps marked. **One work item = one branch =
-one squash commit on the integration branch. One PR at a time.**
+The consumer's `CLAUDE.md` and Project Facts (plus any `facts-file`) are authoritative on commands,
+paths, and branch names; this skill is the operational checklist with the traps marked. **One work
+item = one branch = one squash commit on the integration branch. One PR at a time.**
 
 **Precedence - when this skill and the consumer's `CLAUDE.md` disagree.** The consumer's `CLAUDE.md`
 **overrides a shared default**: this playbook is the default, not the authority. Follow the
@@ -25,9 +25,10 @@ So a rule about **how** the work is done bends to the consumer; the stops and sc
 named above do not.
 
 Read these Project Facts keys before you start: `integration-branch`, `default-branch`, `build-cmd`,
-`test-cmd`, `run-cmd`, `test-dir`, `changelog`, `commit-subject`, `co-author-trailers`.
-If any key this ritual needs is missing, STOP and ask - never guess a
-build/test command or a branch name.
+`test-cmd`, `run-cmd`, `test-dir`, `changelog`, `commit-subject`, `co-author-trailers`. Look them up
+inline, then in the `facts-file` `CLAUDE.md` names, if any (lookup per the Project Facts contract);
+read that file **at most once per run**. If any key this ritual needs is missing, STOP and ask -
+never guess a build/test command or a branch name.
 
 **When Project Facts `forge` is not `github`**, the GitHub-specific steps this ritual names - issue
 pick, PR/merge, the closing-keyword machinery, the CI gate, branch protection - translate per that
