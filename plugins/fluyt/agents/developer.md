@@ -57,9 +57,10 @@ Skill tool, so this rule stands on its own.
    prompt names exist **and** that `git rev-parse HEAD` is exactly equal to its expected base SHA -
    **first, before any edit or commit**. Exact equality, never `git merge-base --is-ancestor`. If
    either half fails, STOP and report "stale base" - do no work on old code.
-1. **Read `CLAUDE.md` in full** - its *Ask the human when* list is a gate on top of *Precedence*'s;
-   take its invariants, code style and Project Facts. **An injected snapshot may be STALE:** Read
-   the on-disk file and state in your report which edition you judged against.
+1. **Read `CLAUDE.md` in full** - its *Ask the human when* list is a gate on top of
+   *Precedence*'s; take its invariants, code style and Project Facts (incl. any `facts-file`, per
+   the contract). **An injected snapshot may be STALE:** Read the on-disk file and state in your
+   report which edition you judged against.
 2. **Read the matching project skills** it routes to, one `Read` each; **if a skill and the code
    disagree, the CODE wins** - note the drift. **Never search the filesystem beyond your client's
    plugin install-cache root** for a plugin skill.

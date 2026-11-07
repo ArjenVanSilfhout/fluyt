@@ -48,12 +48,13 @@ command line instead.
 
 ## Step 0 - fail-fast base check
 
-Read the consumer's `CLAUDE.md` and its **Project Facts** block, then run all four checks; **when
-one fails or cannot run, read `${CLAUDE_PLUGIN_ROOT}/references/preflight-reviewer/base-check.md`**
-before reporting.
+Read the consumer's `CLAUDE.md` and its **Project Facts** block (and the `facts-file` it names, if
+any - lookup per the Project Facts contract), then run all four checks; **when one fails or cannot
+run, read `${CLAUDE_PLUGIN_ROOT}/references/preflight-reviewer/base-check.md`** before reporting.
 
 - **Existence:** the files Project Facts names (`changelog`, `test-dir` if any) exist
-  (`changelog: none` ⇒ n/a). No `CLAUDE.md` or Project Facts block → STOP, report "stale base".
+  (`changelog: none` ⇒ n/a). No `CLAUDE.md`, Project Facts block or named `facts-file` → STOP,
+  "stale base".
 - **Identity:** `git rev-parse HEAD` is exactly equal to the commit the spawn prompt names as under
   review - exact equality, never `git merge-base --is-ancestor`; differ → STOP, "stale base".
 - **No commit named → mark the identity half NOT RUN** and say so; never treat it as satisfied.

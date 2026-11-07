@@ -9,11 +9,12 @@ description: >-
 
 `CHANGELOG.md` is the **single source of truth** for completed work AND version numbers. Never
 duplicate versions or completion status anywhere else (see *What NEVER carries a version* below).
-Read the consumer's **Project Facts** for `changelog` (the CHANGELOG path) and `version-rules` (the
-project's own MINOR/PATCH definition); this skill is the shared shape. If either key is missing,
-STOP and ask - don't guess the path or the rule.
-**`changelog: none` (an unversioned repo) is a declared value, not a missing key: this skill does
-not apply - no entry, no bump, and no version in the commit subject.**
+Read the consumer's **Project Facts** (and the `facts-file` it names, if any - lookup per the
+Project Facts contract) for `changelog` (the CHANGELOG path) and `version-rules` (the project's own
+MINOR/PATCH definition); this skill is the shared shape. If either key is missing, STOP and ask -
+don't guess the path or the rule. **`changelog: none` (an unversioned repo) is a declared value, not
+a missing key: this skill does not apply - no entry, no bump, and no version in the commit
+subject.**
 
 ## The CHANGELOG entry (newest first)
 

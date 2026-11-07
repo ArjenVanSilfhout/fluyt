@@ -10,16 +10,17 @@ description: >-
 
 Work items land on the **integration branch** as squash commits; a release carries a *set* of them
 onto the **release branch** intact. Read Project Facts for `integration-branch`, `release-branch`,
-`build-cmd`, `test-cmd`, `changelog` - if any is missing, STOP and ask.
+`build-cmd`, `test-cmd`, `changelog` (inline, then any `facts-file`, per the Project Facts
+contract) - if any is missing, STOP and ask.
 
 **When Project Facts `forge` is not `github`**, the `gh`-based promotion, merge, and tagging steps
 below translate per that forge's adapter skill (`forge-azure-devops` for Azure DevOps); the
 ritual's ordering and its never-squash rule stay authoritative regardless.
 
 A key that merely **gates an optional feature** (e.g. `release-milestones`, `release-publish`) is
-different: when it is absent - including because the consumer's Project Facts block predates the
-key - treat it as its **documented default** (stated at its step), not a STOP. STOP-and-ask is for
-the required keys above, not for an unset feature gate.
+different: when it is absent from both places - including because the consumer's Project Facts block
+predates the key - treat it as its **documented default** (stated at its step), not a STOP.
+STOP-and-ask is for the required keys above, not for an unset feature gate.
 
 **The one rule that matters:** the release PR merges with a regular **MERGE COMMIT, never squash** -
 squashing collapses the whole release into one commit and loses the per-item history that the
