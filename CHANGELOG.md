@@ -14,9 +14,21 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.16.0**
+Current version: **1.17.0**
 
 ---
+
+## [1.17.0] — 2026-11-04
+
+**adopt-conventions:** the `CLAUDE-skeleton.md` template's "Agentic process (fluyt plugin)"
+section drops from 4,198 to 1,355 bytes. That is the text every consumer's CLAUDE.md carries on
+every turn. The 16-row routing table becomes one paragraph: consult the matching skill, start
+with `/fluyt:orchestrator`, and each skill loads from its own description. A compact list still
+names every skill, so gate check `[4]` keeps catching a deleted skill. The team-roles note
+shrinks to two lines. The notation legend, the "Skills consulted" rule and the
+project-specific-skills fill-in stay. Re-sync now also proposes removing plugin-owned prose the
+skeleton no longer ships, so an onboarded repo's old routing list is flagged. MINOR: a template's
+shipped output changes.
 
 ## [1.16.0] — 2026-11-04
 

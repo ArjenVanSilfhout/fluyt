@@ -69,7 +69,9 @@ as a `chore/` PR (docs/process → PATCH); its four passes follow. What it reach
    already-onboarded repo keeps the old trigger forever.
 3. For each plugin-owned paragraph, check whether the consumer's `CLAUDE.md` carries it and whether
    it still matches the current skeleton. Propose adding a missing one, or show a diff for a stale
-   one - **confirm-first, never automatic** (as throughout this skill). If the consumer has
+   one - **confirm-first, never automatic** (as throughout this skill). Plugin-owned prose the
+   skeleton no longer ships is stale too: propose removing it (e.g. the per-skill routing list
+   that v1.17.0 replaced with a short routing paragraph). If the consumer has
    deliberately edited a plugin-owned paragraph, surface the difference and let them decide;
    don't clobber their wording.
 4. Merge in only the confirmed additions/updates. For Codex, apply the same paragraph rule to

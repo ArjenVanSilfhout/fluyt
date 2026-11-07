@@ -106,8 +106,8 @@ Merge each template:
    and it is never run as a command, written to as a path, or guessed at. The only difference is at
    re-sync: `none` is left alone, a pending value is chased.
 2. **Client routing** - if `CLAUDE.md` is missing, seed it from the skeleton; if it exists, merge in
-   the **"Agentic process (fluyt plugin)" routing paragraph and its notation line** (what makes the
-   shared skills discoverable; a plugin's own prose is not auto-loaded) and list any
+   the **"Agentic process (fluyt plugin)" routing paragraph and its notation line** (it sends each
+   session to the plugin; each skill then loads from its own description) and list any
    project-specific local skills. For `agent-clients: codex | both`, also merge
    `templates/AGENTS-skeleton.md` into `AGENTS.md`; it makes Codex auto-load the pointer to the same
    `CLAUDE.md` contract and routes specialist work through `dispatch-role`.
