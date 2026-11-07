@@ -26,6 +26,7 @@ inline exactly as before; suggested path `docs/process/project-facts.md`) names 
 `CLAUDE-project-facts.md` lists which keys are core: the build, test and run commands, the three
 branches, `forge`, `handover`, `delegation`, `git-identity`, `facts-file`, and the two keys the
 hooks read, `changelog` and `co-author-trailers`. It also states the lookup rule once:
+
 - Look inline first, then in the file.
 - A key absent from both takes its default, or is a STOP for a required key.
 - A named file that is missing is a STOP.
