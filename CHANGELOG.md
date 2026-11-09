@@ -14,9 +14,18 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.18.0**
+Current version: **1.19.0**
 
 ---
+
+## [1.19.0] — 2026-11-09
+
+**Consumer `CLAUDE.md` template:** the shared precedence, deviation-recording and scope-grant text
+moves out of the template into one new `orchestrator` section, *Precedence and the scope grant*.
+The template's *Deliberate deviations* section keeps its entries fill-in plus one pointer line, and
+*Ask the human when* keeps its adaptable gate list plus a one-line **Otherwise, keep working**
+pointer. The template shrinks by about 1.3 KB per consumer; re-sync proposes the shorter wording.
+The orchestrator's size budget rises to 8300 bytes to hold the moved text.
 
 ## [1.18.0] — 2026-11-07
 

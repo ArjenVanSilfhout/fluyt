@@ -74,7 +74,7 @@ plugins/fluyt/skills/hook-authoring/SKILL.md 9500
 plugins/fluyt/skills/hub/SKILL.md 15300
 plugins/fluyt/skills/install-refresh-plugin/SKILL.md 10300
 plugins/fluyt/skills/install-refresh-plugin/claude-code-repair.md 9400
-plugins/fluyt/skills/orchestrator/SKILL.md 7000
+plugins/fluyt/skills/orchestrator/SKILL.md 8300
 plugins/fluyt/skills/release/SKILL.md 12400
 plugins/fluyt/skills/release/back-sync-pr.md 5200
 plugins/fluyt/skills/release/hotfix.md 2700

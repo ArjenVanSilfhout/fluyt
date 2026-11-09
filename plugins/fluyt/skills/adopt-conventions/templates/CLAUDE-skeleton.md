@@ -36,16 +36,7 @@ lookup.>
 
 ## Deliberate deviations from the shared playbook
 
-Precedence - what this file may override and what it may not - is `ship-work-item`, *Precedence*: a
-shared **default** bends to this file; a shared **gate** never does, and an entry that narrows one is
-not a deviation (honour the gate, surface the conflict, raise it upstream via
-`/fluyt:report-upstream`).
-
-Record each deliberate divergence below **with its reason**, so an agent that meets the contradiction
-can resolve it instead of guessing, and a future maintainer can re-evaluate it rather than deleting it
-as noise. Where a Project Facts key already governs the choice on its own documented trigger, set the
-key instead of writing prose here. If you keep an equivalent register under a heading of your own, keep
-it there - don't duplicate.
+Precedence and how to record an entry: `/fluyt:orchestrator`, *Precedence and the scope grant*.
 
 <Each entry: the shared default you diverge from, what this project does instead, and why. An
 explicitly empty register is a valid answer - write "none" rather than inventing divergence.>
@@ -91,12 +82,5 @@ destructive or irreversible operation on data or history (deletions, data migrat
 schema/format rewrites, force-pushes, mass regeneration), work only possible in an external tool
 or console - file as a `question` issue and/or ask in-session; log durable outcomes in the decisions file.>
 
-**Otherwise, keep working.** When none of the above applies, an authorized scope of work - "work the
-backlog", a named tier, "do these N" - is a standing mandate to proceed item-to-item; agents do
-**not** re-confirm between backlog items. Guardrails: a scope never widens (one tier does not roll
-into the next; a named set does not grow into the backlog), "keep going" resumes the scope already in
-flight rather than opening a wider one, and a grant is live only for the continuous stretch it opened -
-re-confirm after a context reset, an intervening instruction, or a long gap. Landing items to the
-integration branch is in-scope; **cutting a release is not** - that keeps its own confirm step
-(`/fluyt:release`), as does filing upstream (`/fluyt:report-upstream`). Full doctrine:
-`/fluyt:ship-work-item`.
+**Otherwise, keep working** - the scope-grant rule: `/fluyt:orchestrator`, *Precedence and the
+scope grant*.
