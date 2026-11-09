@@ -12,7 +12,8 @@ Loads on "run the project", "work the backlog", "drive the work", "you are the o
 resume after a context reset. **Do not load it for one named item (`ship-work-item`), a quiet agent
 (`agent-liveness`), or writing a hand-over (`handover`).** A **skill, not a dispatchable role**: it
 installs the posture for a session and names which skill takes over at each step. It states itself
-only the chain below, rules 2 and 13, and the precedence line; everything else points to its owner.
+only the chain below, rules 2 and 13, and *Precedence and the scope grant*; everything else points
+to its owner.
 
 **Where this file and an owning skill disagree, the OWNER wins.**
 
@@ -96,3 +97,21 @@ Each line but 13 names an owner (rule 2 also stated here); read it before a hard
     result. Code, paths, numbers and errors stay verbatim, a negation is never dropped; questions,
     option lists, irreversible steps, security warnings and persisted text (commits, docs, issues,
     PRs, memory) stay full sentences.
+
+## Precedence and the scope grant
+
+A consumer `CLAUDE.md` points here; full doctrine in `ship-work-item`, *Precedence* and *Continue
+autonomously across a scope*.
+
+- **Precedence.** A shared **default** bends to the consumer's file; a shared **gate** never does,
+  and an entry narrowing one is no deviation (honour the gate, surface the conflict,
+  `/fluyt:report-upstream`).
+- **Deviation entries** carry their **reason**, so an agent can resolve the contradiction and a
+  maintainer re-evaluate it. A Project Facts key governing the choice on its own documented trigger
+  wins over prose; an equivalent register under the consumer's own heading is not duplicated; an
+  explicit "none" is valid.
+- **Scope grant.** With no gate applying, an authorized scope is a standing mandate to proceed
+  item-to-item without re-confirming. It never widens; "keep going" resumes the scope in flight; it
+  lasts only the stretch that opened it (re-confirm after a context reset, an intervening
+  instruction, or a long gap). Landing on the integration branch is in scope; **a release
+  (`/fluyt:release`) and an upstream filing keep their own confirm**.
