@@ -9,9 +9,12 @@ as a `chore/` PR (docs/process → PATCH); its four passes follow. What it reach
 
 **Pass A - Project Facts keys:**
 
-1. Read the consumer's current Project Facts block and `templates/CLAUDE-project-facts.md`.
-2. List keys the template defines that the block is **missing**; also surface (as a note, never a
-   deletion) any keys the block has that the template no longer defines.
+1. Read the consumer's current Project Facts block (and the `facts-file` it names, if any) and
+   `templates/CLAUDE-project-facts.md`.
+2. List keys the template defines that are **missing** - absent from both places; also surface (as a
+   note, never a deletion) any keys present that the template no longer defines, and flag any key
+   present in both places as a duplicate (inline wins). An all-inline consumer with no recorded
+   `facts-file` decision is offered the split (confirm-first, per `SKILL.md` §2 step 1).
 3. For each missing key, propose a value by inspection where inferable (build/test/branch facts),
    and **ask** where it's a design or priority choice - don't guess.
 4. Merge in only the confirmed additions; **never overwrite an existing value.**
@@ -74,10 +77,11 @@ as a `chore/` PR (docs/process → PATCH); its four passes follow. What it reach
    that v1.17.0 replaced with a short routing paragraph). If the consumer has
    deliberately edited a plugin-owned paragraph, surface the difference and let them decide;
    don't clobber their wording.
-4. Merge in only the confirmed additions/updates. For Codex, apply the same paragraph rule to
+4. Merge in only the confirmed additions/updates/removals (a confirmed removal is applied;
+   nothing is removed unconfirmed). For Codex, apply the same paragraph rule to
    `AGENTS-skeleton.md`: its bracket-free routing is plugin-owned, while existing consumer guidance
-   remains untouched. `AGENTS.md` points to the single Project Facts block in `CLAUDE.md`; never
-   copy that block into both files.
+   remains untouched. `AGENTS.md` points to the Project Facts in `CLAUDE.md` (plus any
+   `facts-file`); never copy them into both files.
 5. **Surface - never fill - an unfilled consumer section.** If a `<...>` fill-in prompt survives in a
    consumer-owned **section** of the `CLAUDE.md`, or a section the skeleton defines is absent
    altogether (under its heading or the repo's own equivalent), report it and offer the §2 step 3

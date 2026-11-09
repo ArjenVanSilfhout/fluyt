@@ -5,11 +5,12 @@ references point into that body.
 
 ## Step 0 - fail-fast base check, long form
 
-Read the consumer's `CLAUDE.md` and its **Project Facts** block. Confirm the branch's checkout looks
-like a current one (the files the Project Facts name - `changelog`, `test-dir` if any - exist;
-`changelog: none` is a declared value with no file to find, so that check is n/a - report it as
-such). If `CLAUDE.md` or the Project Facts block is missing, this checkout predates the process -
-STOP immediately and report "stale base" without checking anything else.
+Read the consumer's `CLAUDE.md` and its **Project Facts** block (and the `facts-file` it names, if
+any - lookup per the Project Facts contract). Confirm the branch's checkout looks like a current one
+(the files the Project Facts name - `changelog`, `test-dir` if any - exist; `changelog: none` is a
+declared value with no file to find, so that check is n/a - report it as such). If `CLAUDE.md`, the
+Project Facts block or a named `facts-file` is missing, this checkout predates the process - STOP
+immediately and report "stale base" without checking anything else.
 
 **Existence is only half the check - assert commit identity too.** Unlike the implementer
 roles, you run *after* the work is committed, so your identity target is **not** the integration

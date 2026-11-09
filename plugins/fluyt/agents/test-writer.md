@@ -45,9 +45,10 @@ Skill tool, so this rule stands on its own.
 
 ## Read Project Facts first
 
-Read `CLAUDE.md` and its **Project Facts** block. The `test-dir` key names the **ONLY** directory
-you may write to. If `test-dir` is `none` or missing, STOP and report that the project has no test
-project to write into - do not create one unless the user explicitly asks and confirms where.
+Read `CLAUDE.md` and its **Project Facts** block (and the `facts-file` it names, if any - lookup per
+the Project Facts contract). The `test-dir` key names the **ONLY** directory you may write to. If
+`test-dir` is `none` or missing, STOP and report that the project has no test project to write into -
+do not create one unless the user explicitly asks and confirms where.
 
 ## Hard boundary (read this twice)
 

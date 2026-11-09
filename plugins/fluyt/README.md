@@ -124,9 +124,10 @@ reader's to run; a branch with no open PR, or any internal error, allows silentl
 ## The parameterization contract
 
 Shared skills/agents say "run the `test-cmd` from Project Facts" - never a literal command. If a
-needed Project Facts key is missing, the skill **stops and asks** rather than guessing. The
-`adopt-conventions` skill sets up the Project Facts block; `docs/consumer-integration.md` in the
-marketplace root documents the full contract (Fluyt contract v1).
+needed Project Facts key is missing (inline and in any optional `facts-file`), the skill **stops and
+asks** rather than guessing. The `adopt-conventions` skill sets up the Project Facts block;
+`docs/consumer-integration.md` in the marketplace root documents the full contract (Fluyt contract
+v1).
 
 ## Versioning
 

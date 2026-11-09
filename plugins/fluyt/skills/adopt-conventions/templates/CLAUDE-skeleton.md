@@ -30,7 +30,9 @@ add-thing, area skills - or "none yet">.
 ## Project Facts
 
 <Paste the filled-in Project Facts block here - see CLAUDE-project-facts.md. The shared skills read
-these keys by name; a missing key makes a skill stop and ask.>
+these keys by name; a missing key makes a skill stop and ask. Optionally keep only the inline core
+here and put the other keys in the file `facts-file` names; the contract states the core and the
+lookup.>
 
 ## Deliberate deviations from the shared playbook
 
