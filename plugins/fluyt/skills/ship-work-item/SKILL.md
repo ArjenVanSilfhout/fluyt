@@ -1,19 +1,15 @@
 ---
 name: ship-work-item
 description: >-
-  The end-to-end delivery ritual for landing ONE work item - pick an issue, branch off the
-  integration branch, implement, test, update the CHANGELOG + version, put `Closes #N` in the PR
-  body, commit, open a PR, arm fire-and-forget auto-merge, and verify the issue closed. Use whenever
-  you start OR finish a backlog issue, are about to commit or open a PR, need to pick the version
-  bump, or are waiting on an auto-merge. Skipping this ritual is how mis-versioned releases and
-  silently-unclosed issues happen.
+  End-to-end ritual for landing ONE work item: branch, implement, CHANGELOG + version, PR,
+  auto-merge, verify close. Use whenever you start or finish a backlog issue or commit or open a PR.
 ---
 
 # Ship a work item (branch → PR → merge)
 
-The consumer's `CLAUDE.md` and Project Facts are authoritative on commands, paths, and branch
-names; this skill is the operational checklist with the traps marked. **One work item = one branch =
-one squash commit on the integration branch. One PR at a time.**
+The consumer's `CLAUDE.md` and Project Facts (plus any `facts-file`) are authoritative on commands,
+paths, and branch names; this skill is the operational checklist with the traps marked. **One work
+item = one branch = one squash commit on the integration branch. One PR at a time.**
 
 **Precedence - when this skill and the consumer's `CLAUDE.md` disagree.** The consumer's `CLAUDE.md`
 **overrides a shared default**: this playbook is the default, not the authority. Follow the
@@ -29,9 +25,10 @@ So a rule about **how** the work is done bends to the consumer; the stops and sc
 named above do not.
 
 Read these Project Facts keys before you start: `integration-branch`, `default-branch`, `build-cmd`,
-`test-cmd`, `run-cmd`, `test-dir`, `changelog`, `commit-subject`, `co-author-trailers`.
-If any key this ritual needs is missing, STOP and ask - never guess a
-build/test command or a branch name.
+`test-cmd`, `run-cmd`, `test-dir`, `changelog`, `commit-subject`, `co-author-trailers`. Look them up
+inline, then in the `facts-file` `CLAUDE.md` names, if any (lookup per the Project Facts contract);
+read that file **at most once per run**. If any key this ritual needs is missing, STOP and ask -
+never guess a build/test command or a branch name.
 
 **When Project Facts `forge` is not `github`**, the GitHub-specific steps this ritual names - issue
 pick, PR/merge, the closing-keyword machinery, the CI gate, branch protection - translate per that
@@ -67,7 +64,8 @@ here or in the file named at its section, and a reviewer enforcing a section rea
   PR and merge stay yours, the commit too outside an isolated lane. **Read what comes back and
   challenge it against the spec AND the idea behind it.** Inline only when all hold: one file, no
   new logic and no more than a handful of changed lines, no new or updated test; when you cannot
-  tell, dispatch.
+  tell, dispatch. **A `size:S` item takes the fast path** - one `developer` writes the code and its
+  tests, no `test-writer` spawn; the rule is in `verification.md`.
 - **Before you write a spawn brief, act on a delegate's or reviewer's report, weigh going inline, or
   run on `delegation: on-demand`, read `delegation.md`:** the delegation bullets, the challenge bar,
   *a delegate's report is a secondary source*, *delegation is not deference*, the pre-ruled version

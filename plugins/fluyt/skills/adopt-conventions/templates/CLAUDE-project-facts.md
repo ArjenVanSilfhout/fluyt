@@ -1,8 +1,9 @@
 <!-- Fluyt contract v1 - Project Facts block.
-     Paste this into your CLAUDE.md and fill every key. The shared fluyt skills and agents
+     Fill every key. Paste the block into your CLAUDE.md whole, or keep only the inline core there
+     and move the rest to a file (`facts-file` below). The shared fluyt skills and agents
      read these keys by name (e.g. "run the `test-cmd` from Project Facts") and contain NO
      project-specific facts of their own. A key a ritual REQUIRES stops that skill and asks when
-     missing; a key with a documented absent-key default (sixteen below, e.g. `delegation`) never
+     missing; a key with a documented absent-key default (seventeen below, e.g. `delegation`) never
      stops anything - stating it explicitly is recommended, not required: a stated default reads as
      a decision, not an oversight. -->
 
@@ -48,17 +49,38 @@
      `ratified @vX.Y.Z` key whose definition below carries a `recommendation-changed` version NEWER
      than its own `@vX.Y.Z` gets re-presented; everything else - every `inferred` key regardless, and
      every `ratified` key with no newer tell - is left exactly as `adopt-conventions`' existing
-     Pass A rules already treat it. Today no key below carries a `recommendation-changed` annotation:
-     the mechanism ships ahead of any actual change, and the first key whose recommendation
-     materially changes is the first to carry one. -->
+     `re-sync.md` Pass A rules already treat it. Today no key below carries a
+     `recommendation-changed` annotation: the
+     mechanism ships ahead of any actual change, and the first key whose recommendation materially
+     changes is the first to carry one. -->
 
 ## Project Facts (Fluyt contract v1)
 
 - `project-name`: <human-readable name>
 - `repo`: <owner>/<repo> (public | private)
 - `agent-clients`: <claude | codex | both> - which client surfaces consume this same Fluyt
-  working agreement. The Project Facts block remains single-sourced in `CLAUDE.md`; a Codex
-  `AGENTS.md` routes to it rather than duplicating the contract.
+  working agreement. The Project Facts stay single-sourced (`CLAUDE.md`, plus the `facts-file` it
+  names, if any); a Codex `AGENTS.md` routes to them rather than duplicating the contract.
+- `facts-file`: <none | path> - OPTIONAL split of the block, so `CLAUDE.md` (loaded every turn)
+  carries only a small inline core. Default `none` (absent → `none`): every key stays inline,
+  exactly as before. Suggested path `docs/process/project-facts.md` - tracked, never `.local.md`.
+  **The inline core** stays in `CLAUDE.md` whatever you choose: `build-cmd`, `test-cmd`, `run-cmd`,
+  `default-branch`, `integration-branch`, `release-branch`, `forge`, `handover`,
+  `co-author-trailers`, `changelog` (two hooks read these from `CLAUDE.md`), `delegation` (governs
+  every turn), `git-identity` (checked at session start) and `facts-file`. Every other key may move.
+  **Lookup rule (stated here once; every skill and agent points here):** look a key up inline first,
+  then in the file. Absent from both ⇒ its documented default, or STOP-and-ask for a required key. A
+  named file that is missing ⇒ STOP, never silent defaults. A key in both places: inline wins, and
+  re-sync flags the duplicate. A ritual reads the file at most once, only where it reads its keys.
+  Never `@`-import the file into `CLAUDE.md` - that would load it every turn. Declining the split is
+  recorded as `facts-file: none` (`chosen`). The file holds the same key lines:
+
+  ```markdown
+  ## Project Facts (continued)
+
+  - `test-dir`: <...>
+  - `backlog`: <...>
+  ```
 - `forge`: <github | azure-devops> - which forge platform the delivery ritual's forge-specific steps
   (backlog, PR/merge, issue-close linking, CI gate, branch protection) target. Default `github`
   (absent → `github`, never a STOP). Set `azure-devops` to route those steps through the

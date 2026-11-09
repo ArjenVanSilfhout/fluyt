@@ -3,7 +3,9 @@
 # WHAT THIS IS: the per-file byte budgets check [12] in scripts/validate-local.ps1 enforces for
 # every Markdown file directly in a shipped skill directory (plugins/*/skills/*/*.md - SKILL.md plus
 # the reference files a skill splits out, in scope; a skill's templates/ subdirectory is
-# one level deeper and NOT budgeted) and every canonical role (plugins/*/agents/*.md). Every lane
+# one level deeper and NOT budgeted), every canonical role (plugins/*/agents/*.md), and every
+# agent reference file (plugins/*/references/*/*.md - the detail a role's body Reads on demand;
+# DECISIONS.md, 2026-11-04). Every lane
 # that loads one of these files pays for ALL of it on EVERY load, and without a cap, files regrow
 # silently. This is a RATCHET, not a target: it stops silent growth; it does not demand a trim.
 #
@@ -28,26 +30,56 @@
 # case-sensitively; a path may appear only once. Keep entries sorted by path and ASCII-only (this
 # file is read on PowerShell 5.1 hosts too - see plugin-vocabulary-allowlist.txt's ENCODING note).
 
-plugins/fluyt/agents/developer.md 18800
-plugins/fluyt/agents/preflight-reviewer.md 26100
+plugins/fluyt/agents/developer.md 10900
+plugins/fluyt/agents/preflight-reviewer.md 10100
 plugins/fluyt/agents/product-owner.md 8400
 plugins/fluyt/agents/scrum-master.md 9300
 plugins/fluyt/agents/tech-debt-reviewer.md 8500
-plugins/fluyt/agents/test-writer.md 15400
-plugins/fluyt/skills/adopt-conventions/SKILL.md 39100
-plugins/fluyt/skills/agent-liveness/SKILL.md 18300
+plugins/fluyt/agents/test-writer.md 10700
+plugins/fluyt/references/developer/build-and-tests.md 1600
+plugins/fluyt/references/developer/decided-values.md 2500
+plugins/fluyt/references/developer/house-style.md 1000
+plugins/fluyt/references/developer/report-back.md 2600
+plugins/fluyt/references/developer/start-up-checks.md 4500
+plugins/fluyt/references/developer/verification-examples.md 2600
+plugins/fluyt/references/developer/worktree-isolation.md 1600
+plugins/fluyt/references/preflight-reviewer/adversarial-coverage.md 1300
+plugins/fluyt/references/preflight-reviewer/base-check.md 2500
+plugins/fluyt/references/preflight-reviewer/build-and-test.md 2800
+plugins/fluyt/references/preflight-reviewer/changelog-and-version.md 3600
+plugins/fluyt/references/preflight-reviewer/diff-scope.md 1400
+plugins/fluyt/references/preflight-reviewer/instruction-file-review.md 1700
+plugins/fluyt/references/preflight-reviewer/invariants-and-code-style.md 2200
+plugins/fluyt/references/preflight-reviewer/issue-and-decisions.md 3300
+plugins/fluyt/references/preflight-reviewer/rulebook.md 3200
+plugins/fluyt/references/preflight-reviewer/test-diff-lens.md 1000
+plugins/fluyt/references/preflight-reviewer/visual-evidence.md 1600
+plugins/fluyt/references/test-writer/desktop-boundary.md 1100
+plugins/fluyt/references/test-writer/report-fields.md 1900
+plugins/fluyt/references/test-writer/self-verify-loop.md 1300
+plugins/fluyt/references/test-writer/start-up-checks.md 3100
+plugins/fluyt/references/test-writer/what-earns-a-test.md 800
+plugins/fluyt/references/test-writer/writing-good-tests.md 2300
+plugins/fluyt/skills/adopt-conventions/SKILL.md 23100
+plugins/fluyt/skills/adopt-conventions/from-scratch.md 4300
+plugins/fluyt/skills/adopt-conventions/re-sync.md 11700
+plugins/fluyt/skills/agent-liveness/SKILL.md 15100
+plugins/fluyt/skills/agent-liveness/process-check.md 3200
 plugins/fluyt/skills/backlog/SKILL.md 11700
-plugins/fluyt/skills/branch-protection/SKILL.md 18300
-plugins/fluyt/skills/dispatch-role/SKILL.md 4700
-plugins/fluyt/skills/forge-azure-devops/SKILL.md 11200
-plugins/fluyt/skills/handover/SKILL.md 9600
-plugins/fluyt/skills/hook-authoring/SKILL.md 9800
+plugins/fluyt/skills/branch-protection/SKILL.md 18200
+plugins/fluyt/skills/dispatch-role/SKILL.md 4600
+plugins/fluyt/skills/forge-azure-devops/SKILL.md 10900
+plugins/fluyt/skills/handover/SKILL.md 8700
+plugins/fluyt/skills/hook-authoring/SKILL.md 9500
 plugins/fluyt/skills/hub/SKILL.md 15300
-plugins/fluyt/skills/install-refresh-plugin/SKILL.md 19700
-plugins/fluyt/skills/orchestrator/SKILL.md 7400
-plugins/fluyt/skills/release/SKILL.md 20600
-plugins/fluyt/skills/report-upstream/SKILL.md 6900
-plugins/fluyt/skills/scrum/SKILL.md 8300
+plugins/fluyt/skills/install-refresh-plugin/SKILL.md 10300
+plugins/fluyt/skills/install-refresh-plugin/claude-code-repair.md 9400
+plugins/fluyt/skills/orchestrator/SKILL.md 8300
+plugins/fluyt/skills/release/SKILL.md 12400
+plugins/fluyt/skills/release/back-sync-pr.md 5200
+plugins/fluyt/skills/release/hotfix.md 2700
+plugins/fluyt/skills/report-upstream/SKILL.md 6700
+plugins/fluyt/skills/scrum/SKILL.md 8000
 plugins/fluyt/skills/ship-work-item/SKILL.md 15500
 plugins/fluyt/skills/ship-work-item/after-merge.md 7500
 plugins/fluyt/skills/ship-work-item/closing-keyword-grep.md 2500

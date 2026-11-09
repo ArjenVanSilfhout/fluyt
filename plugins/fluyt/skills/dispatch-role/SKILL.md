@@ -2,10 +2,8 @@
 name: dispatch-role
 description: >-
   Codex adapter for Fluyt's six specialist roles. Use when a Codex task should delegate to the
-  developer, product-owner, preflight-reviewer, tech-debt-reviewer, test-writer, or scrum-master
-  contract, or when verifying those roles in read-only smoke mode. Loads the canonical role file
-  from this plugin and dispatches it through Codex subagents; never substitutes an unscoped generic
-  prompt or a copied local role definition.
+  developer, product-owner, preflight-reviewer, tech-debt-reviewer, test-writer or scrum-master
+  role.
 ---
 
 # Dispatch a Fluyt role in Codex
@@ -25,12 +23,14 @@ adapter: it reads the same canonical role file and gives its complete contract t
 | `../../agents/scrum-master.md` | deep analysis | read-only |
 
 No other role name is valid. Claude Code dispatches the native `fluyt:<role>` agents instead.
+A role body's `${CLAUDE_PLUGIN_ROOT}/references/<role>/<topic>.md` reads as
+`../../references/<role>/<topic>.md` from this skill's directory; pass the subagent that path.
 
 ## Dispatch procedure
 
-1. Read the consumer's `CLAUDE.md` in full: it stays the canonical Project Facts and
-   working-agreement file on both clients. If the file or a fact the role requires is missing, stop
-   and ask instead of guessing.
+1. Read the consumer's `CLAUDE.md` in full: it stays the canonical Project Facts (plus any
+   `facts-file` it names, per the Project Facts contract) and working-agreement file on both
+   clients. If the file or a fact the role requires is missing, stop and ask instead of guessing.
 2. Resolve this skill's directory, then read the selected role file **in full** - the single source
    of truth; never substitute a remembered, summarized, or consumer-local copy. Confirm its
    frontmatter `name` matches the requested role.

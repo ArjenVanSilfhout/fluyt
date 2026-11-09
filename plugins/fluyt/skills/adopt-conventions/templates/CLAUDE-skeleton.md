@@ -1,6 +1,6 @@
-<!-- CLAUDE.md skeleton - merge into an existing CLAUDE.md, don't overwrite. The routing
-     paragraph below is load-bearing: the plugin's own prose is NOT auto-loaded, so these pointers must
-     live HERE, in the consumer's CLAUDE.md, to make the shared skills trigger. -->
+<!-- CLAUDE.md skeleton - merge into an existing CLAUDE.md, don't overwrite. The short routing
+     paragraph below is load-bearing: it sends every session to the plugin before work starts; each
+     skill then loads from its own description in the skill listing. -->
 
 # <Project name> - working agreement
 
@@ -8,54 +8,16 @@
 
 ## Agentic process (fluyt plugin)
 
-This repo uses the **fluyt** plugin for its delivery process. The shared playbooks live in the
-plugin; this file stays the compact, client-neutral contract + the routing that points at them.
-**Consult the matching skill before working in its area** instead of working from memory. Claude Code
-invokes namespaced skills as `/fluyt:<name>`; Codex uses `$fluyt:<name>` (or triggers
-from its description). Below, swap `/` for `$` when working in Codex:
+This repo uses the **fluyt** plugin for its delivery process. **Consult the matching skill before
+working in its area**, not memory. Start or resume a session with `/fluyt:orchestrator`; it routes
+the ritual chain. Each skill loads from its description: `orchestrator`, `hub`, `ship-work-item`,
+`backlog`, `release`, `versioning-and-changelog`, `scrum`, `report-upstream`, `adopt-conventions`,
+`branch-protection`, `install-refresh-plugin`, `agent-liveness`, `handover`, `hook-authoring`,
+`dispatch-role`, `forge-azure-devops`. In Codex, swap `/` for `$`.
 
-- **Starting a working session, or resuming after a context reset** - "run the project", "work the
-  backlog", "drive the work", "you are the orchestrator" - the session posture and the ritual chain
-  it routes to: `/fluyt:orchestrator`
-- **Running ONE cross-project hub session** that coordinates several project sessions (each still the
-  orchestrator of its own repo) - the hub repo, the message protocol, relaying decisions, and the
-  authority boundary: `/fluyt:hub`
-- **Delivering a work item** (branch → PR → merge, version bump, close the issue):
-  `/fluyt:ship-work-item`
-- **Picking / filing / re-tiering backlog issues**: `/fluyt:backlog`
-- **Cutting a release** (integration → release branch): `/fluyt:release`
-- **Version + CHANGELOG discipline**: `/fluyt:versioning-and-changelog`
-- **Retrospective on the agent team + workflow**: `/fluyt:scrum`
-- **Found a bug in / want a feature for the shared plugin itself**: `/fluyt:report-upstream`
-- **Starting a brand-new project from scratch** (interview the shape, offer to create the repo and
-  branches, then onboard it): `/fluyt:adopt-conventions` (from-scratch mode)
-- **After updating the fluyt plugin - re-sync conventions** (pull in new Project Facts keys +
-  changed shipped guidance): `/fluyt:adopt-conventions` (re-sync mode)
-- **Protecting a branch** (a ruleset or classic protection on the integration or release branch,
-  required status checks, which merge methods a branch allows) - or auditing the CI triggers that go
-  with it: `/fluyt:branch-protection`
-- **Plugin won't load / update on an embedded client, or checking which version is loaded**:
-  `/fluyt:install-refresh-plugin`
-- **About to dispatch a sub-agent** (detached or blocking? watch it or collect it?), **or a background
-  one has gone quiet** - is it working, dead, or already handed back? Resume it or re-dispatch?:
-  `/fluyt:agent-liveness`
-- **Ending a session, or a context reset is coming** (an auto-compaction threshold, a manual reset, a
-  long pause, handing off to another person or agent) - write a hand-over a successor can act on
-  without reconstructing state from the transcript: `/fluyt:handover`. On resuming after one,
-  read it before acting on anything a prior turn appears to have told you.
-- **About to write or change a Claude Code hook** (a `hooks.json` entry, or any event hook that
-  writes a file, stamps a time, or resolves a path) - read the authoring discipline BEFORE authoring,
-  not once at onboarding: `/fluyt:hook-authoring`
-- **Dispatching a canonical specialist role from Codex**: `/fluyt:dispatch-role`
-- **The repo lives on Azure DevOps** (Project Facts `forge: azure-devops`) and a ritual step names
-  GitHub or `gh` - translate that step, not the ritual: `/fluyt:forge-azure-devops`
-
-Claude Code loads the team subagents directly as `fluyt:developer`,
-`fluyt:product-owner`, `fluyt:preflight-reviewer`,
-`fluyt:tech-debt-reviewer`, `fluyt:test-writer`, and `fluyt:scrum-master`.
-Codex dispatches the same canonical role files through `$fluyt:dispatch-role`. Every role's
-substantive report ends with a **"Skills consulted"** line naming what it read; a missing line is
-worth questioning ("none" is legitimate only for a trivial mechanical task).
+Team roles load as `fluyt:<role>` subagents in Claude Code and through `$fluyt:dispatch-role` in
+Codex. Every role's report ends with a **"Skills consulted"** line naming what it read; a missing
+line is worth questioning ("none" is legitimate only for a trivial mechanical task).
 
 Notation in fluyt skills and agent files: `⇒` = implies (what follows, or what a system does); `→` =
 then (the next step, or the action you take).
@@ -68,24 +30,13 @@ add-thing, area skills - or "none yet">.
 ## Project Facts
 
 <Paste the filled-in Project Facts block here - see CLAUDE-project-facts.md. The shared skills read
-these keys by name; a missing key makes a skill stop and ask.>
+these keys by name; a missing key makes a skill stop and ask. Optionally keep only the inline core
+here and put the other keys in the file `facts-file` names; the contract states the core and the
+lookup.>
 
 ## Deliberate deviations from the shared playbook
 
-This file **overrides a shared `fluyt` default** - the plugin's skills are the default, not the
-authority. It does **not** override a shared **gate**: the stops `ship-work-item` lists under *Surface
-mid-scope only for a real decision*, together with the scope-grant guardrails restated under **Ask the
-human when** below. Those are what keep an agent from
-deciding alone what only the human can decide. **An entry that narrows a gate is not a deviation and
-does not belong here** - an agent that meets one honours the gate, surfaces the conflict, and does not
-act on the entry. If a project genuinely needs a gate relaxed, raise it upstream via
-`/fluyt:report-upstream`.
-
-Record each deliberate divergence below **with its reason**, so an agent that meets the contradiction
-can resolve it instead of guessing, and a future maintainer can re-evaluate it rather than deleting it
-as noise. Where a Project Facts key already governs the choice on its own documented trigger, set the
-key instead of writing prose here. If you keep an equivalent register under a heading of your own, keep
-it there - don't duplicate.
+Precedence and how to record an entry: `/fluyt:orchestrator`, *Precedence and the scope grant*.
 
 <Each entry: the shared default you diverge from, what this project does instead, and why. An
 explicitly empty register is a valid answer - write "none" rather than inventing divergence.>
@@ -131,12 +82,5 @@ destructive or irreversible operation on data or history (deletions, data migrat
 schema/format rewrites, force-pushes, mass regeneration), work only possible in an external tool
 or console - file as a `question` issue and/or ask in-session; log durable outcomes in the decisions file.>
 
-**Otherwise, keep working.** When none of the above applies, an authorized scope of work - "work the
-backlog", a named tier, "do these N" - is a standing mandate to proceed item-to-item; agents do
-**not** re-confirm between backlog items. Guardrails: a scope never widens (one tier does not roll
-into the next; a named set does not grow into the backlog), "keep going" resumes the scope already in
-flight rather than opening a wider one, and a grant is live only for the continuous stretch it opened -
-re-confirm after a context reset, an intervening instruction, or a long gap. Landing items to the
-integration branch is in-scope; **cutting a release is not** - that keeps its own confirm step
-(`/fluyt:release`), as does filing upstream (`/fluyt:report-upstream`). Full doctrine:
-`/fluyt:ship-work-item`.
+**Otherwise, keep working** - the scope-grant rule: `/fluyt:orchestrator`, *Precedence and the
+scope grant*.

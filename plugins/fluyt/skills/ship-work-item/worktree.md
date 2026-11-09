@@ -9,7 +9,8 @@ its `§N` and *Section* references point into that `SKILL.md`.
     session rooted one directory above the repo never loads `<repo>/.claude/settings.json`, so
     **whichever `worktree.baseRef` the repo configures is inert** - an isolated agent then silently
     branches from the far-behind release branch, regardless of the configured value. Diagnose
-    with the *Project settings resolve from the SESSION ROOT* check in `install-refresh-plugin`.
+    with the *Project settings resolve from the SESSION ROOT* check in `install-refresh-plugin`
+    (`claude-code-repair.md`).
     Workaround for a mis-rooted session: plain `git worktree add` under the scratchpad, with
     **non-isolated** agents pointed at that path in their prompt.
   - **Commit any agent-definition or settings changes FIRST.** A worktree-isolated agent loads the

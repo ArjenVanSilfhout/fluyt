@@ -1,24 +1,21 @@
 ---
 name: orchestrator
 description: >-
-  The top-level session posture for the main agent: you orchestrate and delegate, you do not
-  implement. Use at the START of a working session, when the user says run the project, work the
-  backlog, drive the work, or you are the orchestrator, and when resuming after a context reset.
-  Names the ritual chain - read the hand-over, pick from the backlog, ship one item, keep dispatched
-  agents live, loop, write the hand-over before any pause - and the posture at each link: what
-  stays yours versus dispatched, how to challenge and verify a report, and what to capture when one
-  lands. It ROUTES to the skills that own each step; only rules 2 and 13 are its own. Do NOT load
-  it for one named item (ship-work-item), a quiet agent (agent-liveness), or writing a hand-over
-  (handover).
+  The top-level session posture: you orchestrate and delegate, you do not implement. Use at the
+  START of a session, on "run the project", "work the backlog", "drive the work", or after a
+  context reset.
 ---
 
 # Orchestrator - the session posture and the ritual chain
 
-A **skill, not a dispatchable role**: it installs the posture for a session and names which skill
-takes over at each step. It states itself only the chain below, rules 2 and 13, and the precedence
-line; everything else points to its owner.
+Loads on "run the project", "work the backlog", "drive the work", "you are the orchestrator", or a
+resume after a context reset. **Do not load it for one named item (`ship-work-item`), a quiet agent
+(`agent-liveness`), or writing a hand-over (`handover`).** A **skill, not a dispatchable role**: it
+installs the posture for a session and names which skill takes over at each step. It states itself
+only the chain below, rules 2 and 13, and *Precedence and the scope grant*; everything else points
+to its owner.
 
-**Where this file and an owning skill disagree, the OWNER wins.** This file is a map.
+**Where this file and an owning skill disagree, the OWNER wins.**
 
 A cross-project **hub** session still takes this posture; `hub` adapts the chain for a session that
 runs no repo work.
@@ -33,18 +30,17 @@ runs no repo work.
                                   (while dispatched work runs)
                                              |
   +------------------------------------------+------------------------------------+
-  |  the human calls a cut --> release         (its own confirm gate;               |
-  |                                             a drain never promotes)             |
-  |  the snag is in the SHARED process --> report-upstream / scrum                  |
+  |  the human calls a cut --> release (own confirm gate; a drain never promotes) |
+  |  the snag is in the SHARED process --> report-upstream / scrum                |
   +------------------------------------------+------------------------------------+
                                              |
   EXIT <-- handover (written before any pause, reset, or session end)
 ```
 
 - **Enter - `handover`.** Read the artifact at the Project Facts `handover` location before
-  acting on anything a prior turn told you; treat an inherited grant as expired
-  until the human re-confirms. When Project Facts sets `git-identity`, also confirm the git and
-  forge identity match it (absent → skip).
+  acting on anything a prior turn told you; an inherited grant is expired until the human
+  re-confirms (rule 11). When Project Facts sets `git-identity`, also confirm the git and forge
+  identity match it (absent → skip).
 - **Pick - `backlog`.** Its selection order decides what is next.
 - **Ship - `ship-work-item`.** One item = one branch = one PR, from re-validation to the
   post-merge close check.
@@ -54,10 +50,9 @@ runs no repo work.
 - **Cut - `release`, only when the human calls one.** **A drain never promotes**: emptying a
   scope is no release trigger.
 - **Shared-process snag - `report-upstream`, or `scrum` for a pass over how the team is working.**
-  A shared-process defect is filed upstream, not re-implemented locally; filing has its own
-  confirm step.
-- **Exit - `handover`.** Before any foreseeable pause, reset, or session end; mid-item it is
-  written and left uncommitted.
+  A shared-process defect is filed upstream, not re-implemented locally; filing has its own confirm.
+- **Exit - `handover`.** Before any foreseeable pause, reset, or session end; it owns the
+  uncommitted-mid-item rule.
 
 ## The posture - thirteen rules, eleven owned elsewhere
 
@@ -67,10 +62,10 @@ Each line but 13 names an owner (rule 2 also stated here); read it before a hard
    (absent = `default`); the inline escape hatch still applies. → `ship-work-item` §1, delegation
    bullets.
 2. **What stays yours is settled by OWNERSHIP, not by file type.** Ask who owns the artifact's
-   correctness: recon, the spec, the dispatch, the verification of what returns, the tracker, and
-   branch / CHANGELOG / version / commit / PR / merge are yours (→ `ship-work-item` §1, *Parallel
-   work*). **Config, CI and doc/process edits default to orchestrator work** - a consumer whose CI
-   config is product-shaped may route it to a delegate, recorded in its `CLAUDE.md` as a deviation.
+   correctness: recon, spec, dispatch, verification, tracker and the branch → merge path are yours
+   (→ `ship-work-item` §1, *Parallel work*). **Config, CI and doc/process edits default to
+   orchestrator work** - a consumer whose CI config is product-shaped may route it to a
+   delegate, recorded in its `CLAUDE.md` as a deviation.
 3. **A delegate's report is a secondary source about its own work** - verify a load-bearing claim
    against the tree or primary output before it carries weight. → `ship-work-item` §1,
    secondary-source bullet.
@@ -101,4 +96,22 @@ Each line but 13 names an owner (rule 2 also stated here); read it before a hard
     no closing recap or offer; a tool run gets one line before, one per phase change, one with the
     result. Code, paths, numbers and errors stay verbatim, a negation is never dropped; questions,
     option lists, irreversible steps, security warnings and persisted text (commits, docs, issues,
-    PRs, memory) stay full sentences. → related: `hub`, *Keep `[REPORT]` and `[FYI]` bodies short*.
+    PRs, memory) stay full sentences.
+
+## Precedence and the scope grant
+
+A consumer `CLAUDE.md` points here; full doctrine in `ship-work-item`, *Precedence* and *Continue
+autonomously across a scope*.
+
+- **Precedence.** A shared **default** bends to the consumer's file; a shared **gate** never does,
+  and an entry narrowing one is no deviation (honour the gate, surface the conflict,
+  `/fluyt:report-upstream`).
+- **Deviation entries** carry their **reason**, so an agent can resolve the contradiction and a
+  maintainer re-evaluate it. A Project Facts key governing the choice on its own documented trigger
+  wins over prose; an equivalent register under the consumer's own heading is not duplicated; an
+  explicit "none" is valid.
+- **Scope grant.** With no gate applying, an authorized scope is a standing mandate to proceed
+  item-to-item without re-confirming. It never widens; "keep going" resumes the scope in flight; it
+  lasts only the stretch that opened it (re-confirm after a context reset, an intervening
+  instruction, or a long gap). Landing on the integration branch is in scope; **a release
+  (`/fluyt:release`) and an upstream filing keep their own confirm**.

@@ -1,20 +1,20 @@
 ---
 name: versioning-and-changelog
 description: >-
-  The CHANGELOG-as-single-source-of-truth discipline and the MINOR-vs-PATCH version-bump rule. Use
-  whenever you add a CHANGELOG entry, pick a version bump, write a version-stamped commit subject, or
-  need to settle whether a change is MINOR or PATCH.
+  CHANGELOG discipline and the MINOR-vs-PATCH bump rule. Use whenever you add a CHANGELOG entry,
+  pick a version bump, write a version-stamped commit subject, or settle MINOR or PATCH.
 ---
 
 # Versioning & the CHANGELOG
 
 `CHANGELOG.md` is the **single source of truth** for completed work AND version numbers. Never
 duplicate versions or completion status anywhere else (see *What NEVER carries a version* below).
-Read the consumer's **Project Facts** for `changelog` (the CHANGELOG path) and `version-rules` (the
-project's own MINOR/PATCH definition); this skill is the shared shape. If either key is missing,
-STOP and ask - don't guess the path or the rule.
-**`changelog: none` (an unversioned repo) is a declared value, not a missing key: this skill does
-not apply - no entry, no bump, and no version in the commit subject.**
+Read the consumer's **Project Facts** (and the `facts-file` it names, if any - lookup per the
+Project Facts contract) for `changelog` (the CHANGELOG path) and `version-rules` (the project's own
+MINOR/PATCH definition); this skill is the shared shape. If either key is missing, STOP and ask -
+don't guess the path or the rule. **`changelog: none` (an unversioned repo) is a declared value, not
+a missing key: this skill does not apply - no entry, no bump, and no version in the commit
+subject.**
 
 ## The CHANGELOG entry (newest first)
 

@@ -1,14 +1,8 @@
 ---
 name: hook-authoring
 description: >-
-  Use when adding a new Claude Code hook, editing a hooks.json entry, or designing any event hook
-  that writes a file, stamps a timestamp, or resolves a path - before you author it, not at onboarding.
-  Covers four recurring failure modes: a hook-written file sharing a path with a human-authored
-  one, a timestamp stamped in the wrong timezone for what it gets compared against,
-  `$CLAUDE_PROJECT_DIR` resolving to the session root rather than the repo root, and silent failure
-  swallowing a real break unnoticed. Also settles async vs blocking, which event can BLOCK a tool
-  call, whether a hook counts a tripwire or a metric, and the trust boundary a shipped hook keeps
-  (no session-entry network or credentials, no runtime fetch, every hook disclosed).
+  Use before adding a Claude Code hook, editing a hooks.json entry, or designing any event hook
+  that writes a file, stamps a time, or resolves a path. Covers the recurring failure modes.
 ---
 
 # Hook authoring - four failure modes and a trust boundary, read before you write one

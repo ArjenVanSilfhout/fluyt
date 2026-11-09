@@ -241,8 +241,8 @@ The plugin evolves; a repo already on fluyt keeps up in two steps:
 2. **Re-sync the conventions** — skim the marketplace CHANGELOG for new Project Facts keys or changed
    shipped guidance, then run **`fluyt:adopt-conventions` in re-sync mode** using the active
    client's invocation style ("re-sync the conventions" / "check for convention drift"). It is
-   additive and non-destructive: it proposes the Project Facts keys the template gained (Pass A), the
-   plugin-owned `CLAUDE.md` guidance that changed (Pass B — paragraph-by-paragraph, bounded by the
+   additive and non-destructive: it proposes (the passes live in the skill's `re-sync.md`) the Project Facts keys the
+   template gained (Pass A), the plugin-owned `CLAUDE.md` guidance that changed (Pass B — paragraph-by-paragraph, bounded by the
    skeleton's `<...>` convention), the settings / gitignore / gitattributes fragments (Pass C), and the
    repo-level GitHub settings that only ever ran at onboarding — auto-merge, the
    `delete_branch_on_merge` topology check, labels, branch protection and CI triggers (Pass D, which

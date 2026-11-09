@@ -14,9 +14,137 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.13.0**
+Current version: **1.19.0**
 
 ---
+
+## [1.19.0] — 2026-11-09
+
+**Consumer `CLAUDE.md` template:** the shared precedence, deviation-recording and scope-grant text
+moves out of the template into one new `orchestrator` section, *Precedence and the scope grant*.
+The template's *Deliberate deviations* section keeps its entries fill-in plus one pointer line, and
+*Ask the human when* keeps its adaptable gate list plus a one-line **Otherwise, keep working**
+pointer. The template shrinks by about 1.3 KB per consumer; re-sync proposes the shorter wording.
+The orchestrator's size budget rises to 8300 bytes to hold the moved text.
+
+## [1.18.0] — 2026-11-07
+
+**Project Facts:** a consumer can now keep a small inline core in `CLAUDE.md` and move the other
+keys to a referenced file. The new optional key `facts-file` (default `none`, which keeps every key
+inline exactly as before; suggested path `docs/process/project-facts.md`) names that file.
+`CLAUDE-project-facts.md` lists which keys are core: the build, test and run commands, the three
+branches, `forge`, `handover`, `delegation`, `git-identity`, `facts-file`, and the two keys the
+hooks read, `changelog` and `co-author-trailers`. It also states the lookup rule once:
+
+- Look inline first, then in the file.
+- A key absent from both takes its default, or is a STOP for a required key.
+- A named file that is missing is a STOP.
+- When a key is in both places, the inline value wins.
+- Never `@`-import the file.
+
+Skills and agents that read Project Facts now point to that rule, and `ship-work-item` reads the
+file at most once per run. Onboarding offers the split, and a decline is recorded as
+`facts-file: none` (`chosen`). Re-sync counts a key as missing only when it is absent from both
+places, flags duplicates, and offers the split, asking first. Re-sync step 4 now names confirmed
+removals. Also corrected the 1.17.0 entry: the team-roles note is three lines, not two.
+
+MINOR: shipped skills and templates gain instructions a consumer follows; an all-inline consumer
+needs no change. Closes #74.
+
+## [1.17.0] — 2026-11-04
+
+**adopt-conventions:** the `CLAUDE-skeleton.md` template's "Agentic process (fluyt plugin)"
+section drops from 4,198 to 1,355 bytes. That is the text every consumer's CLAUDE.md carries on
+every turn. The 16-row routing table becomes one paragraph: consult the matching skill, start
+with `/fluyt:orchestrator`, and each skill loads from its own description. A compact list still
+names every skill, so gate check `[4]` keeps catching a deleted skill. The team-roles note
+shrinks to three lines. The notation legend, the "Skills consulted" rule and the
+project-specific-skills fill-in stay. Re-sync now also proposes removing plugin-owned prose the
+skeleton no longer ships, so an onboarded repo's old routing list is flagged. MINOR: a template's
+shipped output changes.
+
+## [1.16.0] — 2026-11-04
+
+**release, adopt-conventions, install-refresh-plugin, agent-liveness, handover, orchestrator:**
+the six heaviest skills after `ship-work-item` are cut and split. Rarely needed detail moves to
+reference files in each skill's own directory, one Read away, and each core gains a "Read
+`<file>` when ..." step. Every gate, stop and safety rule stays one Read away, and the core repeats
+the key ones beside each pointer. Core bytes, before → after: release 19,299 → 11,910 (+ `back-sync-pr.md`,
+`hotfix.md`); adopt-conventions 37,719 → 21,994 (+ `re-sync.md`, `from-scratch.md`);
+install-refresh-plugin 19,049 → 9,799 (+ `claude-code-repair.md`, which also holds the
+session-root settings check); agent-liveness 17,479 → 14,376 (+ `process-check.md`); handover
+8,731 → 8,234 and orchestrator 6,913 → 6,672 (trimmed, not split). Across the six, the core a
+session loads drops from 109,190 to 72,985 bytes. No skill folder's summed budget lines rise. The
+`CLAUDE-skeleton.md` template's precedence paragraph becomes a pointer to `ship-work-item`,
+*Precedence*, so a re-sync no longer re-proposes plugin-owned text. Its scope-grant guardrails
+stay in full. Cross-references updated in `branch-protection`, `ship-work-item/worktree.md`,
+`CLAUDE-project-facts.md` and `docs/consumer-integration.md`. MINOR: skills gain a
+read-this-file step.
+
+## [1.15.2] — 2026-11-04
+
+**orchestrator, hub:** two routing triggers the v1.14.1 description cut dropped instead of
+moving are back in the skill bodies: "you are the orchestrator" and "you are the hub" on each
+skill's *Loads on* line (the hub skill gains that line), and the orchestrator's do-not-load rule
+(one named item, a quiet agent, a hand-over each load their own skill). Descriptions stay at most
+200 characters. PATCH: restored routing text; no instruction a consumer follows changes.
+
+## [1.15.1] — 2026-11-04
+
+**CLAUDE.md:** the working agreement drops from 23.3k to about 19.2k bytes (314 to 262 lines)
+after a read-only review: two contradictions fixed (the work-branch pattern now matches
+`ship-work-item` §0's `<type>/i<N>-<slug>`, and the bug rule no longer claims to cross tiers),
+five restatements of the `main`-pin fact collapsed to one, the precedence paragraph replaced by a
+pointer to `ship-work-item` (the scope-grant guardrails stay stated in full), the two long
+invariants cut to rule plus a `DECISIONS.md` pointer, and the client-specific sandbox and shell
+chatter removed from `test-cmd` and `notes`. Three Project Facts keys the template defines are
+now stated explicitly: `test-budget: advisory`, `git-identity: none`, `report-upstream: on`. No
+gate, invariant, key or value is dropped. PATCH: a repo-side file.
+
+## [1.15.0] — 2026-11-04
+
+**developer, test-writer, preflight-reviewer:** each body shrinks to about 10k bytes
+(18,584 → 10,443; 14,613 → 10,147; 24,790 → 9,614), because every dispatch paid for the whole
+role whether or not its cases arose. The detail moved verbatim into 24 reference files under
+`references/<role>/`, a plugin-root folder neither client scans as an agent; a body cites each one
+as `${CLAUDE_PLUGIN_ROOT}/references/<role>/<topic>.md` at the trigger where the case arises, and
+`dispatch-role` tells Codex the same path resolves as `../../references/…`. Every gate, hard
+boundary, report field and desktop or identity rule stays in the body. Summed size per role
+grows (body plus references: 25.8k, 19.9k, 32.6k); gate check `[12]` budgets the new folder.
+MINOR: an agent gains read-this-file steps a consumer follows.
+
+## [1.14.1] — 2026-11-04
+
+**All sixteen skills:** descriptions are cut to at most 200 characters (folded), because every
+session pays for the skill listing whether or not it uses the skill: 9,295 characters of listing
+become 3,041. Each description opens with its trigger; three trigger phrases that lived only in a
+description ("work the backlog", "after updating the plugin", raw ideas to be filed) moved into
+the body of `orchestrator`, `adopt-conventions` and `backlog`. Nine size budgets ratchet down with
+the files. PATCH: no instruction a consumer follows changes.
+
+## [1.14.0] — 2026-11-04
+
+**ship-work-item, developer:** a `size:S` item takes a fast path: the one `developer` spawn writes
+the code and its tests, held to `test-writer`'s *What earns a test* bar, and no `test-writer` is
+spawned; preflight runs as before. A comment-only or rename-only slice is one PR with the
+`developer` at `haiku`; an issue's `model:*` routing label still wins over that rule. The
+covered-by rule stays on top of both paths, and `size:M` / `size:L` keep the `test-writer` spawn.
+The reason: a small item paid for a second spawn and a second hand-off that its test budget never
+needed. One rationale sentence in `model-selection.md` ("searching code is never a heavy-model
+task") is cut to fit the file's budget; its instruction stays. MINOR: a skill and an agent gain an
+instruction a consumer follows.
+
+## [1.13.2] — 2026-11-04
+
+**README:** the two Status lines no longer name a version (they said 1.0.0 while the current
+version was 1.13.1) and point to `CHANGELOG.md` for the current version instead, so the README
+cannot go stale again at a release. PATCH: docs only.
+
+## [1.13.1] — 2026-11-04
+
+**ship-work-item:** the *Dispatch in the background* sentence in `delegation.md` ends at "for its
+whole run" again. The 1.13.0 split dropped the clause that followed the comma and left two
+sentences joined. PATCH: wording only, no instruction changes.
 
 ## [1.13.0] — 2026-11-02
 

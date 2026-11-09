@@ -1,16 +1,15 @@
 ---
 name: hub
 description: >-
-  Run ONE cross-project hub session that coordinates several project sessions, each of which stays
-  the orchestrator of its own repo. Use when the user says run the hub, coordinate my sessions,
-  relay this to the sessions, or you are the hub - and when setting up the hub repo or the protocol
-  project sessions follow to report to it. Covers the message protocol,
-  verbatim decision relay, the strict-or-cc routing mode, the authority boundary (a relayed answer
-  counts as approval only where the user said so in that session's own chat), and away mode. Routes
-  to orchestrator for the posture and to handover for the state file.
+  Run ONE cross-project hub session coordinating several project sessions. Use on "run the hub",
+  "coordinate my sessions", "relay this to the sessions", or when setting up the hub repo or
+  protocol.
 ---
 
 # Hub - one session coordinating many orchestrators
+
+Loads on "run the hub", "coordinate my sessions", "relay this to the sessions", "you are the hub",
+or when setting up the hub repo or protocol.
 
 A hub is a session the user talks to *instead of* each project session. Every project session stays
 the orchestrator of its own repo (`orchestrator`, `ship-work-item`); the hub coordinates three

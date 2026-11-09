@@ -1,18 +1,16 @@
 ---
 name: backlog
 description: >-
-  GitHub-Issues backlog conventions - how to pick the next work item, file new issues, re-tier,
-  record decisions, and run the hygiene scan. Use whenever you pick work, file / prioritise /
-  re-tier / relate a backlog item with `gh`, run a backlog hygiene pass, or the user drops raw
-  ideas to be filed. Reads the tier-label scheme and milestones flag from Project Facts - it never
-  assumes a label naming convention.
+  GitHub-Issues backlog conventions. Use whenever you pick work, file, prioritise, re-tier or
+  relate an issue with `gh`, run a hygiene scan, or the user drops raw ideas to be filed.
 ---
 
 # Backlog - GitHub Issues
 
 The backlog lives in **GitHub Issues**. This skill is the *how*; the consumer's `CLAUDE.md` /
 Project Facts is the authority on the *which repo* and *which labels*. `gh` needs network + auth; if
-it breaks, fix that first - the backlog is unreachable without it.
+it breaks, fix that first - the backlog is unreachable without it. Raw ideas the user drops are
+filed here too.
 
 **When Project Facts `forge` is not `github`**, the `gh`-based steps below translate per that
 forge's adapter skill (`forge-azure-devops` for Azure DevOps); the selection order and hygiene
@@ -20,7 +18,8 @@ rules here stay authoritative.
 
 ## Read the scheme from Project Facts FIRST
 
-Read the `backlog` key in the consumer's Project Facts. It declares:
+Read the `backlog` key in the consumer's Project Facts (and the `facts-file` it names, if any -
+lookup per the Project Facts contract). It declares:
 
 - the **repo** the issues live on;
 - the **tier-label scheme** - the MoSCoW label names in use (default: plain

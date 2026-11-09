@@ -1,15 +1,8 @@
 ---
 name: branch-protection
 description: >-
-  Use when offering, auditing or repairing branch protection on a GitHub repo - a ruleset or classic
-  protection on the integration or release branch, required status checks, merge-method restrictions
-  (squash for work items, merge-commit-only on the release branch), or the bypass posture. Routed to
-  from adopt-conventions onboarding and its re-sync Pass D, and usable standalone when the user says
-  "protect the branch", "set up a ruleset", "require CI to pass before merge", or "nobody can merge
-  this any more". Carries the traps: a ruleset POSTed on an unpaid private repo is accepted and
-  silently unenforced, a required check that never reports deadlocks the branch forever, and a second
-  POST mints a duplicate. Also audits GitHub Actions triggers for double runs and offers a docs-only
-  fast path.
+  Use when offering, auditing or repairing branch protection on a GitHub repo - rulesets, required
+  checks, merge methods - or when the user says "protect the branch" or "require CI before merge".
 ---
 
 # Branch protection and the CI audit that rides with it
@@ -17,9 +10,9 @@ description: >-
 This is the repo-configuration half of adopting the process: protecting the `integration-branch` and
 `release-branch`, deciding what CI must report before a merge, and auditing the workflow triggers
 while you are in there. Onboarding routes here from `adopt-conventions` §5; drift-checking, from its
-Pass D. A consumer can also invoke it directly whenever a branch needs protecting or a rule needs
-reading. Every `gh` call below resolves the repo from the **current directory's** git remote -
-run from inside the target clone, or it silently targets the wrong repo.
+`re-sync.md` Pass D. A consumer can also invoke it directly whenever a branch needs protecting or
+a rule needs reading. Every `gh` call below resolves the repo from the **current directory's** git
+remote - run from inside the target clone, or it silently targets the wrong repo.
 
 **When Project Facts `forge` is not `github`, only the principles below carry over.** Per the
 `forge-azure-devops` adapter's own deliberate non-translation, this playbook's rulesets / `gh api`
