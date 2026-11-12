@@ -288,7 +288,7 @@ Bugs and feature requests: open an issue, or run `report-upstream` from a repo t
 
 ## Compatibility
 
-- **Tested clients.** Claude Code 2.1.296 (2026-10-11; CI
+- **Tested clients.** Claude Code 2.1.321 (2026-11-12; CI
   installs the latest `@anthropic-ai/claude-code` on each run). **Codex support is written but
   untested**: no Codex version is claimed.
 - **MINOR** (`X.Y.0`) means a skill, agent, hook, or template changed an instruction or output you
