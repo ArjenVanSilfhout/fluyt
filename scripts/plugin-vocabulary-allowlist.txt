@@ -57,6 +57,9 @@ WebSearch
 SendMessage
 ListAgents
 AskUserQuestion
+SendFeedback
+ScheduleWakeup
+ReportFindings
 
 # --- shell / PowerShell API vocabulary inside shipped snippets ---------------------------------
 # These are fragments of cmdlet, parameter and property names the heuristic sees once the hyphen or

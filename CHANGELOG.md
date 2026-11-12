@@ -14,9 +14,17 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.19.0**
+Current version: **1.20.0**
 
 ---
+
+## [1.20.0] — 2026-11-10
+
+**`adopt-conventions`:** step 4 gains an opt-in offer, never applied by default, to add a committed
+`permissions.deny` for five tools a delivery session never calls (`Artifact`, `SendFeedback`,
+`Workflow`, `ScheduleWakeup`, `ReportFindings`). Checked on Claude Code 2.1.321: the deny drops them
+from the session's tool list. It binds every user of the repo, so the settings fragment does not
+carry it.
 
 ## [1.19.0] — 2026-11-09
 
