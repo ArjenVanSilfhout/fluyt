@@ -1,6 +1,6 @@
 {
   "name": "fluyt",
-  "version": "1.20.0",
+  "version": "1.21.0",
   "description": "Client-agnostic delivery, backlog, release, review, and retrospective workflows for Codex and Claude Code.",
   "author": {
     "name": "Fluyt contributors",
