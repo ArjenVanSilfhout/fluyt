@@ -14,9 +14,17 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.20.0**
+Current version: **1.21.0**
 
 ---
+
+## [1.21.0] — 2026-11-12
+
+**`adopt-conventions`:** step 4's opt-in offer gains a second, separately asked setting:
+`"autoMemoryEnabled": false` in the committed `.claude/settings.json`. Checked on Claude Code
+2.1.321: it drops the auto-memory section from the session's first message, about 1k tokens. Like
+the unused-tool deny it binds every user of the repo and costs them the client's per-project memory,
+so it is never applied by default and the settings fragment does not carry it.
 
 ## [1.20.0] — 2026-11-10
 

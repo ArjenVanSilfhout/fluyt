@@ -198,11 +198,13 @@ Merge each template:
    config`; the project fragment cannot carry it - the classifier never reads `autoMode` from
    `.claude/settings.json` or `.claude/settings.local.json`.
 
-   **Then offer, never apply, the unused-tool deny.** Ask whether to add `"permissions": {"deny":
-   ["Artifact", "SendFeedback", "Workflow", "ScheduleWakeup", "ReportFindings"]}` to the committed
-   `.claude/settings.json`: it drops tools a delivery session never calls from every session's tool
-   list, so less context. **Opt-in only** - it binds every user of the repo, so the fragment never
-   carries it. Skip it for `agent-clients: codex`.
+   **Then offer, never apply, two context savers**, asked one at a time, for the committed
+   `.claude/settings.json`: (a) `"permissions": {"deny": ["Artifact", "SendFeedback", "Workflow",
+   "ScheduleWakeup", "ReportFindings"]}` drops tools a delivery session never calls from every
+   session's tool list; (b) `"autoMemoryEnabled": false` drops the auto-memory section from every
+   session's first message (about 1k tokens), at the cost of the client's per-project memory.
+   **Opt-in only** - each binds every user of the repo, so the fragment never carries them. Skip
+   both for `agent-clients: codex`.
 5. **gitignore** (`templates/gitignore-additions.txt`) - APPEND the missing lines to `.gitignore`
    (skip any already present). The `docs/process/*.local.md` glob is required - it keeps the
    friction notes (`retro-log.local.md`) and the `SubagentStop` hook's dispatch feed
