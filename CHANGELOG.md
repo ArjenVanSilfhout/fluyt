@@ -22,9 +22,11 @@ Current version: **1.21.2**
 
 **Gate:** new check `[16]` (unpin-detect) fails when a fluyt marketplace source loses
 `"ref": "main"` in this repo's own `.claude/settings.json`, the README install block, or the
-`docs/consumer-integration.md` fragment. The failure names the file, and a source that rides `dev`
-fails too. A self-test on inline fixtures runs first, so the gate also goes red if the detector stops
-catching an unpinned source.
+`docs/consumer-integration.md` fragment (JSON fences at any indentation). The same check requires
+`--ref main` on every `codex plugin marketplace add` sample in those two docs and names the file and
+line when one is missing. A source that rides `dev` fails too. The hand-run Claude `/plugin
+marketplace add` line is documented as tracking `dev`, so it is not checked. A self-test on inline
+fixtures runs first, so the gate also goes red if the detector stops catching an unpinned source.
 
 ## [1.21.1] — 2026-11-12
 

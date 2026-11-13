@@ -40,7 +40,9 @@
         skill splits out) and every agent file stays within its byte budget in
         scripts/component-size-budget.txt - a ratchet, check [12]
       - every fluyt github marketplace source (own .claude/settings.json, README and consumer-integration
-        json samples) keeps "ref": "main"; a lost pin fails naming the file - check [16]
+        json samples, in fences at any indentation) keeps "ref": "main", and every Codex
+        `marketplace add` sample for this repo in those two docs keeps `--ref main`; a lost pin
+        fails naming the file (and line for Codex) - check [16]
 
     Scan scope: the two checks that walk the filesystem from the repo root ([9] manifest dirs, [10]
     markdown pre-flight) skip every path git IGNORES, so a git-ignored local file (a hand-over, a
@@ -1441,11 +1443,18 @@ if ($LASTEXITCODE -ne 0 -or $wfListing.Count -eq 0) {
 # deleted or reshaped) fails, so the check cannot pass vacuously. The detector is self-tested first
 # on inline fixtures - an unpinned one MUST yield a finding naming the lost pin, a pinned one none -
 # so the gate goes red if the detector itself ever stops biting (the CI "unpin-detect" test).
+# The fence regex accepts ANY leading whitespace (a sample nested in a list is indented), so no json
+# block is skipped silently. The Codex CLI pin is a command, not JSON: Get-CodexPinFinding scans the
+# two docs line by line for `codex ... marketplace add ArjenVanSilfhout/fluyt` and requires
+# `--ref main` on each (a missing ref or `--ref dev` fails, naming file:line); each doc must hold at
+# least one such sample (fail-closed). Deliberately NOT matched: the Claude `/plugin marketplace add`
+# lines, which consumer-integration documents as the unpinned manual fallback tracking the default
+# branch - only lines containing `codex` are in scope, so that documented example stays legal.
 function Get-UnpinnedSourceFinding([string]$text, [string]$label, [bool]$isMarkdown) {
     $slug = 'ArjenVanSilfhout/fluyt'
     $blocks = @()
     if ($isMarkdown) {
-        foreach ($m in [regex]::Matches($text, '(?ms)^[ ]{0,3}```json[^\r\n]*\r?\n(.*?)^[ ]{0,3}```')) { $blocks += $m.Groups[1].Value }
+        foreach ($m in [regex]::Matches($text, '(?ms)^[ \t]*```json[^\r\n]*\r?\n(.*?)^[ \t]*```')) { $blocks += $m.Groups[1].Value }
     } else {
         $blocks = @($text)
     }
@@ -1478,6 +1487,25 @@ function Get-UnpinnedSourceFinding([string]$text, [string]$label, [bool]$isMarkd
     return $findings
 }
 
+function Get-CodexPinFinding([string]$text, [string]$label) {
+    $findings = @()
+    $found = 0
+    $lineNo = 0
+    foreach ($line in ($text -split '\r?\n')) {
+        $lineNo++
+        if ($line -match '\bcodex\s+(?:plugin\s+)?marketplace\s+add\s+ArjenVanSilfhout/fluyt\b(?<rest>.*)$') {
+            $found++
+            if ($Matches['rest'] -notmatch '(?:^|\s)--ref(?:\s+|=)main(?:\s|$|`)') {
+                $findings += "${label}:${lineNo}: codex marketplace add lost `"--ref main`" - consumers would ride dev"
+            }
+        }
+    }
+    if ($found -eq 0) {
+        $findings += "${label}: no codex marketplace add sample for ArjenVanSilfhout/fluyt found - the sample was deleted or reshaped, so `"--ref main`" cannot be verified (lost `"--ref main`" check NOT RUN)"
+    }
+    return $findings
+}
+
 Write-Output ""
 Write-Output "[16] marketplace pin (unpin-detect)"
 $failuresBefore16 = $script:Failures
@@ -1486,16 +1514,29 @@ $unpinnedFixture = '{ "source": { "source": "github", "repo": "ArjenVanSilfhout/
 $mdFence = '```'
 $unpinnedMdFixture = "Prose keeps ""ref"": ""main"" in a sentence.`n`n${mdFence}json`n$unpinnedFixture`n${mdFence}`n"
 $pinnedMdFixture = "${mdFence}json`n$pinnedFixture`n${mdFence}`n"
+$unpinnedIndentedFixture = "- a list item`n`n  ${mdFence}json`n  $unpinnedFixture`n  ${mdFence}`n"
+$unpinnedCodexFixture = "${mdFence}powershell`ncodex plugin marketplace add ArjenVanSilfhout/fluyt`n${mdFence}`n"
+$devCodexFixture = "codex plugin marketplace add ArjenVanSilfhout/fluyt --ref dev`n"
+$pinnedCodexFixture = "${mdFence}powershell`ncodex plugin marketplace add ArjenVanSilfhout/fluyt --ref main`n${mdFence}`n/plugin marketplace add ArjenVanSilfhout/fluyt`n"
+$selfNegIndent = @(Get-UnpinnedSourceFinding $unpinnedIndentedFixture 'fixture.md' $true)
+$selfNegCodex = @(Get-CodexPinFinding $unpinnedCodexFixture 'fixture.md')
+$selfNegCodexDev = @(Get-CodexPinFinding $devCodexFixture 'fixture.md')
+$selfNegCodexNone = @(Get-CodexPinFinding "no sample here`n" 'fixture.md')
+$selfPosCodex = @(Get-CodexPinFinding $pinnedCodexFixture 'fixture.md')
 $selfNeg = @(Get-UnpinnedSourceFinding $unpinnedFixture 'fixture' $false)
 $selfNegMd = @(Get-UnpinnedSourceFinding $unpinnedMdFixture 'fixture.md' $true)
 $selfPos = @(Get-UnpinnedSourceFinding $pinnedFixture 'fixture' $false)
 $selfPosMd = @(Get-UnpinnedSourceFinding $pinnedMdFixture 'fixture.md' $true)
 if (@($selfNeg | Where-Object { $_ -like '*lost "ref": "main"*' }).Count -eq 0 -or @($selfNegMd | Where-Object { $_ -like '*lost "ref": "main"*' }).Count -eq 0) {
     Fail "unpin-detect self-test: an unpinned fluyt source fixture did not yield a finding naming the lost `"ref`": `"main`" - the detector is blind"
-} elseif ($selfPos.Count -ne 0 -or $selfPosMd.Count -ne 0) {
+} elseif (@($selfNegIndent | Where-Object { $_ -like '*lost "ref": "main"*' }).Count -eq 0) {
+    Fail "unpin-detect self-test: an unpinned source inside an INDENTED json fence was not flagged - the fence regex skips indented fences"
+} elseif (@($selfNegCodex + $selfNegCodexDev | Where-Object { $_ -like '*lost "--ref main"*' }).Count -ne 2 -or @($selfNegCodexNone | Where-Object { $_ -like '*"--ref main"*' }).Count -eq 0) {
+    Fail "unpin-detect self-test: an unpinned, --ref dev or missing codex marketplace add sample did not yield a finding naming `"--ref main`" - the codex detector is blind"
+} elseif ($selfPos.Count -ne 0 -or $selfPosMd.Count -ne 0 -or $selfPosCodex.Count -ne 0) {
     Fail "unpin-detect self-test: a pinned fluyt source fixture produced a finding - the detector false-positives"
 } else {
-    Pass "self-test: unpinned fixtures (json + fenced markdown) are flagged naming the lost ref, pinned ones are clean"
+    Pass "self-test: unpinned fixtures (json, fenced and indented-fenced markdown, codex command) are flagged naming the lost ref, pinned ones are clean"
     foreach ($pinFile in @(
         @{ Rel = '.claude/settings.json'; Md = $false },
         @{ Rel = 'README.md'; Md = $true },
@@ -1504,8 +1545,9 @@ if (@($selfNeg | Where-Object { $_ -like '*lost "ref": "main"*' }).Count -eq 0 -
         if (-not (Test-Path -LiteralPath $pinPath)) { Fail "$($pinFile.Rel) is missing - cannot check the fluyt marketplace pin (NOT RUN, not passed)"; continue }
         $pinText = Get-Content -LiteralPath $pinPath -Raw -Encoding UTF8
         foreach ($pinFinding in @(Get-UnpinnedSourceFinding $pinText $pinFile.Rel $pinFile.Md)) { Fail $pinFinding }
+        if ($pinFile.Md) { foreach ($codexFinding in @(Get-CodexPinFinding $pinText $pinFile.Rel)) { Fail $codexFinding } }
     }
-    if ($script:Failures -eq $failuresBefore16) { Pass "3 files checked: every fluyt github marketplace source carries `"ref`": `"main`"" }
+    if ($script:Failures -eq $failuresBefore16) { Pass "3 files checked: every fluyt github marketplace source carries `"ref`": `"main`" and every codex marketplace add sample carries `"--ref main`"" }
 }
 
 Write-Output ""
@@ -1522,7 +1564,7 @@ if ($script:Failures -eq 0) {
     Write-Output "      files [13] (*.local.md, settings.local.json, .mcp.json, .claude/worktrees/), hidden Unicode [14]"
     Write-Output "      (zero-width, bidi, Tag-block characters in tracked text files), workflow lockdown [15] (no"
     Write-Output "      pull_request_target, deny-all top-level permissions, no write scope), marketplace pin [16]"
-    Write-Output "      (every fluyt github source keeps `"ref`": `"main`") - plus a NARROW"
+    Write-Output "      (every fluyt github source keeps `"ref`": `"main`", every codex add sample keeps --ref main) - plus a NARROW"
     Write-Output "      markdown pre-flight [10] that greps a small set of markdownlint rules"
     Write-Output "      (MD018, MD049/MD050, MD004, MD060, MD028, MD026). That pre-flight is NOT markdownlint:"
     Write-Output "      it is blind to every other rule, so a green [10] does NOT mean markdownlint would"
