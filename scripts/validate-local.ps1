@@ -39,6 +39,8 @@
       - every Markdown file directly in a skill directory (SKILL.md and the reference files a
         skill splits out) and every agent file stays within its byte budget in
         scripts/component-size-budget.txt - a ratchet, check [12]
+      - every fluyt github marketplace source (own .claude/settings.json, README and consumer-integration
+        json samples) keeps "ref": "main"; a lost pin fails naming the file - check [16]
 
     Scan scope: the two checks that walk the filesystem from the repo root ([9] manifest dirs, [10]
     markdown pre-flight) skip every path git IGNORES, so a git-ignored local file (a hand-over, a
@@ -1426,6 +1428,86 @@ if ($LASTEXITCODE -ne 0 -or $wfListing.Count -eq 0) {
     if ($script:Failures -eq $failuresBefore15) { Pass "$($wfListing.Count) workflow file(s) checked: no pull_request_target, top-level permissions present, no write scope" }
 }
 
+# --- 16. marketplace pin (unpin-detect) --------------------------------
+# `dev` is the GitHub default branch, so a fluyt marketplace source WITHOUT "ref": "main" (the
+# release branch, Project Facts `release-branch`) silently rides unreleased integration work
+# (docs/consumer-integration.md, the load-bearing-ref paragraph). Nothing else in the gate notices a
+# lost pin, so every fluyt github source in the three places that carry one is parsed as JSON and
+# must say "ref": "main": this repo's own dogfood .claude/settings.json, the README install block and
+# the consumer-integration fragment. The two markdown files are read ONLY through their fenced json
+# blocks - their prose mentions "ref": "main" and "ref": "dev" deliberately, so a whole-file regex
+# would both false-pass and false-fail. A deliberate "ref": "dev" in a SAMPLE is a failure too
+# (samples show the release pin). Fail-closed: a file with no fluyt github source at all (sample
+# deleted or reshaped) fails, so the check cannot pass vacuously. The detector is self-tested first
+# on inline fixtures - an unpinned one MUST yield a finding naming the lost pin, a pinned one none -
+# so the gate goes red if the detector itself ever stops biting (the CI "unpin-detect" test).
+function Get-UnpinnedSourceFinding([string]$text, [string]$label, [bool]$isMarkdown) {
+    $slug = 'ArjenVanSilfhout/fluyt'
+    $blocks = @()
+    if ($isMarkdown) {
+        foreach ($m in [regex]::Matches($text, '(?ms)^[ ]{0,3}```json[^\r\n]*\r?\n(.*?)^[ ]{0,3}```')) { $blocks += $m.Groups[1].Value }
+    } else {
+        $blocks = @($text)
+    }
+    $found = 0
+    $findings = @()
+    $stack = New-Object System.Collections.Stack
+    foreach ($b in $blocks) {
+        try { $root = $b | ConvertFrom-Json -ErrorAction Stop }
+        catch { $findings += "${label}: a json block does not parse ($($_.Exception.Message)) - cannot check the fluyt marketplace pin"; continue }
+        $stack.Push($root)
+        while ($stack.Count -gt 0) {
+            $node = $stack.Pop()
+            if ($node -is [System.Management.Automation.PSCustomObject]) {
+                if ($node.PSObject.Properties['source'] -and $node.source -eq 'github' -and $node.PSObject.Properties['repo'] -and $node.repo -eq $slug) {
+                    $found++
+                    $refProp = $node.PSObject.Properties['ref']
+                    if (-not $refProp -or $refProp.Value -ne 'main') {
+                        $findings += "${label}: fluyt marketplace source lost `"ref`": `"main`" - consumers would ride dev"
+                    }
+                }
+                foreach ($p in $node.PSObject.Properties) { $stack.Push($p.Value) }
+            } elseif ($node -is [System.Array]) {
+                foreach ($e in $node) { $stack.Push($e) }
+            }
+        }
+    }
+    if ($found -eq 0 -and $findings.Count -eq 0) {
+        $findings += "${label}: no fluyt github marketplace source found in $(if ($isMarkdown) { 'any fenced json block' } else { 'the file' }) - the sample was deleted or reshaped, so `"ref`": `"main`" cannot be verified (lost `"ref`": `"main`" check NOT RUN)"
+    }
+    return $findings
+}
+
+Write-Output ""
+Write-Output "[16] marketplace pin (unpin-detect)"
+$failuresBefore16 = $script:Failures
+$pinnedFixture = '{ "source": { "source": "github", "repo": "ArjenVanSilfhout/fluyt", "ref": "main" } }'
+$unpinnedFixture = '{ "source": { "source": "github", "repo": "ArjenVanSilfhout/fluyt" } }'
+$mdFence = '```'
+$unpinnedMdFixture = "Prose keeps ""ref"": ""main"" in a sentence.`n`n${mdFence}json`n$unpinnedFixture`n${mdFence}`n"
+$pinnedMdFixture = "${mdFence}json`n$pinnedFixture`n${mdFence}`n"
+$selfNeg = @(Get-UnpinnedSourceFinding $unpinnedFixture 'fixture' $false)
+$selfNegMd = @(Get-UnpinnedSourceFinding $unpinnedMdFixture 'fixture.md' $true)
+$selfPos = @(Get-UnpinnedSourceFinding $pinnedFixture 'fixture' $false)
+$selfPosMd = @(Get-UnpinnedSourceFinding $pinnedMdFixture 'fixture.md' $true)
+if (@($selfNeg | Where-Object { $_ -like '*lost "ref": "main"*' }).Count -eq 0 -or @($selfNegMd | Where-Object { $_ -like '*lost "ref": "main"*' }).Count -eq 0) {
+    Fail "unpin-detect self-test: an unpinned fluyt source fixture did not yield a finding naming the lost `"ref`": `"main`" - the detector is blind"
+} elseif ($selfPos.Count -ne 0 -or $selfPosMd.Count -ne 0) {
+    Fail "unpin-detect self-test: a pinned fluyt source fixture produced a finding - the detector false-positives"
+} else {
+    Pass "self-test: unpinned fixtures (json + fenced markdown) are flagged naming the lost ref, pinned ones are clean"
+    foreach ($pinFile in @(
+        @{ Rel = '.claude/settings.json'; Md = $false },
+        @{ Rel = 'README.md'; Md = $true },
+        @{ Rel = 'docs/consumer-integration.md'; Md = $true })) {
+        $pinPath = Join-Path $RepoRoot $pinFile.Rel
+        if (-not (Test-Path -LiteralPath $pinPath)) { Fail "$($pinFile.Rel) is missing - cannot check the fluyt marketplace pin (NOT RUN, not passed)"; continue }
+        $pinText = Get-Content -LiteralPath $pinPath -Raw -Encoding UTF8
+        foreach ($pinFinding in @(Get-UnpinnedSourceFinding $pinText $pinFile.Rel $pinFile.Md)) { Fail $pinFinding }
+    }
+    if ($script:Failures -eq $failuresBefore16) { Pass "3 files checked: every fluyt github marketplace source carries `"ref`": `"main`"" }
+}
+
 Write-Output ""
 Write-Output "-----------------------------------------------------------------"
 if ($script:Failures -eq 0) {
@@ -1439,7 +1521,8 @@ if ($script:Failures -eq 0) {
     Write-Output "      byte budgets [12] (every skill-dir .md, not just SKILL.md), never-tracked local"
     Write-Output "      files [13] (*.local.md, settings.local.json, .mcp.json, .claude/worktrees/), hidden Unicode [14]"
     Write-Output "      (zero-width, bidi, Tag-block characters in tracked text files), workflow lockdown [15] (no"
-    Write-Output "      pull_request_target, deny-all top-level permissions, no write scope) - plus a NARROW"
+    Write-Output "      pull_request_target, deny-all top-level permissions, no write scope), marketplace pin [16]"
+    Write-Output "      (every fluyt github source keeps `"ref`": `"main`") - plus a NARROW"
     Write-Output "      markdown pre-flight [10] that greps a small set of markdownlint rules"
     Write-Output "      (MD018, MD049/MD050, MD004, MD060, MD028, MD026). That pre-flight is NOT markdownlint:"
     Write-Output "      it is blind to every other rule, so a green [10] does NOT mean markdownlint would"

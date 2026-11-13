@@ -14,9 +14,17 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.21.1**
+Current version: **1.21.2**
 
 ---
+
+## [1.21.2] — 2026-11-13
+
+**Gate:** new check `[16]` (unpin-detect) fails when a fluyt marketplace source loses
+`"ref": "main"` in this repo's own `.claude/settings.json`, the README install block, or the
+`docs/consumer-integration.md` fragment. The failure names the file, and a source that rides `dev`
+fails too. A self-test on inline fixtures runs first, so the gate also goes red if the detector stops
+catching an unpinned source.
 
 ## [1.21.1] — 2026-11-12
 
