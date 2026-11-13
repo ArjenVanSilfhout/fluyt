@@ -14,9 +14,14 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.21.0**
+Current version: **1.21.1**
 
 ---
+
+## [1.21.1] — 2026-11-12
+
+**README:** the tested client moves from Claude Code 2.1.296 to 2.1.321, the version this repo's own
+sessions shipped v1.20.0 and v1.21.0 on.
 
 ## [1.21.0] — 2026-11-12
 
