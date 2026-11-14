@@ -14,9 +14,18 @@ Versioning:
 `CHANGELOG.md` is the single source of truth for completed work AND version numbers — never
 duplicate them elsewhere. (See CLAUDE.md `version-rules`.)
 
-Current version: **1.21.2**
+Current version: **1.22.0**
 
 ---
+
+## [1.22.0] — 2026-11-14
+
+**adopt-conventions re-sync:** Pass C now offers the two opt-in context savers, the unused-tool
+`permissions.deny` (v1.20.0) and `"autoMemoryEnabled": false` (v1.21.0), to repos that adopted
+before they existed. Each is offered one at a time, only for a Claude client and only when its key
+is absent. A decline is recorded in *Deliberate deviations* so the next re-sync skips it. Pass C's
+steps moved to a new reference file, `re-sync-settings.md`, so `re-sync.md` shrank. Run re-sync
+after updating to see the offers.
 
 ## [1.21.2] — 2026-11-13
 
