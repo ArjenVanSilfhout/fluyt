@@ -91,16 +91,8 @@ as a `chore/` PR (docs/process → PATCH); its four passes follow. What it reach
    these are the consumer's to declare, and a guessed invariant is worse than a missing one because
    five shipped components will then enforce it.
 
-**Pass C - settings / gitignore / gitattributes fragments:**
-
-1. Read `.gitignore`, `.gitattributes`, and their templates. When `agent-clients` is `claude` or
-   `both`, also read the consumer's `.claude/settings.json` and `templates/settings-fragment.json`.
-   Codex marketplace installation is client-level and has no consumer settings fragment to merge.
-2. List the keys / lines the templates ship that the consumer's files are **missing** (e.g. a newly
-   required `.gitignore` line, a new settings key). Surface - never delete - anything the consumer
-   added that the template lacks.
-3. **Propose** adding the missing keys / lines only - additive, confirm-first, never overwriting a
-   consumer's own values or reformatting their file. Merge only the confirmed additions.
+**Pass C - settings / gitignore / gitattributes fragments:** read `re-sync-settings.md` in this
+skill's directory and follow it (its steps include the opt-in offers).
 
 **Pass D - repo and branch settings drift:**
 
