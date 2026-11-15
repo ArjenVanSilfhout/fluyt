@@ -22,6 +22,8 @@
         usually moved past the release by now, so the checkout's CHANGELOG is the wrong file;
       - tag `v<Version>` exists neither locally nor on origin;
       - -NotesFile is given, readable and not blank (checked first, before any network call);
+      - the title and the notes pass scripts/denylist-scan.js (the private denylist the pre-push hook
+        reads; fail-closed - no node, no script, no or an empty denylist, or a match all abort);
       - `gh auth status` succeeds (skipped under -DryRun).
 
     The notes are NEVER generated here: -NotesFile (mandatory) is the summary, passed to
@@ -148,6 +150,26 @@ try {
     }
     if (-not $notesText.Trim()) { Abort "-NotesFile '$NotesFile' is empty (or only whitespace); refusing to publish blank release notes." }
     $notesLines = @($notesText -split "`r?`n").Count
+
+    # The same private-denylist scan the PreToolUse hook runs (scripts/denylist-scan.js). Title and notes are
+    # published text, and a tool hook sees only this script's call, never the `gh release create` inside it.
+    # Runs under -DryRun too, before any network call; a scan that cannot run (no node, no script, no or an
+    # empty denylist) aborts exactly like a hit. The title travels in an env var, not argv: PS 5.1 mangles an
+    # argument's embedded quotes. The scanner never prints the matched text, only the field and line.
+    $scanner = Join-Path $PSScriptRoot 'denylist-scan.js'
+    if (-not (Get-Command node -ErrorAction SilentlyContinue)) { Abort "node is not on PATH; the private-denylist scan cannot run, so nothing is published." }
+    if (-not (Test-Path -LiteralPath $scanner -PathType Leaf)) { Abort "scripts/denylist-scan.js is missing; the private-denylist scan cannot run, so nothing is published." }
+    $env:FLUYT_SCAN_TITLE = $title
+    try {
+        $scanOut = Invoke-Native node @($scanner, '--file', "notes=$notesPath", '--text-env', 'title=FLUYT_SCAN_TITLE')
+        $scanExit = $LASTEXITCODE
+    } finally {
+        Remove-Item Env:FLUYT_SCAN_TITLE -ErrorAction SilentlyContinue
+    }
+    if ($scanExit -ne 0) {
+        Abort "the private-denylist scan blocked publishing (exit $scanExit; field and line are named above, the matched text never is)."
+    }
+    Say ([string]($scanOut | Select-Object -First 1))
 
     $top = Invoke-Native git @('rev-parse', '--show-toplevel') -Quiet
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $repoRoot 'CHANGELOG.md'))) {

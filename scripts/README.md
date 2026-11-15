@@ -8,6 +8,7 @@ Local tooling for this repo; none of it ships in the plugin payload.
   `release` skill, step 3); it never builds notes from the CHANGELOG and refuses to run without one.
 - `plugin-vocabulary-allowlist.txt`, `component-size-budget.txt` - data files the gate reads.
 - `hooks/pre-push` - the opt-in denylist scan below.
+- `denylist-scan.js` - the gh-publish scan (hook, release script, audit mode) in the last section.
 
 ## Denylist pre-push hook
 
@@ -33,3 +34,44 @@ DENYLIST_FILE=/path/to/terms.txt sh scripts/hooks/pre-push --all
 
 Run with `--all` (or from a terminal) to scan the full history and tree, e.g. before publishing a
 repo.
+
+## gh-publish denylist scan
+
+Issues, PR descriptions, comments, release notes and milestones never pass through `git push`, so the
+pre-push hook cannot see them. `denylist-scan.js` checks that text against the **same denylist file**
+(`DENYLIST_FILE`, else `${XDG_CONFIG_HOME:-$HOME/.config}/denylist/terms.txt`; same parsing). Three
+callers, one implementation:
+
+- **The hook** (`.claude/settings.json`, PreToolUse, one entry for the Bash tool and one for the
+  PowerShell tool). It scans the **values** of `--body`, `--title`, `--notes`, `--subject`,
+  `--comment`, `--description` and `gh api` fields, and the **contents** of `--body-file`,
+  `--notes-file`, `gh api -F key=@file` and `--input` files; heredocs, here-strings, `< file` and
+  pipes from `cat`/`echo`/`Get-Content` feeding `-` are scanned too. It never scans the command line
+  as a whole or a path, so a term in a temp path does not block. A hit, a missing or empty denylist,
+  bad hook JSON, an unparseable command, a missing script and any crash all **block** (exit 2; the
+  the saved command tests that the script exists, then runs `node ".../scripts/denylist-scan.js" --hook ||
+  exit 2`). A value the hook cannot
+  read statically (a shell variable, another command's output, a file rewritten in the same command)
+  blocks with advice to write the text to a file in an earlier call and pass `--body-file <file>`.
+  The block reason names only the command, the field and the line number: never the matched term, and
+  never a filesystem path - the denylist is named as "DENYLIST_FILE, else the default under the XDG config
+  dir", a `--file` input by its label.
+  Commands that do not mention `gh` are not parsed and pass silently.
+- **`publish-release.ps1`** runs the same scan on the title and the notes file before anything else
+  (also under `-DryRun`) and aborts through its usual error path. A tool hook only sees that script's
+  call, never the `gh release create` inside it.
+- **Audit mode**, for what is already published (and web-UI edits, which no hook sees):
+  `node scripts/denylist-scan.js --audit [--repo OWNER/REPO]` pulls issues, PRs, comments, reviews,
+  review comments, releases, milestones and labels through read-only `gh api` and prints
+  `HIT <kind> <id> <field> line N`, never the text. Exit 1 on a hit or any fetch error. Run it before
+  a release.
+
+`scripts/guard-matrix.js` scores both hook entries from the saved commands on disk with a fixture
+denylist, including the must-block controls (denylist missing, denylist empty, scanner script absent).
+
+**Second machine.** The hook lives in committed settings, so a machine without the denylist file is
+**blocked from all gh publishing** in this repo (reads such as `gh pr view` still pass). Provision the
+file as in the pre-push section above (`mkdir -p ~/.config/denylist`, one term per line), or point
+`DENYLIST_FILE` at it. Nothing else is needed; the hook finds the script through `$CLAUDE_PROJECT_DIR`
+(unset, the session's working directory), so the session must be rooted at this repo - otherwise this
+settings file is not loaded at all.

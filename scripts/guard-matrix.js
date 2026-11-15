@@ -22,6 +22,16 @@
  *   The shipped closing-keyword echo is scored too: it must read the PR number from the merge
  *   command's own segment only (`gh pr merge --squash --auto && seq 1 12` must not echo PR #1's
  *   body - a false "clean" at the one pre-merge check for a wrongly closing keyword).
+ *   The two gh-publish denylist scans (Bash and PowerShell entries, scripts/denylist-scan.js) are scored
+ *   with a FIXTURE denylist handed over through DENYLIST_FILE (invented terms written to the fixture dir at
+ *   run time, removed with it - the real denylist is never read) and block through EXIT CODE 2, not a JSON
+ *   deny, so runRows reads the exit status for those rows. Their saved command is the one on disk,
+ *   run through `bash -c`, so a missing script, a missing or empty denylist and bad hook JSON are scored as
+ *   the BLOCKS they must be (fail closed - the opposite posture to the three guards above). Every row of
+ *   theirs also asserts that nothing the hook prints contains a fixture term OR a fixture path (the
+ *   fixture root, so also DENYLIST_FILE; native, slash and MSYS forms, case-insensitive): a reason lands in
+ *   the transcript and must name sources symbolically. The audit mode is scored
+ *   against a gh stub that answers read-only `gh api` calls from fixture data (AUDIT rows, [4]).
  *
  * WHY IT EXISTS (do not lose this - it is the whole point)
  *   A guard can ship DEAD and stay dead. A string-built regex loses its doubled backslashes in the
@@ -110,6 +120,30 @@ const EXIT_DIAGNOSTIC = 3;
 // built at module load and would hit its temporal dead zone if it stayed below them.
 const NL = "\n";
 
+// The gh-publish scan's FIXTURE denylist terms (invented, in-theme; the real denylist is never read here).
+// Lowercase as the hook stores them; rows type them in other cases. The second holds a space, and the
+// fixture file is written with CRLF, indentation, a comment and blank lines, to score pre-push's parsing.
+const GS_TERMS = ["bowsprit-ledger", "maelstrom roster"];
+
+// Every spelling of a fixture path a hook could print on this host (native, forward and back slash, MSYS
+// /c/... form, realpath), lowercased with separators folded to "/"; pair with pathLeaks().
+function pathForms(p) {
+  const out = new Set();
+  const add = (x) => {
+    const n = x.replace(/[\\/]+/g, "/").toLowerCase().replace(/\/$/, "");
+    out.add(n);
+    const m = /^([a-z]):(\/.*)?$/.exec(n);
+    if (m) out.add("/" + m[1] + (m[2] || ""));
+  };
+  add(p);
+  try { add(fs.realpathSync.native(p)); } catch (e) { /* path absent: native form only */ }
+  return Array.from(out);
+}
+function pathLeaks(text, forms) {
+  const t = text.replace(/[\\/]+/g, "/").toLowerCase();
+  return forms.some((f) => t.indexOf(f) >= 0);
+}
+
 function say(msg) { process.stdout.write(msg + "\n"); }
 function pass(msg) { say("  PASS: " + msg); }
 function fail(msg) { say("  FAIL: " + msg); }
@@ -164,6 +198,22 @@ const GUARDS = [
     match: "Blocking a piped grep",
     label: "gate-verdict guard - denies a piped grep/Select-String/sls read of the gate's verdict",
   },
+  // `tool` = the tool name the entry's matcher must cover AND the tool_name the hook JSON carries; these two
+  // entries share one saved command, so identity is the statusMessage and the matcher is scored too.
+  {
+    key: "gh-scan-bash",
+    source: "settings",
+    tool: "Bash",
+    match: "denylist (Bash)",
+    label: "gh-publish denylist scan, Bash entry - blocks (exit 2, fail closed) a private term in text published through gh",
+  },
+  {
+    key: "gh-scan-ps",
+    source: "settings",
+    tool: "PowerShell",
+    match: "denylist (PowerShell)",
+    label: "gh-publish denylist scan, PowerShell entry - same command, PowerShell tool_name and syntax",
+  },
   {
     key: "branch-delete",
     source: "plugin",
@@ -201,7 +251,7 @@ function readHooks(source, filePath) {
   for (const ev of Object.keys(doc.hooks || {})) {
     (doc.hooks[ev] || []).forEach((entry, i) => {
       (entry.hooks || []).forEach((h, k) => {
-        entries.push({ source: source, event: ev, index: source + ":" + ev + "[" + i + "].hooks[" + k + "]", hook: h });
+        entries.push({ source: source, event: ev, matcher: entry.matcher, index: source + ":" + ev + "[" + i + "].hooks[" + k + "]", hook: h });
       });
     });
   }
@@ -238,6 +288,7 @@ function loadGuards(paths) {
     hits.forEach((h) => claimed.add(h.index));
     resolved[g.key] = Object.assign({}, g, {
       index: hits[0].index,
+      matcher: hits[0].matcher,
       statusMessage: hits[0].hook.statusMessage,
       command: String(hits[0].hook.command || ""),
     });
@@ -348,6 +399,31 @@ function buildFixtures() {
     throw new Error("changelog fixture HEAD is missing its two headings - the heading rows would not discriminate");
   }
   repos.changelog = cl;
+
+  // The gh-publish scan fixture dir: denylist variants, body files, and a file whose NAME carries a term
+  // (the hub's finding: terms sit in local paths and never in published text). `empty-root` has no
+  // scripts/ - CLAUDE_PROJECT_DIR points there for the scanner-absent row.
+  const gs = path.join(root, "ghscan");
+  fs.mkdirSync(path.join(gs, "empty-root"), { recursive: true });
+  fs.mkdirSync(path.join(gs, "xdg", "denylist"), { recursive: true });
+  fs.mkdirSync(path.join(gs, "home", ".config", "denylist"), { recursive: true });
+  const terms = "# fixture terms" + "\r\n" + "\r\n" + "  " + GS_TERMS[0].toUpperCase() + "  " + "\r\n" + GS_TERMS[1] + "\r\n";
+  fs.writeFileSync(path.join(gs, "terms.txt"), terms);
+  fs.writeFileSync(path.join(gs, "xdg", "denylist", "terms.txt"), terms);
+  fs.writeFileSync(path.join(gs, "home", ".config", "denylist", "terms.txt"), terms);
+  fs.writeFileSync(path.join(gs, "terms-empty.txt"), "# only a comment" + "\r\n" + "   " + "\r\n");
+  fs.writeFileSync(path.join(gs, "dirty.md"), "first" + NL + "second" + NL + "third has " + GS_TERMS[0].toUpperCase() + " in it" + NL);
+  fs.writeFileSync(path.join(gs, "clean.md"), "first" + NL + "second" + NL);
+  fs.writeFileSync(path.join(gs, GS_TERMS[0] + "-clean.md"), "clean text" + NL);
+  fs.writeFileSync(path.join(gs, "dirty.json"), JSON.stringify({ body: "a" + NL + "b " + GS_TERMS[1] }));
+  fs.writeFileSync(path.join(gs, "clean.json"), JSON.stringify({ body: "a" + NL + "b" }));
+  // By-construction check: a fixture file that did not hold its term would make every DENY row below
+  // unable to fail for the reason under test.
+  if (fs.readFileSync(path.join(gs, "dirty.md"), "utf8").toLowerCase().indexOf(GS_TERMS[0]) < 0 ||
+      fs.readFileSync(path.join(gs, "dirty.json"), "utf8").toLowerCase().indexOf(GS_TERMS[1]) < 0) {
+    throw new Error("the gh-scan dirty fixtures do not contain their term - the DENY rows would not discriminate");
+  }
+  repos.ghscan = gs;
   return { root: root, repos: repos };
 }
 
@@ -419,6 +495,31 @@ const GH_STUB_SRC = [
   "",
 ].join(NL);
 
+// The audit mode's gh stub, serialised into a second preload (same copy-of-node.exe-named-gh trick; the
+// preload is inherited by the scanner's own node process and no-ops there). Answers the read-only
+// `gh api --paginate --slurp <endpoint>` calls with fixture data; GUARD_MATRIX_GH=audit-dirty plants
+// GUARD_MATRIX_TERM (upper-cased) on line 2 of a PR body, a review, a release and a milestone description.
+function auditStub() {
+  const base = require("path").basename(process.execPath).toLowerCase();
+  if (base !== "gh" && base !== "gh.exe") return;
+  const mode = process.env.GUARD_MATRIX_GH || "";
+  const term = (process.env.GUARD_MATRIX_TERM || "").toUpperCase();
+  const a = process.argv.slice(2);
+  if (mode === "fail") { process.stderr.write("stub gh: simulated failure\n"); process.exit(1); }
+  const text = (planted) => "first line\n" + (planted && mode === "audit-dirty" ? "second line " + term + "\n" : "second line\n");
+  const ep = a.filter((x) => x.charAt(0) !== "-" && x !== "api")[0] || "";
+  let out = [];
+  if (/\/issues\/comments/.test(ep)) out = [{ id: 901, issue_url: "u/issues/12", body: text(false) }];
+  else if (/\/pulls\/comments/.test(ep)) out = [{ id: 902, pull_request_url: "u/pulls/13", body: text(false) }];
+  else if (/\/pulls\/\d+\/reviews/.test(ep)) out = [{ id: 903, body: text(true) }];
+  else if (/\/issues\?/.test(ep)) out = [{ number: 11, title: "an issue", body: text(false) }, { number: 13, title: "a pr", body: text(true), pull_request: {} }];
+  else if (/\/releases/.test(ep)) out = [{ id: 21, name: "v0", tag_name: "v0", body: text(true) }];
+  else if (/\/milestones/.test(ep)) out = [{ number: 3, title: "m", description: text(true) }];
+  else if (/\/labels/.test(ep)) out = [{ id: 31, name: "l", description: "d" }];
+  process.stdout.write(JSON.stringify(a.indexOf("--slurp") >= 0 ? [out] : out));
+  process.exit(0);
+}
+
 function buildGhStub(root) {
   const bin = path.join(root, "gh-stub-bin");
   fs.mkdirSync(bin, { recursive: true });
@@ -430,7 +531,9 @@ function buildGhStub(root) {
   // an escape inside the quoted value: a native path arrives as C:Users<user>AppData..., the require
   // throws before the guard's own script runs, and `2>/dev/null` eats the stack - so every stubbed row
   // reads as a silent ALLOW - the silent-failure shape one layer out.
-  const stub = { bin: bin, preload: preload.split(path.sep).join("/") };
+  const auditPreload = path.join(bin, "gh-audit-preload.js");
+  fs.writeFileSync(auditPreload, "(" + auditStub.toString() + ")();");
+  const stub = { bin: bin, preload: preload.split(path.sep).join("/"), audit: auditPreload.split(path.sep).join("/") };
   // The fixture's own control. The stub is only useful if the guard's `gh` call actually reaches it,
   // and a stub that answers nothing is indistinguishable from an ALLOW verdict.
   // Exercise it through the same
@@ -1048,6 +1151,158 @@ row({ id: "ce-a05", guard: "closing-echo", cwd: "dev", gh: "view", stdinShape: "
 row({ id: "ce-a06", guard: "closing-echo", cwd: "dev", gh: "view", cmd: "echo env gh pr merge 42", expect: "ALLOW",
   note: "`env` is only a command-position prefix - fails if the widened merge anchor admits merge words in an echo's arguments" });
 
+// ---- gh-publish denylist scan (Bash and PowerShell entries) --------------------------------------
+// The hook blocks through exit code 2, so DENY here means "exit 2 + the reason on stderr". Row fields:
+// `dl` picks the denylist the run sees (ok | missing | empty | xdg | home), `scanner: "absent"` points
+// CLAUDE_PROJECT_DIR at a dir with no scripts/, `tool` overrides the tool_name. The fixture dir is `ghscan`
+// and its denylist holds GS_TERMS; every row's output is also checked for those terms (see runRows).
+const G = (x, f) => fwd(x.ghscan) + "/" + f;
+const NATIVE = (x, f) => path.join(x.ghscan, f);
+const gb = (id, expect, cmd, note, o) => row(Object.assign(
+  { id: id, guard: "gh-scan-bash", cwd: "ghscan", cmd: cmd, expect: expect, note: note }, o || {}));
+const gp = (id, expect, cmd, note, o) => row(Object.assign(
+  { id: id, guard: "gh-scan-ps", cwd: "ghscan", cmd: cmd, expect: expect, note: note }, o || {}));
+const TA = "Bowsprit-Ledger";
+const TB = "MAELSTROM roster";
+
+gb("gb-d01", "DENY", "gh issue create --title t --body \"see " + TA + " here\"",
+  "CONTROL - an inline --body value; fails if the hook never ran, never reads the denylist, or matches case-sensitively",
+  { msg: "gh issue create --body, line 1" });
+gb("gb-d02", "DENY", (x) => "gh issue comment 5 --body-file " + G(x, "dirty.md"),
+  "a body FILE's contents, and the line number of the hit in it - fails if file contents are not scanned or the line is wrong",
+  { msg: "--body-file (file contents), line 3" });
+gb("gb-d03", "DENY", "gh pr create --title t --body-file - <<'EOF'" + NL + "ok" + NL + TB + NL + "EOF",
+  "a heredoc feeding --body-file - (stdin) - fails if heredoc bodies are stripped like the other guards do",
+  { msg: "--body-file (stdin), line 2" });
+gb("gb-d04", "DENY", "gh pr create --title t --body \"$(cat <<'EOF'" + NL + "ok" + NL + TA + NL + "EOF" + NL + ")\"",
+  "the $(cat <<'EOF' ...) body idiom - fails if a command substitution is treated as unknowable and blocks for the wrong reason, or as clean",
+  { msg: "gh pr create --body, line 2" });
+gb("gb-d05", "DENY", "gh api repos/o/r/issues -f title=ok -f body=\"" + TA + "\"",
+  "a gh api -f value (the second -f) - fails if api fields are not scanned or the key is scanned instead of the value",
+  { msg: "gh api -f #2, line 1" });
+gb("gb-d06", "DENY", (x) => "gh api repos/o/r/issues --input " + G(x, "dirty.json"),
+  "gh api --input <file> - fails if --input is not read (the second fixture term, in a JSON body)",
+  { msg: "gh api --input (file contents), line 1" });
+gb("gb-d07", "DENY", (x) => "gh api repos/o/r/issues -F body=@" + G(x, "dirty.md"),
+  "gh api -F key=@file - fails if the @file form is sent unread",
+  { msg: "gh api -F #1 (file contents), line 3" });
+gb("gb-d08", "DENY", "gh issue comment 5 --body=" + TA.toUpperCase(),
+  "the --flag=value form, upper-cased - fails if only the two-word form is parsed or matching is case-sensitive",
+  { msg: "--body, line 1" });
+gb("gb-d09", "DENY", "gh issue comment 5 -b\"" + TA + "\"",
+  "a short flag with an attached value - fails if -bVALUE is not split", { msg: "--body, line 1" });
+gb("gb-d10", "DENY", (x) => "gh issue comment 5 -F " + G(x, "dirty.md"),
+  "short -F as body-file on an issue command - fails if -F is only known as the api field flag", { msg: "--body-file (file contents)" });
+gb("gb-d11", "DENY", "gh release create v1 --title t --notes \"" + TA + "\"",
+  "release --notes", { msg: "gh release create --notes, line 1" });
+gb("gb-d12", "DENY", (x) => "gh release create v1 --title t --notes-file " + G(x, "dirty.md"),
+  "release --notes-file", { msg: "--notes-file (file contents), line 3" });
+gb("gb-d13", "DENY", "gh pr merge 5 --squash --subject \"" + TA + "\"",
+  "pr merge --subject (the squash commit subject)", { msg: "gh pr merge --subject" });
+gb("gb-d14", "DENY", "gh issue comment 5 --body \"" + TB + "\"",
+  "the second denylist line (CRLF file, a term with a space, mixed case) - fails if only the first term is read or CR is not stripped",
+  { msg: "--body, line 1" });
+gb("gb-d15", "DENY", "gh issue comment 5 -F dirty.md",
+  "a RELATIVE body file resolves against the hook JSON cwd - fails if it resolves against the hook's own cwd", { msg: "(file contents), line 3" });
+if (process.platform === "win32") {
+  gb("gb-d16", "DENY", (x) => "gh issue comment 5 -F " + fwd(x.ghscan).replace(/^([A-Za-z]):/, (m, d) => "/" + d.toLowerCase()) + "/dirty.md",
+    "a Git Bash /c/... path - fails if the MSYS drive form is not mapped (the file would read as missing, a DENY for the WRONG reason)",
+    { msg: "(file contents), line 3" });
+}
+gb("gb-d17", "DENY", (x) => "cat " + G(x, "dirty.md") + " | gh issue comment 5 -F -",
+  "a pipe from cat of a file - resolved, not just blocked as a pipe", { msg: "--body-file (stdin), line 3" });
+gb("gb-d18", "DENY", (x) => "gh issue comment 5 -F - < " + G(x, "dirty.md"),
+  "stdin redirected from a file", { msg: "--body-file (stdin), line 3" });
+gb("gb-d19", "DENY", "gh issue comment 5 --body \"$BODY\"",
+  "UNRESOLVABLE: a shell variable as a body - fails if an expansion is let through; the reason must advise a file", { msg: "through a file" });
+gb("gb-d20", "DENY", "make-notes | gh issue comment 5 -F -",
+  "UNRESOLVABLE: a pipe from another command", { msg: "not visible to the hook" });
+gb("gb-d21", "DENY", (x) => "gh issue comment 5 --body-file " + G(x, "no-such-file.md"),
+  "an unreadable body file blocks - fails if a read error is treated as clean", { msg: "unreadable" });
+gb("gb-d22", "DENY", "gh issue comment 5 --body \"never closed",
+  "a gh command that cannot be parsed blocks", { msg: "could not parse" });
+gb("gb-d23", "DENY", "bash -c 'gh issue comment 5 --body \"" + TA + "\"'",
+  "gh inside bash -c - fails if interpreter arguments are not re-parsed", { msg: "--body, line 1" });
+gb("gb-d24", "DENY", "u=$(gh issue create --title t --body \"" + TA + "\")",
+  "gh inside a command substitution", { msg: "--body, line 1" });
+gb("gb-d25", "DENY", (x) => "cat > " + G(x, "w.md") + " <<'EOF'" + NL + TA + NL + "EOF" + NL + "gh issue comment 5 --body-file " + G(x, "w.md"),
+  "a file written in the SAME command - its heredoc is what gets published; the file is not on disk yet",
+  { msg: "(file contents), line 1" });
+gb("gb-d26", "DENY", (x) => "some-tool > " + G(x, "clean.md") + " && gh issue comment 5 --body-file " + G(x, "clean.md"),
+  "a file overwritten in the same command by something unreadable - fails if the stale clean file on disk is scanned instead", { msg: "rewritten in this command" });
+gb("gb-d27", "DENY", "(garbage stdin)", "unparseable hook JSON blocks - fails if the parse error is swallowed",
+  { stdinShape: "garbage", msg: "not valid JSON" });
+gb("gb-d28", "DENY", "gh issue comment 5 --body ok",
+  "CONTROL (fail closed) - denylist file MISSING blocks every gh publish even with clean text", { dl: "missing", msg: "denylist file missing" });
+gb("gb-d29", "DENY", "gh issue comment 5 --body ok",
+  "CONTROL (fail closed) - denylist with only a comment and blanks blocks", { dl: "empty", msg: "no terms" });
+gb("gb-d30", "DENY", "gh issue comment 5 --body ok",
+  "CONTROL (blocks on its own errors) - the scanner script is ABSENT: the saved command alone must turn node's failure into exit 2",
+  { scanner: "absent" });
+gb("gb-d31", "DENY", "gh issue comment 5 --body \"" + TA + "\"",
+  "the XDG_CONFIG_HOME default location - fails if only DENYLIST_FILE is honoured", { dl: "xdg", msg: "--body, line 1" });
+gb("gb-d32", "DENY", "gh issue comment 5 --body \"" + TA + "\"",
+  "the $HOME/.config default location", { dl: "home", msg: "--body, line 1" });
+gb("gb-d33", "DENY", "gh issue close 5 --comment \"" + TA + "\"", "issue close --comment", { msg: "gh issue close --comment" });
+gb("gb-d34", "DENY", "$GH issue create --title t --body ok",
+  "UNRESOLVABLE: a command name built from a variable cannot be judged", { msg: "call gh by name" });
+gb("gb-d35", "DENY", "gh issue comment 5 --body $'x\\n" + TA + "'",
+  "an ANSI-C quoted body is decoded", { msg: "--body, line 2" });
+gb("gb-d36", "DENY", "echo hi", "a tool this hook does not understand blocks (matcher drift must not pass silently)",
+  { tool: "Read", msg: "not Bash or PowerShell" });
+
+gb("gb-a01", "ALLOW", (x) => "gh issue comment 5 --body-file " + G(x, TA + "-clean.md"),
+  "the hub's finding: a term only in a file PATH is not published - fails if the whole command line is scanned");
+gb("gb-a02", "ALLOW", "gh issue comment 5 --body ok --repo o/" + TA + " --label " + TA,
+  "a term in non-text flags (a repo, a label) - fails if the command line is scanned");
+gb("gb-a03", "ALLOW", "gh issue list --search " + TA, "read-only gh with a term in it - fails if every gh call is scanned");
+gb("gb-a04", "ALLOW", "echo " + TA, "CONTROL - not gh at all; fails if the hook denies unconditionally");
+gb("gb-a05", "ALLOW", "ls -la", "a command that never mentions gh passes even with NO denylist (it is not parsed or scanned)", { dl: "missing" });
+gb("gb-a06", "ALLOW", "gh pr view 5 --json body", "read-only gh passes with no denylist - fails if reads need the file", { dl: "missing" });
+gb("gb-a07", "ALLOW", "gh issue create --title ok --body ok", "CONTROL - clean inline text; fails if every publish is denied");
+gb("gb-a08", "ALLOW", (x) => "gh issue comment 5 -F " + G(x, "clean.md"), "a clean body file");
+gb("gb-a09", "ALLOW", "gh pr create --title t --body-file - <<'EOF'" + NL + "all clean" + NL + "EOF", "a clean heredoc");
+gb("gb-a10", "ALLOW", "gh pr create --title t --body \"$(cat <<'EOF'" + NL + "all clean" + NL + "EOF" + NL + ")\"", "a clean cat-heredoc body");
+gb("gb-a11", "ALLOW", "gh api repos/o/r/issues -f title=ok -f body=ok", "clean api fields");
+gb("gb-a12", "ALLOW", (x) => "gh api repos/o/r/issues --input " + G(x, "clean.json") + " -F n=@" + G(x, "clean.md"), "clean api --input and -F @file");
+gb("gb-a13", "ALLOW", "gh api repos/o/r/issues -f " + TA + "=x", "a term in a field KEY - only values are published text");
+gb("gb-a14", "ALLOW", "gh issue comment \"$N\" --body ok", "a quoted expansion as a positional (a PR number) is tolerated");
+gb("gb-a15", "ALLOW", "git commit -m \"docs: gh issue create --body " + TA + "\"", "gh words inside one quoted argument of another command");
+gb("gb-a16", "ALLOW", (x) => "cat > " + G(x, "w2.md") + " <<'EOF'" + NL + "all clean" + NL + "EOF" + NL + "gh issue comment 5 --body-file " + G(x, "w2.md"),
+  "a clean file written in the SAME command (absent from disk) - fails if an unreadable file is blocked without resolving the write");
+gb("gb-a17", "ALLOW", "gh issue comment 5 --body ok # " + TA, "a term in a trailing shell comment");
+gb("gb-a18", "ALLOW", "gh pr merge 5 --squash --auto", "merge with no text fields");
+gb("gb-a19", "ALLOW", "cat > f <<'EOF'" + NL + TA + NL + "EOF", "a heredoc feeding a NON-gh command is data, not published text");
+gb("gb-a20", "ALLOW", "echo gh", "the word gh alone");
+
+gp("gp-d01", "DENY", "gh issue create --title 'x' --body '" + TA + "'",
+  "CONTROL - PowerShell entry, inline single-quoted body; fails if the PowerShell tool_name is not scanned", { msg: "--body, line 1" });
+gp("gp-d02", "DENY", "@'" + NL + "l1" + NL + TB + NL + "'@ | gh issue comment 5 --body-file -",
+  "a here-string piped to --body-file -", { msg: "--body-file (stdin), line 2" });
+gp("gp-d03", "DENY", "gh issue comment 5 --body @'" + NL + "l1" + NL + TA + NL + "'@",
+  "a here-string as the --body argument", { msg: "--body, line 2" });
+gp("gp-d04", "DENY", "gh api repos/o/r/issues -f body='" + TA + "'", "a PowerShell gh api -f value", { msg: "gh api -f #1" });
+gp("gp-d05", "DENY", (x) => "gh issue comment 5 --body (Get-Content -Raw " + G(x, "dirty.md") + ")",
+  "(Get-Content -Raw file) as the body", { msg: "--body, line 3" });
+gp("gp-d06", "DENY", "gh issue comment 5 --body-file $path", "UNRESOLVABLE: a PowerShell variable as the path", { msg: "through a file" });
+gp("gp-d07", "DENY", "& \"C:\\Program Files\\GitHub CLI\\gh.exe\" issue comment 5 --body \"" + TA + "\"",
+  "the call operator with a full path to gh.exe (a Windows path in the command)", { msg: "--body, line 1" });
+gp("gp-d08", "DENY", (x) => "Set-Content -Path " + G(x, "p.md") + " -Value '" + TA + "'; gh issue comment 5 --body-file " + G(x, "p.md"),
+  "a file written by Set-Content in the same command", { msg: "(file contents), line 1" });
+gp("gp-d09", "DENY", (x) => "gh issue comment 5 --body-file \"" + NATIVE(x, "dirty.md") + "\"",
+  "a native backslash path in double quotes - fails if backslashes are mangled by the bash -> node hand-off", { msg: "(file contents), line 3" });
+gp("gp-d10", "DENY", "$b = 'x'; gh issue comment 5 --body $b", "UNRESOLVABLE: a body variable", { msg: "through a file" });
+gp("gp-d11", "DENY", "gh issue comment 5 --body ok", "CONTROL (fail closed) on the PowerShell entry - denylist missing", { dl: "missing", msg: "denylist file missing" });
+gp("gp-d12", "DENY", "gh issue comment 5 --body ok", "CONTROL (blocks on its own errors) on the PowerShell entry - scanner absent", { scanner: "absent" });
+gp("gp-a01", "ALLOW", "gh issue create --title 'x' --body 'fine'", "CONTROL - clean PowerShell text");
+gp("gp-a02", "ALLOW", "@'" + NL + "l1" + NL + "'@ | gh issue comment 5 --body-file -", "a clean here-string");
+gp("gp-a03", "ALLOW", "Get-ChildItem | Select-String \"gh\"", "gh as a search word, no gh command");
+gp("gp-a04", "ALLOW", (x) => "gh issue comment 5 --body-file \"" + NATIVE(x, GS_TERMS[0] + "-clean.md") + "\"", "a term only in a native Windows PATH");
+gp("gp-a05", "ALLOW", "gh issue comment $n --body 'ok'", "a PowerShell variable as a positional PR number");
+gp("gp-a06", "ALLOW", (x) => "Set-Content -Path " + G(x, "p2.md") + " -Value 'clean'; gh issue comment 5 --body-file " + G(x, "p2.md"),
+  "a clean file written by Set-Content in the same command");
+gp("gp-a07", "ALLOW", "gh issue view 5", "read-only gh with no denylist", { dl: "missing" });
+
 // ---------------------------------------------------------------------------------------------
 // [5] Execution - bash -c is the production path, and the only authoritative one
 // ---------------------------------------------------------------------------------------------
@@ -1065,7 +1320,28 @@ function scriptOf(command) {
 // survived elsewhere on that row's PATH it would answer from a fixture repo with no remote and still
 // error, so the row still lands on the loud fail-open message - by a different route, which is why
 // the stub rows above own the deterministic cases.
+const isGhScan = (r) => r.guard.indexOf("gh-scan") === 0;
+
+// The gh-scan rows run with CLAUDE_PROJECT_DIR set (ENV deletes it for the other guards, which fall back to
+// it): at the repo for the saved command to find scripts/denylist-scan.js, or at a scriptless dir for the
+// scanner-absent row. The denylist always comes from the fixture dir; an ambient DENYLIST_FILE or
+// XDG_CONFIG_HOME of the person running this is overridden or removed, so the real file is never read.
+function ghScanEnv(r, ctx) {
+  const fx = ctx.repos.ghscan;
+  const env = Object.assign({}, ENV, {
+    CLAUDE_PROJECT_DIR: r.scanner === "absent" ? path.join(fx, "empty-root") : REPO_ROOT,
+  });
+  delete env.DENYLIST_FILE;
+  delete env.XDG_CONFIG_HOME;
+  const dl = r.dl || "ok";
+  if (dl === "xdg") env.XDG_CONFIG_HOME = path.join(fx, "xdg");
+  else if (dl === "home") { env.HOME = path.join(fx, "home"); env.USERPROFILE = env.HOME; }
+  else env.DENYLIST_FILE = path.join(fx, dl === "missing" ? "terms-missing.txt" : dl === "empty" ? "terms-empty.txt" : "terms.txt");
+  return env;
+}
+
 function envFor(row, ctx) {
+  if (isGhScan(row)) return ghScanEnv(row, ctx);
   if (!row.gh) return ENV;
   if (row.gh === "missing") {
     const parts = String(ENV.PATH || "").split(path.delimiter)
@@ -1081,6 +1357,9 @@ function envFor(row, ctx) {
 
 function fire(guard, stdin, ctx, row) {
   const opts = { input: stdin, encoding: "utf8", env: envFor(row, ctx), cwd: ctx.root };
+  if (OPT.nodeDirect && isGhScan(row)) {
+    return cp.spawnSync("node", [path.join(REPO_ROOT, "scripts", "denylist-scan.js"), "--hook"], opts);
+  }
   return OPT.nodeDirect
     ? cp.spawnSync("node", ["-e", scriptOf(guard.command)], opts)
     : cp.spawnSync("bash", ["-c", guard.command], opts);
@@ -1089,6 +1368,7 @@ function fire(guard, stdin, ctx, row) {
 function stdinFor(r, repos) {
   if (r.stdinShape === "garbage") return "not json at all {{{";
   const payload = { tool_input: { command: cmdOf(r, repos) }, cwd: repos[r.cwd] };
+  if (isGhScan(r)) payload.tool_name = r.tool || (r.guard === "gh-scan-ps" ? "PowerShell" : "Bash");
   if (r.stdinShape !== "no-session") payload.session_id = SID;
   if (r.agent) { payload.agent_id = r.agent; payload.agent_type = "developer"; }
   return JSON.stringify(payload);
@@ -1118,14 +1398,22 @@ function runRows(rows, guards, ctx) {
     setFlag(ctx.flagFile, r.flag || "none", ctx.repos);
     if (r.state) clState(ctx.repos.changelog, r.state);
     const res = fire(guard, stdinFor(r, ctx.repos), ctx, r);
-    const out = res.stdout || "";
-    const observed = verdictOf(out);
+    // The gh-scan hook blocks through exit code 2 (reason on stderr); any other non-zero status is a
+    // non-blocking hook error in the client, i.e. an ALLOW that must never be read as a block - so it scores
+    // as ERROR, matching no expectation.
+    const scan = isGhScan(r);
+    const out = (res.stdout || "") + (scan && res.status === 2 ? res.stderr || "" : "");
+    const observed = scan ? (res.status === 2 ? "DENY" : res.status === 0 ? "ALLOW" : "ERROR") : verdictOf(out);
     const msgMiss = !!r.msg && out.indexOf(r.msg) < 0;
     const absentHit = !!r.absent && out.indexOf(r.absent) >= 0;
     const flagAfter = r.after ? readFlag(ctx.flagFile) : null;
     const flagMiss = !!r.after && !r.after.check(flagAfter, ctx.repos);
-    const ok = observed === r.expect && !msgMiss && !absentHit && !flagMiss;
-    if (!ok) failures.push(Object.assign({ observed: observed, flagMiss: flagMiss }, r));
+    // No gh-scan output - block reason, stderr noise, anything - may contain a fixture term.
+    const printed = (res.stdout || "") + (res.stderr || "");
+    const leak = scan && (GS_TERMS.some((t) => printed.toLowerCase().indexOf(t) >= 0) ||
+      pathLeaks(printed, pathForms(ctx.root)));
+    const ok = observed === r.expect && !msgMiss && !absentHit && !flagMiss && !leak;
+    if (!ok) failures.push(Object.assign({ observed: observed, flagMiss: flagMiss, leak: leak }, r));
     say("  " + (ok ? "PASS" : "FAIL") + " | " + r.id + " | " + r.expect.padEnd(5) + "| got " +
       observed.padEnd(5) + "| " + display(cmdOf(r, ctx.repos)).slice(0, 78));
     if (!ok) {
@@ -1133,6 +1421,7 @@ function runRows(rows, guards, ctx) {
       if (msgMiss) say("       missing expected text: " + r.msg + " | said: " + display(out).slice(0, 200));
       if (absentHit) say("       forbidden text present: " + r.absent + " | said: " + display(out).slice(0, 200));
       if (flagMiss) say("       flag file not as required (" + r.after.what + "): " + JSON.stringify(flagAfter).slice(0, 300));
+      if (leak) say("       LEAK: the hook's output contains a fixture denylist term or fixture path");
       const err = (res.stderr || "").trim();
       if (err) say("       stderr: " + err.slice(0, 200));
     }
@@ -1145,6 +1434,51 @@ function runRows(rows, guards, ctx) {
 // [6] The real matrix
 // ---------------------------------------------------------------------------------------------
 
+// The audit mode (`denylist-scan.js --audit`) scored against the audit stub: it is a CLI, not a saved hook
+// command, so it is spawned directly. Each row states what must appear, and `exit`. A scanner that always
+// exits 0 fails the dirty/error rows and one that always exits 1 fails the clean row; every row also
+// asserts the fixture term never appears in its output.
+const AUDIT_LOCS = ["pr #13 body line 2", "review #13 (id 903) body line 2", "release 21 body line 2", "milestone #3 description line 2"];
+const AUDIT_ROWS = [
+  { id: "au-d01", gh: "audit-dirty", exit: 1, has: AUDIT_LOCS,
+    note: "CONTROL - planted terms in a PR body, review, release and milestone: fails if a kind is not fetched/scanned or a location is wrong" },
+  { id: "au-a01", gh: "audit-clean", exit: 0, has: ["denylist audit: scanned issue 1", "denylist audit: clean"],
+    note: "CONTROL - clean data exits 0 and reports a non-zero count (not blind); fails if the audit denies unconditionally or scans nothing" },
+  { id: "au-d02", gh: "fail", exit: 1, has: ["ERROR gh api"],
+    note: "any fetch error is non-zero - fails if a failed gh call reads as an empty, clean result" },
+  { id: "au-d03", gh: "audit-clean", dl: "missing", exit: 1, has: ["denylist file missing"],
+    note: "fail closed - no denylist, no audit verdict" },
+];
+
+function runAuditRows(ctx) {
+  const failures = [];
+  const scanner = path.join(REPO_ROOT, "scripts", "denylist-scan.js");
+  for (const r of AUDIT_ROWS) {
+    const env = Object.assign({}, ENV, {
+      PATH: ctx.ghStub.bin + path.delimiter + String(ENV.PATH || ""),
+      NODE_OPTIONS: "--require \"" + ctx.ghStub.audit + "\"",
+      GUARD_MATRIX_GH: r.gh,
+      GUARD_MATRIX_TERM: GS_TERMS[0],
+      DENYLIST_FILE: path.join(ctx.repos.ghscan, r.dl === "missing" ? "terms-missing.txt" : "terms.txt"),
+    });
+    delete env.XDG_CONFIG_HOME;
+    const res = cp.spawnSync("node", [scanner, "--audit", "--repo", "owner/fixture"], { encoding: "utf8", env: env });
+    const all = (res.stdout || "") + (res.stderr || "");
+    const missing = r.has.filter((h) => all.indexOf(h) < 0);
+    const leak = GS_TERMS.some((t) => all.toLowerCase().indexOf(t) >= 0) || pathLeaks(all, pathForms(ctx.root));
+    const ok = res.status === r.exit && missing.length === 0 && !leak;
+    if (!ok) failures.push(Object.assign({ expect: "exit " + r.exit, observed: "exit " + res.status }, r));
+    say("  " + (ok ? "PASS" : "FAIL") + " | " + r.id + " | exit " + r.exit + " | got " + res.status + " | audit " + r.gh +
+      (r.dl ? " (denylist " + r.dl + ")" : ""));
+    if (!ok) {
+      say("       note: " + r.note);
+      if (missing.length) say("       missing expected text: " + missing.join(" | ") + " | said: " + display(all).slice(0, 300));
+      if (leak) say("       LEAK: the audit output contains a fixture denylist term or fixture path");
+    }
+  }
+  return failures;
+}
+
 function runMatrix(ctx) {
   say("[1] guards resolved from " + SOURCE_LABEL.settings + " " + PATHS.settings);
   say("    and from " + SOURCE_LABEL.plugin + " " + PATHS.plugin);
@@ -1155,6 +1489,16 @@ function runMatrix(ctx) {
     if (r) pass(g.key + " at " + r.index + " (len=" + r.command.length + " sha256=" + sha12(r.command) + ")");
   }
   for (const n of loaded.notes) warn("NOT controlled here (listed in PLUGIN_UNCOVERED): " + n);
+  // The two gh-scan entries must each fire for their own tool: an entry whose matcher stopped covering it
+  // is a hook that never runs, which no row below could see (rows invoke the saved command directly).
+  for (const g of GUARDS) {
+    const r = loaded.guards[g.key];
+    if (!r || !g.tool) continue;
+    let covers = false;
+    try { covers = new RegExp("^(?:" + r.matcher + ")$").test(g.tool); } catch (e) { covers = false; }
+    if (covers) pass(g.key + " matcher \"" + r.matcher + "\" covers the " + g.tool + " tool");
+    else { fail(g.key + " matcher \"" + r.matcher + "\" does not cover the " + g.tool + " tool - the hook would never fire for it"); loaded.problems.push("matcher"); }
+  }
   if (loaded.problems.length) return { guardProblems: loaded.problems.length, failures: [], rows: 0 };
 
   let failures = [];
@@ -1168,6 +1512,12 @@ function runMatrix(ctx) {
     failures = failures.concat(f);
     rows += mine.length;
   }
+  say("");
+  say("[2.x] gh-publish denylist AUDIT mode (denylist-scan.js --audit, against the audit stub) - " + AUDIT_ROWS.length + " rows");
+  const af = runAuditRows(ctx);
+  say("      audit: " + AUDIT_ROWS.length + " rows, " + af.length + " failed");
+  failures = failures.concat(af);
+  rows += AUDIT_ROWS.length;
   return { guardProblems: 0, failures: failures, rows: rows };
 }
 
@@ -1322,6 +1672,45 @@ const CORRUPTIONS = [
     why: "every bare `VAR=v;` read as exported - a variable gh never sees is applied, " +
       "tagging the merge with a repo/host it will not use - the bare-assignment `absent` rows catch it",
   },
+  // The gh-scan entries. The saved command ends in `node "$s" --hook || exit 2`; the first two corruptions edit
+  // that, and the two LEAK ones make a block reason print a fixture term / the fixture DENYLIST_FILE path (LEAK =
+  // a row's no-term / no-path assertion failed - the assertion on every gh-scan row is itself proven able to fail).
+  {
+    name: "gh-scan-bash-fails-open",
+    guard: "gh-scan-bash",
+    direction: "DENY",
+    apply: (cmd) => cmd.split("|| exit 2").join("|| true"),
+    why: "the fail-open wrapper (the existing guards' `|| true`): node's exit 2 and every crash become an allow - " +
+      "the DENY rows, including the missing-denylist and scanner-absent controls, must catch it",
+  },
+  {
+    name: "gh-scan-bash-blocks-everything",
+    guard: "gh-scan-bash",
+    direction: "ALLOW",
+    apply: (cmd) => cmd.split("--hook").join("--no-such-mode"),
+    why: "the scanner rejects its mode and the wrapper turns that into a block on EVERY command - only the ALLOW rows catch it",
+  },
+  {
+    name: "gh-scan-bash-leaks-term",
+    guard: "gh-scan-bash",
+    direction: "LEAK",
+    apply: (cmd) => cmd.split("|| exit 2").join("|| { echo " + GS_TERMS[0] + " >&2; exit 2; }"),
+    why: "a block whose reason prints a denylist term - only the no-term assertion on the rows catches it",
+  },
+  {
+    name: "gh-scan-bash-leaks-path",
+    guard: "gh-scan-bash",
+    direction: "LEAK",
+    apply: (cmd) => cmd.split("|| exit 2").join("|| { echo \"$DENYLIST_FILE\" >&2; exit 2; }"),
+    why: "a block whose reason prints the resolved denylist path - only the no-path assertion on the rows catches it",
+  },
+  {
+    name: "gh-scan-ps-fails-open",
+    guard: "gh-scan-ps",
+    direction: "DENY",
+    apply: (cmd) => cmd.split("|| exit 2").join("|| true"),
+    why: "the same fail-open wrapper on the PowerShell entry - its own DENY rows must catch it",
+  },
 ];
 
 function runSelfTest(ctx) {
@@ -1367,7 +1756,8 @@ function runSelfTest(ctx) {
     const mine = ROWS.filter((r) => r.guard === c.guard);
     say("  -- " + c.name + " (" + c.why + ")");
     const failures = runRows(mine, broken.guards, ctx);
-    const rightDirection = failures.filter((f) => (c.direction === "FLAG" ? f.flagMiss : f.expect === c.direction));
+    const rightDirection = failures.filter((f) =>
+      (c.direction === "FLAG" ? f.flagMiss : c.direction === "LEAK" ? f.leak : f.expect === c.direction));
     if (failures.length === 0) {
       fail(c.name + ": the corrupted guard scored CLEAN - this matrix cannot detect it");
       allProved = false;
