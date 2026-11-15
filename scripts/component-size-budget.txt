@@ -62,7 +62,8 @@ plugins/fluyt/references/test-writer/what-earns-a-test.md 800
 plugins/fluyt/references/test-writer/writing-good-tests.md 2300
 plugins/fluyt/skills/adopt-conventions/SKILL.md 23100
 plugins/fluyt/skills/adopt-conventions/from-scratch.md 4300
-plugins/fluyt/skills/adopt-conventions/re-sync.md 11700
+plugins/fluyt/skills/adopt-conventions/re-sync-settings.md 1800
+plugins/fluyt/skills/adopt-conventions/re-sync.md 11600
 plugins/fluyt/skills/agent-liveness/SKILL.md 15100
 plugins/fluyt/skills/agent-liveness/process-check.md 3200
 plugins/fluyt/skills/backlog/SKILL.md 11700
