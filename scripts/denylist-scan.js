@@ -26,25 +26,35 @@
  *
  * WHAT THE HOOK SCANS: the VALUES of text fields and the CONTENTS of body/notes files - never the command
  * line as a whole and never a path (a denylist term often sits in a local temp or home path that is
- * not published). Covered: `gh issue|pr create|edit|comment`, `gh pr review|merge`, `gh issue|pr
+ * not published). Covered: `gh issue|pr create|edit|comment` (and the `new` aliases of create), `gh pr review|merge|revert`, `gh issue|pr
  * close|reopen -c`, `gh release create|edit`, `gh label create|edit -d`, `gh repo create|edit -d/-h` and
  * `gh api` (-f/--raw-field, -F/--field incl. `@file`/`@-`, --input), long and short flags, `--flag
- * value`, `--flag=value` and attached `-bvalue`. Heredocs, here-strings, `< file`, a pipe from
+ * value`, `--flag=value`, attached `-bvalue` and pflag-style short-flag clusters (`-wb value`, `-dt=x`: booleans
+ * chain, the first value-taking letter takes the rest of the token or the next argument; a letter missing from the SHORTS
+ * table blocks; gh has no long-flag prefix matching, verified against gh 2.103.3). Heredocs, here-strings, `< file`, a pipe from
  * cat/echo/printf/Get-Content/a string literal, `$(cat <<'EOF' ...)`, `$(cat file)` and a file
  * written by an earlier `> file` / Set-Content in the SAME command are resolved. A value the hook cannot
  * resolve statically (a shell variable, another command's output, an unreadable file) BLOCKS with advice to
  * pass the text through a file written in an earlier call. A command that never mentions `gh` is not parsed.
  *
+ * A verb of a covered group that the table does not know (a new gh verb or alias, or flags placed before the
+ * verb) BLOCKS when the command carries one of that group's text flags; an unknown verb without one passes.
+ *
  * FAILS CLOSED: a missing, unreadable or empty denylist, bad hook JSON, an unparseable gh command, an
- * unsupported tool, or any crash blocks. The saved command in .claude/settings.json tests that the script
+ * unsupported tool, a parser step that consumes nothing, or any crash blocks. The saved command in .claude/settings.json tests that the script
  * exists (a fixed message on a miss - node's own "cannot find module" error would print the session-root
- * path) and then runs `node "$s" --hook || exit 2`, so a missing script or node binary also exits 2. CLAUDE_PROJECT_DIR is the SESSION root, which is this repo's root whenever this
+ * path) and then runs `timeout 6 node "$s" --hook || { ...; exit 2; }`: a hang is killed by `timeout` and a missing
+ * script, node or timeout binary exits non-zero, all turned into exit 2 (a hook the CLIENT times out is a non-blocking
+ * error, i.e. an ALLOW, so the bound lives inside the command and the entry's own `timeout` field sits above it). CLAUDE_PROJECT_DIR is the SESSION root, which is this repo's root whenever this
  * settings file is the one loaded; the hook writes no file, so a wrong root cannot misplace output - it
  * can only make the script unreachable, which blocks.
  *
  * Gaps (known): scripts a command merely runs (`bash x.sh`, `node x.js`) are not entered; `gh gist
- * create`, `gh project`, label/milestone/branch NAMES and release asset files are not scanned; a body
- * assembled by a variable or function in an earlier call is only visible to the audit.
+ * create`, `gh project`, label/milestone/branch NAMES, release asset files and the files `gh issue artifact
+ * create|edit` take as positional arguments are not scanned; a body assembled by a variable or function in an
+ * earlier call is only visible to the audit; a body FILE is read at hook time and gh reads it again at run time, so
+ * a file changed in between is not seen; user-defined aliases (`gh alias set`, kept in gh's config) and gh
+ * extensions are invisible to the hook - an alias that injects text is only visible to the audit.
  */
 
 const fs = require("fs");
@@ -125,12 +135,13 @@ class Parser {
       seg.pipedFrom = piped;
     };
     while (this.i < s.length) {
+      const at = this.i;
       const c = s.charAt(this.i);
       if (c === "\n") {
         this.i++;
         if (pend.length) { this.heredocBodies(pend); pend = []; }
         end("\n");
-      } else if (c === " " || c === "\t" || c === "\r") {
+      } else if (/\s/.test(c)) {
         this.i++;
       } else if (c === "#") {
         while (this.i < s.length && s.charAt(this.i) !== "\n") this.i++;
@@ -156,6 +167,7 @@ class Parser {
         const w = this.readWord();
         if (w.parts.length || w.q) seg.words.push(w);
       }
+      if (this.i === at) throw new ParseError("the parser made no progress");
     }
     if (close) throw new ParseError("unterminated substitution");
     end(";");
@@ -527,7 +539,7 @@ const SPECS = {
   "issue create": BODY.concat([TITLE]), "issue edit": BODY.concat([TITLE]),
   "pr create": BODY.concat([TITLE]), "pr edit": BODY.concat([TITLE]),
   "issue comment": BODY, "pr comment": BODY, "pr review": BODY,
-  "pr merge": BODY.concat([{ l: "subject", s: "t", k: T }]),
+  "pr merge": BODY.concat([{ l: "subject", s: "t", k: T }]), "pr revert": BODY.concat([TITLE]),
   "release create": [{ l: "notes", s: "n", k: T }, { l: "notes-file", s: "F", k: F }, TITLE],
   "release edit": [{ l: "notes", s: "n", k: T }, { l: "notes-file", s: "F", k: F }, TITLE],
   "issue close": [COMMENT], "issue reopen": [COMMENT], "pr close": [COMMENT], "pr reopen": [COMMENT],
@@ -536,12 +548,73 @@ const SPECS = {
 };
 const API = [{ l: "raw-field", s: "f", k: "raw" }, { l: "field", s: "F", k: "typed" }, { l: "input", s: null, k: "input" }];
 const GROUPS = ["issue", "pr", "release", "label", "repo", "api"];
+// Verb aliases, read from the ALIASES section of each `gh <group> <verb> --help` (gh 2.103.3). A user's own
+// `gh alias set` aliases live in gh's config and are NOT visible here (see Gaps).
+const ALIASES = { "issue new": "issue create", "pr new": "pr create", "release new": "release create", "repo new": "repo create" };
+// Verbs of a covered group audited as publishing no free text through a flag (same help output; includes the
+// read-only aliases ls and co). A verb in neither SPECS, ALIASES nor this table that carries one of the group's
+// text flags BLOCKS: the class "a verb or alias the table does not know" fails closed, not open.
+const SAFE_VERBS = {
+  issue: ["list", "ls", "status", "view", "delete", "develop", "lock", "pin", "transfer", "unlock", "unpin"],
+  pr: ["list", "ls", "status", "view", "checkout", "co", "checks", "diff", "lock", "ready", "unlock", "update-branch"],
+  release: ["list", "ls", "view", "delete", "delete-asset", "download", "upload", "verify", "verify-asset"],
+  label: ["list", "ls", "clone", "delete"],
+  repo: ["list", "ls", "view", "archive", "autolink", "clone", "delete", "deploy-key", "fork", "gitignore", "license",
+    "read-dir", "read-file", "rename", "set-default", "sync", "unarchive"],
+};
+// The text flags of each group, derived from SPECS so the two cannot drift.
+const GROUP_TEXT = {};
+for (const key of Object.keys(SPECS)) {
+  const g = key.split(" ")[0];
+  GROUP_TEXT[g] = GROUP_TEXT[g] || [];
+  for (const f of SPECS[key]) if (GROUP_TEXT[g].indexOf(f) < 0) GROUP_TEXT[g].push(f);
+}
+// Short flags per covered command, read from `gh <group> <verb> --help` (gh 2.103.3). b = boolean letters, v = value-taking
+// letters that publish no scanned text (a repo, a label, a base branch ...); the TEXT letters come from SPECS. gh parses
+// pflag-style: in `-xyz` every letter is a flag, booleans chain, and the FIRST value-taking letter takes the rest of the
+// token (after an optional `=`), or the next argument when nothing remains. A letter in no list BLOCKS (it could be a
+// text flag of a newer gh), as does a missing table row (asserted below).
+const SHORTS = {
+  "issue create": { b: "ew", v: "almpTR" }, "issue edit": { b: "", v: "mR" },
+  "issue comment": { b: "ew", v: "R" }, "issue close": { b: "", v: "rR" }, "issue reopen": { b: "", v: "R" },
+  "pr create": { b: "defw", v: "aBHlmprTR" }, "pr edit": { b: "", v: "BmR" },
+  "pr comment": { b: "ew", v: "R" }, "pr review": { b: "acr", v: "R" }, "pr merge": { b: "dmrs", v: "AR" },
+  "pr revert": { b: "d", v: "R" }, "pr close": { b: "d", v: "R" }, "pr reopen": { b: "", v: "R" },
+  "release create": { b: "dp", v: "R" }, "release edit": { b: "", v: "R" },
+  "label create": { b: "f", v: "cR" }, "label edit": { b: "", v: "cnR" },
+  "repo create": { b: "c", v: "glrstp" }, "repo edit": { b: "", v: "" },
+  api: { b: "i", v: "HXpqt" },
+};
+for (const key of Object.keys(SPECS).concat(["api"])) {
+  const sh = SHORTS[key];
+  const text = (key === "api" ? API : SPECS[key]).map((f) => f.s).filter((x) => x);
+  if (!sh || text.some((x) => (sh.b + sh.v).indexOf(x) >= 0)) throw new Error("short-flag table out of step with SPECS: " + key);
+}
 const INTERPRETERS = ["bash", "sh", "zsh", "dash", "ksh", "fish", "pwsh", "powershell", "cmd", "eval"];
 const GH_RE = /(?:^|[^A-Za-z0-9_-])gh(?:\.exe)?(?![A-Za-z0-9_-])/i;
 const FILE_ADVICE = "pass the text through a file written in an earlier call (--body-file <file> / -F <file>)";
 
 // Parse the flags of one gh invocation; push scans/problems onto ctx.
-function ghFlags(seg, args, spec, name, ctx) {
+// Walk one short-flag token letter by letter (see SHORTS). Returns { flag, rest } at the first TEXT flag (rest = the
+// attached value, else null: the value is the next argument), { awaits } after a value-taking non-text flag (its value
+// is not published text; awaits = gh takes the NEXT argument as it), or { problem }.
+function walkShorts(w, lead, spec, sh) {
+  for (let i = 1; i < lead.length; i++) {
+    const ch = lead.charAt(i);
+    const f = spec.find((x) => x.s === ch);
+    if (f) {
+      const rest = sliceWord(w, i + 1 + (lead.charAt(i + 1) === "=" ? 1 : 0));
+      return { flag: f, rest: rest.parts.length ? rest : null };
+    }
+    if (sh.v.indexOf(ch) >= 0) {
+      return isDyn(w) ? { problem: "a short flag built from an expansion cannot be checked; " + FILE_ADVICE } : { awaits: i + 1 >= lead.length };
+    }
+    if (sh.b.indexOf(ch) < 0) return { problem: "the short flag cluster holds a letter this scan does not know (it could be a text flag); " + FILE_ADVICE };
+  }
+  return isDyn(w) ? { problem: "a short flag cluster built from an expansion cannot be checked; " + FILE_ADVICE } : { awaits: false };
+}
+
+function ghFlags(seg, args, spec, sh, name, ctx) {
   let prevFlag = false;
   let ordinal = 0;
   for (let a = 0; a < args.length; a++) {
@@ -550,20 +623,22 @@ function ghFlags(seg, args, spec, name, ctx) {
     const dyn = isDyn(w);
     let flag = null;
     let val = null;
+    let awaits = null;
+    const lead = w.parts.length && w.parts[0].k === "lit" ? w.parts[0].t : "";
     if (!dyn && t === "--") break;
     if (t.indexOf("--") === 0) {
       const eq = t.indexOf("=");
       const nm = eq < 0 ? t.slice(2) : t.slice(2, eq);
       flag = spec.find((f) => f.l === nm) || null;
       if (flag) val = eq >= 0 ? sliceWord(w, eq + 1) : args[++a] || null;
-    } else if (/^-[A-Za-z]/.test(t)) {
-      flag = spec.find((f) => f.s === t.charAt(1)) || null;
-      if (flag) {
-        const rest = sliceWord(w, t.charAt(2) === "=" ? 3 : 2);
-        val = rest.parts.length ? rest : args[++a] || null;
-      }
+    } else if (/^-[A-Za-z]/.test(lead)) {
+      const c = walkShorts(w, lead, spec, sh);
+      if (c.problem) { ctx.problems.push(name + ": " + c.problem); prevFlag = false; continue; }
+      flag = c.flag || null;
+      if (flag) val = c.rest || args[++a] || null; else awaits = c.awaits;
     }
     if (!flag) {
+      if (awaits !== null) { prevFlag = awaits; continue; }
       if (dyn && t.charAt(0) === "-") {
         ctx.problems.push(name + ": a flag name built from an expansion cannot be checked; " + FILE_ADVICE);
       } else if (dyn && !prevFlag && !(ctx.d === "ps" ? !w.splat : w.parts.every((p) => p.k === "lit" || p.inq))) {
@@ -615,16 +690,45 @@ function ghInvocation(seg, gi, ctx) {
   const g = lit(ws[k]).toLowerCase();
   if (GROUPS.indexOf(g) < 0) return;
   if (g === "api") {
-    ghFlags(seg, ws.slice(k + 1), API, "gh api", ctx);
+    ghFlags(seg, ws.slice(k + 1), API, SHORTS.api, "gh api", ctx);
     return;
   }
   if (k + 1 >= ws.length) return;
   if (isDyn(ws[k + 1])) { ctx.problems.push("gh " + g + ": the verb is not statically known"); return; }
-  const v = lit(ws[k + 1]).toLowerCase();
+  const raw = lit(ws[k + 1]).toLowerCase();
+  const v = ALIASES[g + " " + raw] ? ALIASES[g + " " + raw].split(" ")[1] : raw;
   const spec = SPECS[g + " " + v];
-  if (!spec) return;
+  if (!spec) {
+    if (SAFE_VERBS[g].indexOf(v) >= 0) return;
+    // A verb the table does not know (also a flag where the verb belongs): pass only without a text flag.
+    const rest = ws.slice(k + 1);
+    if (carriesTextFlag(rest, GROUP_TEXT[g])) {
+      ctx.problems.push("gh " + g + ": a verb this scan does not know carries a text flag (a new gh verb or alias, or flags placed " +
+        "before the verb); put the verb first and use a covered one (see scripts/README.md), or " + FILE_ADVICE);
+    }
+    return;
+  }
   ctx.pub.v = true;
-  ghFlags(seg, ws.slice(k + 2), spec, "gh " + g + " " + v, ctx);
+  ghFlags(seg, ws.slice(k + 2), spec, SHORTS[g + " " + v], "gh " + g + " " + v, ctx);
+}
+
+// True when any word looks like one of `flags` (long, short, `--flag=v`, attached `-bv`, a short-flag cluster),
+// or is a flag whose name is built from an expansion. Over-approximates on purpose: a false hit only blocks.
+function carriesTextFlag(words, flags) {
+  for (const w of words) {
+    const t = lit(w);
+    if (!isDyn(w) && t === "--") return false;
+    if (isDyn(w) && t.charAt(0) === "-") return true;
+    if (t.indexOf("--") === 0) {
+      const eq = t.indexOf("=");
+      const nm = eq < 0 ? t.slice(2) : t.slice(2, eq);
+      if (flags.some((f) => f.l === nm)) return true;
+    } else if (/^-[A-Za-z]/.test(t)) {
+      // no table for an unknown verb: any letter before the first non-letter could be a text flag (`-wb=x`, `-wbx y`)
+      if (/^-[A-Za-z]+/.exec(t)[0].slice(1).split("").some((ch) => flags.some((f) => f.s === ch))) return true;
+    }
+  }
+  return false;
 }
 
 function analyzeSegs(segs, ctx, depth) {

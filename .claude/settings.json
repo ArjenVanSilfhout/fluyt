@@ -58,7 +58,8 @@
           {
             "type": "command",
             "shell": "bash",
-            "command": "s=\"${CLAUDE_PROJECT_DIR:-.}/scripts/denylist-scan.js\"; [ -f \"$s\" ] || { echo 'BLOCKED: scripts/denylist-scan.js is missing, so the gh publish scan cannot run' >&2; exit 2; }; node \"$s\" --hook || exit 2",
+            "command": "s=\"${CLAUDE_PROJECT_DIR:-.}/scripts/denylist-scan.js\"; [ -f \"$s\" ] || { echo 'BLOCKED: scripts/denylist-scan.js is missing, so the gh publish scan cannot run' >&2; exit 2; }; timeout 6 node \"$s\" --hook || { rc=$?; [ \"$rc\" -eq 2 ] || echo \"BLOCKED: the gh publish scan did not complete (exit $rc): a hang, a crash or a missing timeout or node blocks the command\" >&2; exit 2; }",
+            "timeout": 20,
             "statusMessage": "Scanning text published through gh against the private denylist (Bash)"
           }
         ]
@@ -69,7 +70,8 @@
           {
             "type": "command",
             "shell": "bash",
-            "command": "s=\"${CLAUDE_PROJECT_DIR:-.}/scripts/denylist-scan.js\"; [ -f \"$s\" ] || { echo 'BLOCKED: scripts/denylist-scan.js is missing, so the gh publish scan cannot run' >&2; exit 2; }; node \"$s\" --hook || exit 2",
+            "command": "s=\"${CLAUDE_PROJECT_DIR:-.}/scripts/denylist-scan.js\"; [ -f \"$s\" ] || { echo 'BLOCKED: scripts/denylist-scan.js is missing, so the gh publish scan cannot run' >&2; exit 2; }; timeout 6 node \"$s\" --hook || { rc=$?; [ \"$rc\" -eq 2 ] || echo \"BLOCKED: the gh publish scan did not complete (exit $rc): a hang, a crash or a missing timeout or node blocks the command\" >&2; exit 2; }",
+            "timeout": 20,
             "statusMessage": "Scanning text published through gh against the private denylist (PowerShell)"
           }
         ]

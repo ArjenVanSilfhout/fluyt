@@ -291,6 +291,7 @@ function loadGuards(paths) {
       matcher: hits[0].matcher,
       statusMessage: hits[0].hook.statusMessage,
       command: String(hits[0].hook.command || ""),
+      timeout: hits[0].hook.timeout,
     });
     if (!resolved[g.key].command) {
       problems.push("guard " + g.key + " has an empty `command` - nothing to execute");
@@ -405,6 +406,9 @@ function buildFixtures() {
   // scripts/ - CLAUDE_PROJECT_DIR points there for the scanner-absent row.
   const gs = path.join(root, "ghscan");
   fs.mkdirSync(path.join(gs, "empty-root"), { recursive: true });
+  // `hang-root`: a scanner stub that never yields for 20 s (a synchronous loop, the shape of the real hang), then exits 0 - an ALLOW.
+  fs.mkdirSync(path.join(gs, "hang-root", "scripts"), { recursive: true });
+  fs.writeFileSync(path.join(gs, "hang-root", "scripts", "denylist-scan.js"), "const end = Date.now() + 20000; while (Date.now() < end) {}" + NL);
   fs.mkdirSync(path.join(gs, "xdg", "denylist"), { recursive: true });
   fs.mkdirSync(path.join(gs, "home", ".config", "denylist"), { recursive: true });
   const terms = "# fixture terms" + "\r\n" + "\r\n" + "  " + GS_TERMS[0].toUpperCase() + "  " + "\r\n" + GS_TERMS[1] + "\r\n";
@@ -1251,6 +1255,71 @@ gb("gb-d35", "DENY", "gh issue comment 5 --body $'x\\n" + TA + "'",
 gb("gb-d36", "DENY", "echo hi", "a tool this hook does not understand blocks (matcher drift must not pass silently)",
   { tool: "Read", msg: "not Bash or PowerShell" });
 
+// Odd whitespace: the parser once skipped only space/tab/CR at the top level while the word reader stopped at
+// ANY s, so a word ending in FF, VT, NBSP, U+2028 or U+FEFF looped forever and the hook never returned. Every row
+// pins the scanner's own match message, so a timeout-block (a different message) cannot score as a pass.
+const FF = String.fromCharCode(12);
+const VT = String.fromCharCode(11);
+const NBSP = String.fromCharCode(0xa0);
+const LS = String.fromCharCode(0x2028);
+const BOM = String.fromCharCode(0xfeff);
+gb("gb-d37", "DENY", "gh issue comment 1 -b " + TA + FF, "a body word followed by a form feed - fails if the parser hangs or the FF is not a separator", { msg: "--body, line 1" });
+gb("gb-d38", "DENY", "gh issue comment 1 -b " + TA + " " + VT + "x", "a body word, a space, a vertical tab and a word", { msg: "--body, line 1" });
+gb("gb-d39", "DENY", "gh issue comment 1 -b " + TA + NBSP + "x", "a body word followed by a no-break space", { msg: "--body, line 1" });
+gb("gb-d40", "DENY", "gh issue comment 1 -b " + TA + LS + "x", "a body word followed by U+2028", { msg: "--body, line 1" });
+gb("gb-d41", "DENY", BOM + "gh issue comment 1 -b " + TA, "a leading U+FEFF before the command", { msg: "--body, line 1" });
+gb("gb-d42", "DENY", NBSP + "gh" + NBSP + "issue comment 1 -b " + TA, "no-break spaces around the command words", { msg: "--body, line 1" });
+gp("gp-d13", "DENY", "gh issue comment 1 --body '" + TA + "'" + NBSP + "x", "a PowerShell body followed by a no-break space", { msg: "--body, line 1" });
+gb("gb-d43", "DENY", "gh issue comment 5 --body ok",
+  "CONTROL (a hang blocks) - the scanner stub never returns: only the `timeout` inside the saved command can turn that into exit 2 (124), " +
+  "and the per-row limit scores a missing bound as ERROR, never a stall", { scanner: "hang", msg: "did not complete (exit 124)" });
+gb("gb-d44", "DENY", "gh issue comment 5 --body ok",
+  "CONTROL (a missing tool blocks) - the saved command run with an empty PATH (a prefix only; the command is the one on disk): " +
+  "timeout cannot start, exit 127, and the fallback must block with its fixed message", { prefix: "PATH=/no-such-dir; ", msg: "did not complete (exit 127)" });
+
+// gh aliases, read from the ALIASES section of `gh <group> <verb> --help` (issue/pr/release/repo `new`), and the
+// class rule: a verb the table does not know blocks when it carries one of the group's text flags.
+gb("gb-d45", "DENY", "gh issue new -t x -b \"" + TA + "\"", "the `new` alias of issue create - fails if only the canonical verb is scanned", { msg: "gh issue create --body, line 1" });
+gb("gb-d46", "DENY", "gh pr new --title t --body \"" + TA + "\"", "the `new` alias of pr create", { msg: "gh pr create --body, line 1" });
+gb("gb-d47", "DENY", "gh release new v9.9.9 -n \"" + TA + "\"", "the `new` alias of release create", { msg: "gh release create --notes, line 1" });
+gb("gb-d48", "DENY", "gh repo new demo -d \"" + TA + "\"", "the `new` alias of repo create", { msg: "gh repo create --description, line 1" });
+gb("gb-d49", "DENY", (x) => "gh issue new -t x -F " + G(x, "dirty.md"), "an alias with a body FILE", { msg: "--body-file (file contents), line 3" });
+gb("gb-d50", "DENY", "gh pr revert 5 --title t --body \"" + TA + "\"", "pr revert publishes a body and a title", { msg: "gh pr revert --body, line 1" });
+gb("gb-d51", "DENY", "gh issue frobnicate 5 --body ok", "UNKNOWN verb with a text flag blocks even when the text is clean - fails if unknown verbs pass", { msg: "does not know" });
+gb("gb-d52", "DENY", "gh release frobnicate v1 -n \"" + TA + "\"", "unknown release verb, short text flag", { msg: "does not know" });
+gb("gb-d53", "DENY", "gh label frobnicate x --description y", "unknown label verb, long text flag", { msg: "does not know" });
+gb("gb-d54", "DENY", "gh repo frobnicate x -h y", "unknown repo verb, short text flag", { msg: "does not know" });
+gb("gb-d55", "DENY", "gh issue -R o/r create -b \"" + TA + "\"", "flags BEFORE the verb hide it from the table - fails if the flag is taken for the verb and the command passes", { msg: "does not know" });
+gb("gb-d56", "DENY", "gh issue artifact create 5 --body-file x.md", "a nested verb that publishes text (issue artifact)", { msg: "does not know" });
+gb("gb-d57", "DENY", "gh issue frobnicate 5 -wb x", "a short-flag cluster ending in a text flag", { msg: "does not know" });
+// Short-flag CLUSTERS on KNOWN verbs (pflag: every letter is a flag, booleans chain, the first value-taking letter takes
+// the rest of the token, after an optional =, or the next argument). Each DENY pins the scanner's own field message.
+gb("gb-d58", "DENY", "gh issue create -t sloop -wb " + TA, "a boolean (-w) then a text flag (-b) in one cluster, value in the next argument - fails if only the first letter is read", { msg: "gh issue create --body, line 1" });
+gb("gb-d59", "DENY", "gh pr create -dt " + TA + " -b sloop", "boolean -d then -t: the TITLE is the cluster's value", { msg: "gh pr create --title, line 1" });
+gb("gb-d60", "DENY", "gh issue create -t sloop -wb=" + TA, "cluster, then = and the value - fails if the = form is not split off", { msg: "gh issue create --body, line 1" });
+gb("gb-d61", "DENY", "gh issue create -t sloop -wb" + TA, "cluster with the value attached to the text letter", { msg: "gh issue create --body, line 1" });
+gb("gb-d62", "DENY", "gh issue create -t sloop -wZ ok", "a letter the table does not know blocks even with clean text (it could be a text flag of a newer gh)", { msg: "letter this scan does not know" });
+gb("gb-d63", "DENY", "gh api repos/o/r/issues -if body=" + TA, "gh api: -i is boolean, -f takes the next argument", { msg: "gh api -f #1, line 1" });
+gb("gb-d64", "DENY", "gh issue frobnicate 5 -wb=" + TA, "UNKNOWN verb, cluster with = - fails if only a pure-letter cluster is recognised", { msg: "does not know" });
+gb("gb-d65", "DENY", "gh pr merge 5 -sb " + TA, "pr merge: boolean -s then the text flag -b", { msg: "gh pr merge --body, line 1" });
+gb("gb-d66", "DENY", "gh issue create -t sloop -w$X", "a cluster whose tail is an expansion cannot be judged", { msg: "built from an expansion" });
+gp("gp-d15", "DENY", "gh pr create -dt '" + TA + "' -b 'sloop'", "the cluster walk on the PowerShell entry", { msg: "gh pr create --title, line 1" });
+gp("gp-d14", "DENY", "gh pr new --title 'x' --body '" + TA + "'", "the new alias on the PowerShell entry", { msg: "gh pr create --body, line 1" });
+
+gb("gb-a21", "ALLOW", "gh issue frobnicate 5", "an unknown verb WITHOUT a text flag may pass - fails if every unknown verb blocks");
+gb("gb-a22", "ALLOW", "gh issue list -t '{{.title}}' --search " + TA, "a known read-only verb whose -t is a template, not text");
+gb("gb-a23", "ALLOW", "gh pr co 5", "the read-only alias pr co");
+gb("gb-a24", "ALLOW", "gh issue ls --search " + TA, "the read-only alias issue ls");
+gb("gb-a25", "ALLOW", "gh issue -R o/r view 5", "flags before the verb with no text flag anywhere");
+gb("gb-a26", "ALLOW", "gh issue new --title ok --body ok", "CONTROL - a clean alias call; fails if every alias is blocked");
+gb("gb-a27", "ALLOW", "gh pr revert 5 --title ok --body ok", "a clean pr revert");
+
+gb("gb-a28", "ALLOW", "gh issue create -t sloop -b ok -wl " + TA,
+  "a cluster ending in the value-taking NON-text -l: its value (the next argument) is a label name, not published text - fails if every cluster value is scanned");
+gb("gb-a29", "ALLOW", "gh issue create -t sloop -b ok -wl" + TA, "the same with the value attached to the cluster");
+gb("gb-a30", "ALLOW", "gh issue create -t sloop -b ok -we", "CONTROL - a boolean-only cluster with clean text; fails if every cluster blocks");
+gb("gb-a31", "ALLOW", "gh pr create -dt ok -b ok -R o/" + TA, "a cluster in front of the text flags and -R with a term-bearing repo (not published text)");
+gb("gb-a32", "ALLOW", "gh api repos/o/r/issues -iq " + TA + " -f body=ok", "gh api: -q is a jq filter, not a published field");
 gb("gb-a01", "ALLOW", (x) => "gh issue comment 5 --body-file " + G(x, TA + "-clean.md"),
   "the hub's finding: a term only in a file PATH is not published - fails if the whole command line is scanned");
 gb("gb-a02", "ALLOW", "gh issue comment 5 --body ok --repo o/" + TA + " --label " + TA,
@@ -1329,7 +1398,7 @@ const isGhScan = (r) => r.guard.indexOf("gh-scan") === 0;
 function ghScanEnv(r, ctx) {
   const fx = ctx.repos.ghscan;
   const env = Object.assign({}, ENV, {
-    CLAUDE_PROJECT_DIR: r.scanner === "absent" ? path.join(fx, "empty-root") : REPO_ROOT,
+    CLAUDE_PROJECT_DIR: r.scanner === "absent" ? path.join(fx, "empty-root") : r.scanner === "hang" ? path.join(fx, "hang-root") : REPO_ROOT,
   });
   delete env.DENYLIST_FILE;
   delete env.XDG_CONFIG_HOME;
@@ -1355,14 +1424,20 @@ function envFor(row, ctx) {
   });
 }
 
+// Per-row time limit: a hanging guard must score as a FAILURE (status null = ERROR), never stall the run. The hang
+// rows run from the temp dir so a stub that outlives the run does not hold the fixture dir open for teardown.
+const ROW_LIMIT_MS = 15000;
+
 function fire(guard, stdin, ctx, row) {
-  const opts = { input: stdin, encoding: "utf8", env: envFor(row, ctx), cwd: ctx.root };
+  const opts = { input: stdin, encoding: "utf8", env: envFor(row, ctx), cwd: row.scanner === "hang" ? os.tmpdir() : ctx.root,
+    killSignal: "SIGKILL" };
+  if (isGhScan(row)) opts.timeout = ROW_LIMIT_MS;
   if (OPT.nodeDirect && isGhScan(row)) {
     return cp.spawnSync("node", [path.join(REPO_ROOT, "scripts", "denylist-scan.js"), "--hook"], opts);
   }
   return OPT.nodeDirect
     ? cp.spawnSync("node", ["-e", scriptOf(guard.command)], opts)
-    : cp.spawnSync("bash", ["-c", guard.command], opts);
+    : cp.spawnSync("bash", ["-c", (row.prefix || "") + guard.command], opts);
 }
 
 function stdinFor(r, repos) {
@@ -1499,6 +1574,18 @@ function runMatrix(ctx) {
     if (covers) pass(g.key + " matcher \"" + r.matcher + "\" covers the " + g.tool + " tool");
     else { fail(g.key + " matcher \"" + r.matcher + "\" does not cover the " + g.tool + " tool - the hook would never fire for it"); loaded.problems.push("matcher"); }
   }
+  // A hook the CLIENT times out is a non-blocking error (an ALLOW), so each gh-scan saved command must bound
+  // node itself (`timeout N node ...`, expiry = non-zero = block) and its entry's own `timeout` field must sit
+  // comfortably above that inner bound, so the inner one always fires first.
+  for (const g of GUARDS) {
+    const r = loaded.guards[g.key];
+    if (!r || !g.tool) continue;
+    const m = /(?:^|[;&|] *)timeout ([0-9]+) node /.exec(r.command);
+    const inner = m ? Number(m[1]) : 0;
+    if (!inner) { fail(g.key + " saved command does not bound node with `timeout N node` - a hang would reach the client's non-blocking timeout"); loaded.problems.push("bound"); }
+    else if (!(Number(r.timeout) >= inner * 2)) { fail(g.key + " entry `timeout` (" + r.timeout + ") is not at least twice the inner bound (" + inner + " s)"); loaded.problems.push("bound"); }
+    else pass(g.key + " bounds node at " + inner + " s inside the command; entry timeout " + r.timeout + " s sits above it");
+  }
   if (loaded.problems.length) return { guardProblems: loaded.problems.length, failures: [], rows: 0 };
 
   let failures = [];
@@ -1534,6 +1621,9 @@ function runMatrix(ctx) {
 // load path - the committed files are never touched. Two directions, because a matrix can be blind in
 // either: a guard that silently allows everything (the silent-allow shape) is caught only by DENY rows, and
 // a guard that denies everything only by ALLOW rows.
+
+// Replace the LAST `exit 2` of a gh-scan saved command (the block of its fallback) with `repl`.
+const lastExit2 = (cmd, repl) => { const i = cmd.lastIndexOf("exit 2"); return i < 0 ? cmd : cmd.slice(0, i) + repl + cmd.slice(i + 6); };
 
 const CORRUPTIONS = [
   {
@@ -1672,16 +1762,24 @@ const CORRUPTIONS = [
     why: "every bare `VAR=v;` read as exported - a variable gh never sees is applied, " +
       "tagging the merge with a repo/host it will not use - the bare-assignment `absent` rows catch it",
   },
-  // The gh-scan entries. The saved command ends in `node "$s" --hook || exit 2`; the first two corruptions edit
-  // that, and the two LEAK ones make a block reason print a fixture term / the fixture DENYLIST_FILE path (LEAK =
+  // The gh-scan entries. The saved command ends in `timeout N node "$s" --hook || { ...; exit 2; }`; the first two
+  // corruptions edit that (the LAST `exit 2` is the block), and the two LEAK ones make a block reason print a fixture term / the fixture DENYLIST_FILE path (LEAK =
   // a row's no-term / no-path assertion failed - the assertion on every gh-scan row is itself proven able to fail).
   {
     name: "gh-scan-bash-fails-open",
     guard: "gh-scan-bash",
     direction: "DENY",
-    apply: (cmd) => cmd.split("|| exit 2").join("|| true"),
+    apply: (cmd) => lastExit2(cmd, "exit 0"),
     why: "the fail-open wrapper (the existing guards' `|| true`): node's exit 2 and every crash become an allow - " +
       "the DENY rows, including the missing-denylist and scanner-absent controls, must catch it",
+  },
+  {
+    name: "gh-scan-bash-unbounded",
+    guard: "gh-scan-bash",
+    direction: "DENY",
+    apply: (cmd) => cmd.split("timeout 6 ").join(""),
+    why: "the bound removed: a scanner that hangs now hangs the hook, which the client treats as a non-blocking error " +
+      "(an allow) - only the hang control row, run under the per-row limit, can see it",
   },
   {
     name: "gh-scan-bash-blocks-everything",
@@ -1694,21 +1792,21 @@ const CORRUPTIONS = [
     name: "gh-scan-bash-leaks-term",
     guard: "gh-scan-bash",
     direction: "LEAK",
-    apply: (cmd) => cmd.split("|| exit 2").join("|| { echo " + GS_TERMS[0] + " >&2; exit 2; }"),
+    apply: (cmd) => lastExit2(cmd, "echo " + GS_TERMS[0] + " >&2; exit 2"),
     why: "a block whose reason prints a denylist term - only the no-term assertion on the rows catches it",
   },
   {
     name: "gh-scan-bash-leaks-path",
     guard: "gh-scan-bash",
     direction: "LEAK",
-    apply: (cmd) => cmd.split("|| exit 2").join("|| { echo \"$DENYLIST_FILE\" >&2; exit 2; }"),
+    apply: (cmd) => lastExit2(cmd, "echo \"$DENYLIST_FILE\" >&2; exit 2"),
     why: "a block whose reason prints the resolved denylist path - only the no-path assertion on the rows catches it",
   },
   {
     name: "gh-scan-ps-fails-open",
     guard: "gh-scan-ps",
     direction: "DENY",
-    apply: (cmd) => cmd.split("|| exit 2").join("|| true"),
+    apply: (cmd) => lastExit2(cmd, "exit 0"),
     why: "the same fail-open wrapper on the PowerShell entry - its own DENY rows must catch it",
   },
 ];

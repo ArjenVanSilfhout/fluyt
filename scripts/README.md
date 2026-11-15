@@ -48,11 +48,22 @@ callers, one implementation:
   `--notes-file`, `gh api -F key=@file` and `--input` files; heredocs, here-strings, `< file` and
   pipes from `cat`/`echo`/`Get-Content` feeding `-` are scanned too. It never scans the command line
   as a whole or a path, so a term in a temp path does not block. A hit, a missing or empty denylist,
-  bad hook JSON, an unparseable command, a missing script and any crash all **block** (exit 2; the
-  the saved command tests that the script exists, then runs `node ".../scripts/denylist-scan.js" --hook ||
-  exit 2`). A value the hook cannot
+  bad hook JSON, an unparseable command, a missing script, a hang and any crash all **block** (exit 2;
+  the saved command tests that the script exists, then runs `timeout 6 node ".../scripts/denylist-scan.js"
+  --hook` and turns any non-zero exit, including `timeout`'s 124 and a missing `timeout` or `node`, into
+  exit 2). The bound is inside the command because a hook the client itself times out is a
+  **non-blocking** error, i.e. the publish would go through; the entry's `timeout` field (20 s) sits well
+  above the inner 6 s so the inner bound always fires first. A value the hook cannot
   read statically (a shell variable, another command's output, a file rewritten in the same command)
   blocks with advice to write the text to a file in an earlier call and pass `--body-file <file>`.
+  The `new` aliases (`gh issue|pr|release|repo new`) are scanned as their `create` verbs, and a verb of
+  a covered group that the scanner does not know (a new gh verb, or flags placed before the verb)
+  **blocks** when the command carries one of that group's text flags (`--body`, `-b`, `--title`, ...);
+  an unknown verb without one passes. The verb tables are read from `gh <group> <verb> --help`
+  (gh 2.103.3): re-check them after a gh upgrade. Short flags follow gh's pflag parsing (`-wb text`,
+  `-dt=x`, `-wbtext`): booleans chain and the first value-taking letter takes the rest of the token or
+  the next argument, so a text flag later in a cluster is scanned, a non-text one (`-l`, `-R`) is not,
+  and a letter the per-command short-flag table does not know **blocks**.
   The block reason names only the command, the field and the line number: never the matched term, and
   never a filesystem path - the denylist is named as "DENYLIST_FILE, else the default under the XDG config
   dir", a `--file` input by its label.
@@ -66,8 +77,20 @@ callers, one implementation:
   `HIT <kind> <id> <field> line N`, never the text. Exit 1 on a hit or any fetch error. Run it before
   a release.
 
+**Known gaps.** The hook reads a body file at hook time and gh reads it again at run time, so a file
+changed in between is not seen (the audit mode is the backstop). User-defined aliases (`gh alias set`,
+stored in gh's own config; `gh alias list` shows them) and gh extensions are **invisible** to the hook:
+an alias outside the covered groups (`gh pub ...`) that expands to a publishing command passes
+unscanned, as does a shell alias (`!`), and only the audit sees what it published. An alias filed under
+a covered group (`gh issue mine`) is an unknown verb and blocks when it carries a text flag. `gh issue artifact create|edit` with a file
+named as a positional argument publishes that file's contents unscanned (a `--body` or `--body-file`
+on it blocks as an unknown verb). Branch, label and milestone names, release assets and gists are not
+scanned either.
+
 `scripts/guard-matrix.js` scores both hook entries from the saved commands on disk with a fixture
-denylist, including the must-block controls (denylist missing, denylist empty, scanner script absent).
+denylist, including the must-block controls (denylist missing, denylist empty, scanner script absent, a
+scanner that never returns, a PATH without `timeout`/`node`) under a per-row time limit, so a hang
+scores as a failure instead of stalling the run.
 
 **Second machine.** The hook lives in committed settings, so a machine without the denylist file is
 **blocked from all gh publishing** in this repo (reads such as `gh pr view` still pass). Provision the
