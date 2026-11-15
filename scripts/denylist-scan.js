@@ -76,7 +76,7 @@ function loadTerms() {
     throw new Fatal("denylist file missing or unreadable (" + DENYLIST_NAME + "); provision it (one term per line) or " +
       "set DENYLIST_FILE - see scripts/README.md. Publishing through gh is blocked until then.");
   }
-  const terms = raw.replace(/^﻿/, "").replace(/\r/g, "").split("\n").map((t) => t.trim())
+  const terms = raw.replace(/^\uFEFF/, "").replace(/\r/g, "").split("\n").map((t) => t.trim())
     .filter((t) => t !== "" && t.charAt(0) !== "#").map((t) => t.toLowerCase());
   if (!terms.length) {
     throw new Fatal("denylist file holds no terms (" + DENYLIST_NAME + ") - refusing to pass an empty check.");
