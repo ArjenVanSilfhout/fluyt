@@ -35,10 +35,22 @@
  * cat/echo/printf/Get-Content/a string literal, `$(cat <<'EOF' ...)`, `$(cat file)` and a file
  * written by an earlier `> file` / Set-Content in the SAME command are resolved. A value the hook cannot
  * resolve statically (a shell variable, another command's output, an unreadable file) BLOCKS with advice to
- * pass the text through a file written in an earlier call. A command that never mentions `gh` is not parsed.
+ * pass the text through a file written in an earlier call. A command that never mentions `gh` (also in the
+ * spellings the shell unquotes: `g""h`) is not parsed. Also scanned: `--attach '<file>#<alt>'` (the alt text after
+ * `#`), `gh pr create -T/--template <file>` (a FILE: contents scanned; `gh issue create -T` is a template NAME from the
+ * repo's committed templates, not read) and `--recover <file>` (gh's JSON of a failed create: raw and decoded, a
+ * non-JSON file blocks).
  *
- * A verb of a covered group that the table does not know (a new gh verb or alias, or flags placed before the
- * verb) BLOCKS when the command carries one of that group's text flags; an unknown verb without one passes.
+ * ALLOW ONLY ON POSITIVE RECOGNITION. The gh word is located as the COMMAND word (past assignments, shell keywords and
+ * the WRAPPERS table, in a path, as gh.exe, quoted, behind `&&` `;` `|` `(` `{`, inside an interpreter's or runner's
+ * command text, and in text an interpreter reads from a heredoc or pipe) - or, loosely, as an argument of another
+ * command (`grep gh docs/` passes: the words after it must open a gh command at all). Whatever follows a command-word gh
+ * must be placed by the tables below (read from `gh --help`, gh 2.103.3): a covered verb is scanned, a known no-text
+ * command or verb passes, and everything else BLOCKS: an unknown command or verb (extension, user alias, new gh
+ * command), a verb that publishes text this scan does not read (gist, discussion, project item, workflow inputs,
+ * variable, agent-task, autolink ...), an unknown long flag on a covered verb, an unknown flag before the verb. Flags
+ * before the verb count: cobra pairs a flag it does not know yet (`--x` without `=`, or two characters) with the NEXT
+ * word, so `gh -R o/r issue create` and `gh --body x issue comment 1` are real commands and are judged with the verb.
  *
  * FAILS CLOSED: a missing, unreadable or empty denylist, bad hook JSON, an unparseable gh command, an
  * unsupported tool, a parser step that consumes nothing, or any crash blocks. The saved command in .claude/settings.json tests that the script
@@ -49,12 +61,15 @@
  * settings file is the one loaded; the hook writes no file, so a wrong root cannot misplace output - it
  * can only make the script unreachable, which blocks.
  *
- * Gaps (known): scripts a command merely runs (`bash x.sh`, `node x.js`) are not entered; `gh gist
- * create`, `gh project`, label/milestone/branch NAMES, release asset files and the files `gh issue artifact
- * create|edit` take as positional arguments are not scanned; a body assembled by a variable or function in an
- * earlier call is only visible to the audit; a body FILE is read at hook time and gh reads it again at run time, so
- * a file changed in between is not seen; user-defined aliases (`gh alias set`, kept in gh's config) and gh
- * extensions are invisible to the hook - an alias that injects text is only visible to the audit.
+ * Gaps (known): scripts a command merely runs (`bash x.sh`, `node x.js`) are not entered; label/milestone/branch/
+ * template NAMES, the bytes of an --attach file, release assets and `issue artifact` files are not scanned; text that
+ * comes from commits or tags the push already published (--fill, --fill-first, --fill-verbose, --generate-notes,
+ * --notes-from-tag: the pre-push hook covers it) or from an interactive editor or browser the hook cannot see (-e,
+ * -w) is not scanned and does not block; a body assembled by a variable or function in an earlier call is only
+ * visible to the audit; a body FILE is read at hook time and gh reads it again at run time, so a file changed in
+ * between is not seen; user-defined aliases and extensions BLOCK (an unknown command or verb), they are never looked
+ * through; a gh word built by a glob or an indirection (`g?`, `${x}h`) is not recognised; a gh behind a wrapper this
+ * file does not list, followed by a flag gh would not accept before a command, is read as not-gh.
  */
 
 const fs = require("fs");
@@ -238,6 +253,7 @@ class Parser {
         const text = s.slice(from, from + tm.index);
         this.i = from + tm.index + tm[0].length;
         put(text);
+        if (dq && text.indexOf('$(') >= 0) w.hereText = text;
         if (dq && /\$[A-Za-z_{(]/.test(text)) w.parts.push({ k: "dyn", inq: true });
         w.q = true;
         return w;
@@ -535,10 +551,15 @@ const BODY = [{ l: "body", s: "b", k: T }, { l: "body-file", s: "F", k: F }];
 const TITLE = { l: "title", s: "t", k: T };
 const COMMENT = { l: "comment", s: "c", k: T };
 const DESC = { l: "description", s: "d", k: T };
+// --attach '<file>#<alt text>': only the alt text is published text (the file's bytes are out of scope).
+// --recover <file>: gh's saved input of a failed create (JSON). pr create -T/--template is a FILE (starting body
+// text); issue create -T/--template is a template NAME looked up in the repo's committed templates (not scanned).
+const ATTACH = { l: "attach", s: null, k: "attach" };
+const RECOVER = { l: "recover", s: null, k: "recover" };
 const SPECS = {
-  "issue create": BODY.concat([TITLE]), "issue edit": BODY.concat([TITLE]),
-  "pr create": BODY.concat([TITLE]), "pr edit": BODY.concat([TITLE]),
-  "issue comment": BODY, "pr comment": BODY, "pr review": BODY,
+  "issue create": BODY.concat([TITLE, ATTACH, RECOVER]), "issue edit": BODY.concat([TITLE, ATTACH]),
+  "pr create": BODY.concat([TITLE, ATTACH, RECOVER, { l: "template", s: "T", k: F }]), "pr edit": BODY.concat([TITLE, ATTACH]),
+  "issue comment": BODY.concat([ATTACH]), "pr comment": BODY.concat([ATTACH]), "pr review": BODY,
   "pr merge": BODY.concat([{ l: "subject", s: "t", k: T }]), "pr revert": BODY.concat([TITLE]),
   "release create": [{ l: "notes", s: "n", k: T }, { l: "notes-file", s: "F", k: F }, TITLE],
   "release edit": [{ l: "notes", s: "n", k: T }, { l: "notes-file", s: "F", k: F }, TITLE],
@@ -548,27 +569,61 @@ const SPECS = {
 };
 const API = [{ l: "raw-field", s: "f", k: "raw" }, { l: "field", s: "F", k: "typed" }, { l: "input", s: null, k: "input" }];
 const GROUPS = ["issue", "pr", "release", "label", "repo", "api"];
-// Verb aliases, read from the ALIASES section of each `gh <group> <verb> --help` (gh 2.103.3). A user's own
-// `gh alias set` aliases live in gh's config and are NOT visible here (see Gaps).
+const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+// ALLOW only on POSITIVE recognition: everything below is read from `gh --help` and `gh <group> [<verb>] --help`
+// (gh 2.103.3), and anything after a gh command word that these tables do not place BLOCKS.
+// Verb aliases (the ALIASES section of each verb's help). A user's own `gh alias set` aliases live in gh's config:
+// they are not in any table here, so they are an unknown command or verb and block.
 const ALIASES = { "issue new": "issue create", "pr new": "pr create", "release new": "release create", "repo new": "repo create" };
-// Verbs of a covered group audited as publishing no free text through a flag (same help output; includes the
-// read-only aliases ls and co). A verb in neither SPECS, ALIASES nor this table that carries one of the group's
-// text flags BLOCKS: the class "a verb or alias the table does not know" fails closed, not open.
+// Verbs of a covered group that publish no free text through a flag (includes the read-only aliases ls and co).
 const SAFE_VERBS = {
   issue: ["list", "ls", "status", "view", "delete", "develop", "lock", "pin", "transfer", "unlock", "unpin"],
   pr: ["list", "ls", "status", "view", "checkout", "co", "checks", "diff", "lock", "ready", "unlock", "update-branch"],
   release: ["list", "ls", "view", "delete", "delete-asset", "download", "upload", "verify", "verify-asset"],
   label: ["list", "ls", "clone", "delete"],
-  repo: ["list", "ls", "view", "archive", "autolink", "clone", "delete", "deploy-key", "fork", "gitignore", "license",
-    "read-dir", "read-file", "rename", "set-default", "sync", "unarchive"],
+  repo: ["list", "ls", "view", "archive", "clone", "delete", "fork", "read-dir", "read-file", "rename", "set-default", "sync",
+    "unarchive"],
 };
-// The text flags of each group, derived from SPECS so the two cannot drift.
-const GROUP_TEXT = {};
-for (const key of Object.keys(SPECS)) {
-  const g = key.split(" ")[0];
-  GROUP_TEXT[g] = GROUP_TEXT[g] || [];
-  for (const f of SPECS[key]) if (GROUP_TEXT[g].indexOf(f) < 0) GROUP_TEXT[g].push(f);
-}
+// Sub-groups one level down: only the listed sub-verbs publish nothing; create/edit/add publish text or files unread.
+const SUBGROUPS = {
+  "issue artifact": ["delete", "download", "list", "view"],
+  "repo autolink": ["delete", "list", "view"], "repo deploy-key": ["delete", "list"],
+  "repo gitignore": ["list", "view"], "repo license": ["list", "view"],
+};
+// Top-level commands outside the covered groups. ANY = no verb publishes text to others; an array = the verbs that
+// publish none, every other verb of it blocks (it publishes text this scan does not read: a gist, a discussion, a
+// project item, an agent-task prompt, workflow inputs, a repository variable, a skill, an alias or extension that runs
+// commands). A word in no table (an extension, a user alias, a command new to gh) blocks.
+const ANY = true;
+const OTHER_TOP = {
+  "agent-task": ["list", "view"], alias: ["delete", "list"], attestation: ANY, auth: ANY, browse: ANY, cache: ANY,
+  codespace: ANY, completion: ANY, config: ANY, discussion: ["list", "view"], extension: ["browse", "create", "install", "list", "remove", "search", "upgrade"],
+  gist: ["clone", "delete", "list", "view"], "gpg-key": ANY, help: ANY, licenses: ANY, org: ANY, preview: ANY,
+  project: ["close", "delete", "field-delete", "field-list", "item-add", "item-archive", "item-delete", "item-list", "link", "list",
+    "mark-template", "unlink", "view"],
+  ruleset: ANY, run: ANY, search: ANY, secret: ANY, skill: ["install", "list", "preview", "search", "update"], "ssh-key": ANY,
+  status: ANY, variable: ["delete", "get", "list"], workflow: ["disable", "enable", "list", "view"], co: ANY,
+};
+// Long flags of each covered command (the FLAGS section of its help). A long flag in neither this table nor SPECS BLOCKS:
+// a text flag added by a newer gh must not pass unscanned. `help` and `repo` are accepted everywhere.
+const LONGS = {
+  "issue create": "assignee attach blocked-by blocking body body-file editor label milestone parent project recover template title type web",
+  "pr create": "assignee attach base body body-file draft dry-run editor fill fill-first fill-verbose head label milestone no-maintainer-edit project recover reviewer template title web",
+  "issue comment": "attach body body-file create-if-none delete-last edit-last editor web yes",
+  "issue edit": "add-assignee add-blocked-by add-blocking add-label add-project add-sub-issue attach body body-file milestone parent remove-assignee remove-blocked-by remove-blocking remove-label remove-milestone remove-parent remove-project remove-sub-issue remove-type title type",
+  "pr edit": "add-assignee add-label add-project add-reviewer attach base body body-file milestone remove-assignee remove-label remove-milestone remove-project remove-reviewer title",
+  "pr comment": "attach body body-file create-if-none delete-last edit-last editor web yes",
+  "pr review": "approve body body-file comment request-changes",
+  "pr merge": "admin author-email auto body body-file delete-branch disable-auto match-head-commit merge rebase squash subject",
+  "pr revert": "body body-file draft title",
+  "release create": "discussion-category draft fail-on-no-commits generate-notes latest notes notes-file notes-from-tag notes-start-tag prerelease target title verify-tag",
+  "release edit": "discussion-category draft latest notes notes-file prerelease tag target title verify-tag",
+  "issue close": "comment duplicate-of reason", "issue reopen": "comment", "pr close": "comment delete-branch", "pr reopen": "comment",
+  "label create": "color description force", "label edit": "color description name",
+  "repo create": "add-readme clone description disable-issues disable-wiki gitignore homepage include-all-branches internal license private public push remote source team template",
+  "repo edit": "accept-visibility-change-consequences add-topic allow-forking allow-update-branch default-branch delete-branch-on-merge description enable-advanced-security enable-auto-merge enable-discussions enable-issues enable-merge-commit enable-projects enable-rebase-merge enable-secret-scanning enable-secret-scanning-push-protection enable-squash-merge enable-wiki homepage remove-topic squash-merge-commit-message template visibility",
+  api: "allow-escape-sequences cache field header hostname include input jq method paginate preview raw-field silent slurp template verbose",
+};
 // Short flags per covered command, read from `gh <group> <verb> --help` (gh 2.103.3). b = boolean letters, v = value-taking
 // letters that publish no scanned text (a repo, a label, a base branch ...); the TEXT letters come from SPECS. gh parses
 // pflag-style: in `-xyz` every letter is a flag, booleans chain, and the FIRST value-taking letter takes the rest of the
@@ -577,7 +632,7 @@ for (const key of Object.keys(SPECS)) {
 const SHORTS = {
   "issue create": { b: "ew", v: "almpTR" }, "issue edit": { b: "", v: "mR" },
   "issue comment": { b: "ew", v: "R" }, "issue close": { b: "", v: "rR" }, "issue reopen": { b: "", v: "R" },
-  "pr create": { b: "defw", v: "aBHlmprTR" }, "pr edit": { b: "", v: "BmR" },
+  "pr create": { b: "defw", v: "aBHlmprR" }, "pr edit": { b: "", v: "BmR" },
   "pr comment": { b: "ew", v: "R" }, "pr review": { b: "acr", v: "R" }, "pr merge": { b: "dmrs", v: "AR" },
   "pr revert": { b: "d", v: "R" }, "pr close": { b: "d", v: "R" }, "pr reopen": { b: "", v: "R" },
   "release create": { b: "dp", v: "R" }, "release edit": { b: "", v: "R" },
@@ -589,9 +644,25 @@ for (const key of Object.keys(SPECS).concat(["api"])) {
   const sh = SHORTS[key];
   const text = (key === "api" ? API : SPECS[key]).map((f) => f.s).filter((x) => x);
   if (!sh || text.some((x) => (sh.b + sh.v).indexOf(x) >= 0)) throw new Error("short-flag table out of step with SPECS: " + key);
+  const longs = own(LONGS, key) ? LONGS[key].split(" ") : null;
+  if (!longs || (key === "api" ? API : SPECS[key]).some((f) => longs.indexOf(f.l) < 0)) throw new Error("long-flag table out of step with SPECS: " + key);
 }
 const INTERPRETERS = ["bash", "sh", "zsh", "dash", "ksh", "fish", "pwsh", "powershell", "cmd", "eval"];
+// Commands that run a command string or a command word they are given (a gh word anywhere after them is judged as gh, not loosely).
+const RUNNERS = INTERPRETERS.concat(["iex", "invoke-expression", "invoke-command", "icm", "start-process", "saps", "start", "ssh", "su",
+  "runuser", "wsl", "find", "parallel", "script", "watch", "sg"]);
+const PS_RUNNERS = ["pwsh", "powershell", "iex", "invoke-expression", "invoke-command", "icm", "start-process", "saps", "start"];
+// Words a command can sit behind: shell keywords, and prefix commands that run the NEXT command (name: the short options
+// that take a separate value). Options of a wrapper that this table does not list make the scan look at a different word:
+// a gh behind them is then judged by the looser rule (see analyzeSegs).
+const KEYWORDS = ["if", "then", "else", "elif", "do", "while", "until", "!", "{"];
+const WRAPPERS = { env: "uCS", sudo: "ughprtCDUT", doas: "uC", xargs: "IJnLPsdEa", timeout: "sk", nice: "n", nohup: "", command: "",
+  builtin: "", exec: "a", setsid: "", stdbuf: "ioe", ionice: "cnp", unbuffer: "", time: "" };
 const GH_RE = /(?:^|[^A-Za-z0-9_-])gh(?:\.exe)?(?![A-Za-z0-9_-])/i;
+// A command that mentions gh, also in the spellings the shell would unquote (`g""h`, `g\h`, ps `g``h`): the gate that decides
+// whether a command is parsed at all.
+const UNQUOTE = new Set(['"', "'", "`", "^", String.fromCharCode(92)].concat(SQ_PS.split(""), DQ_PS.split("")));
+const mentionsGh = (s) => GH_RE.test(s) || GH_RE.test(Array.from(s).filter((c) => !UNQUOTE.has(c)).join(""));
 const FILE_ADVICE = "pass the text through a file written in an earlier call (--body-file <file> / -F <file>)";
 
 // Parse the flags of one gh invocation; push scans/problems onto ctx.
@@ -631,6 +702,9 @@ function ghFlags(seg, args, spec, sh, name, ctx) {
       const nm = eq < 0 ? t.slice(2) : t.slice(2, eq);
       flag = spec.find((f) => f.l === nm) || null;
       if (flag) val = eq >= 0 ? sliceWord(w, eq + 1) : args[++a] || null;
+      else if (nm !== "help" && nm !== "repo" && LONGS[name.slice(3)].split(" ").indexOf(nm) < 0) {
+        ctx.problems.push(name + ": a long flag this scan does not know (it could be a text flag of a newer gh); re-read the gh help into the tables, or " + FILE_ADVICE);
+      }
     } else if (/^-[A-Za-z]/.test(lead)) {
       const c = walkShorts(w, lead, spec, sh);
       if (c.problem) { ctx.problems.push(name + ": " + c.problem); prevFlag = false; continue; }
@@ -674,6 +748,27 @@ function scanValue(seg, flag, text, label, ctx) {
     ctx.scans.push({ label: label, text: eq >= 0 ? text.slice(eq + 1) : text });
   } else if (flag.k === F || flag.k === "input") {
     fromFile(text);
+  } else if (flag.k === "attach") {
+    const h = text.indexOf("#");
+    if (h >= 0) ctx.scans.push({ label: label + " (alt text)", text: text.slice(h + 1) });
+  } else if (flag.k === "recover") {
+    // gh's saved input of a failed create is JSON: scan the raw file AND its decoded strings (an escape such as a
+    // backslash-u sequence splits a term in the raw text); a file that is not JSON cannot be read reliably, so it blocks.
+    const raw = readPath(text, ctx);
+    let doc = null;
+    try { doc = raw === null ? null : JSON.parse(raw); } catch (e) { doc = null; }
+    if (raw === null || doc === null) {
+      ctx.problems.push(label + ": the recover file is unreadable or not JSON, so its format cannot be read reliably; " + FILE_ADVICE);
+      return;
+    }
+    const strs = [];
+    const walk = (x) => {
+      if (typeof x === "string") strs.push(x);
+      else if (x && typeof x === "object") Object.keys(x).forEach((k) => { strs.push(k); walk(x[k]); });
+    };
+    walk(doc);
+    ctx.scans.push({ label: label + " (file contents)", text: raw });
+    ctx.scans.push({ label: label + " (decoded)", text: strs.join(String.fromCharCode(10)) });
   } else {
     const eq = text.indexOf("=");
     const v = eq >= 0 ? text.slice(eq + 1) : text;
@@ -681,87 +776,205 @@ function scanValue(seg, flag, text, label, ctx) {
   }
 }
 
-function ghInvocation(seg, gi, ctx) {
-  const ws = seg.words;
-  let k = gi + 1;
-  while (k < ws.length && !isDyn(ws[k]) && lit(ws[k]).charAt(0) === "-") k++;
-  if (k >= ws.length) return;
-  if (isDyn(ws[k])) { ctx.problems.push("gh: the subcommand is not statically known"); return; }
-  const g = lit(ws[k]).toLowerCase();
-  if (GROUPS.indexOf(g) < 0) return;
+// A flag word before the verb is acceptable when it is gh's own (--help, --version), the repository selector (its value is
+// not published text), or a TEXT flag of the verb being judged (it is then scanned with the verb's flags).
+function leadOk(t, spec) {
+  if (t === "--help" || t === "--version" || t === "-R" || t === "--repo" || t.indexOf("--repo=") === 0) return true;
+  if (t.indexOf("-R") === 0 && t.length > 2) return true;
+  if (!spec) return false;
+  if (t.indexOf("--") === 0) {
+    const eq = t.indexOf("=");
+    const nm = eq < 0 ? t.slice(2) : t.slice(2, eq);
+    return spec.some((f) => f.l === nm);
+  }
+  return t.length === 2 && spec.some((f) => f.s === t.charAt(1));
+}
+
+// True when a word can open a gh command: a group or top-level command word, or a flag gh accepts in front of one.
+const ghLead = (t) => GROUPS.indexOf(t.toLowerCase()) >= 0 || own(OTHER_TOP, t.toLowerCase()) || leadOk(t, null);
+
+// Judge one gh invocation; `gi` indexes the gh word. ALLOW only on positive recognition (see the tables): a known
+// no-text verb or command returns silently, a covered verb has its text scanned, everything else pushes a problem.
+// `loose` = gh was found as an ARGUMENT of some other command (`grep gh file`): the words after it must then open a
+// gh command at all, or it is not gh.
+// Flags before the verb: cobra (gh's parser) pairs a flag it does not know at that point (`--x` without `=`, or exactly
+// two characters) with the NEXT word, so `gh -R o/r issue create` and `gh --body x issue create` both work and the flag
+// words are collected here and judged together with the flags after the verb.
+function ghInvocation(seg, gi, ctx, loose) {
+  const rest = seg.words.slice(gi + 1);
+  if (loose && !(rest.length && !isDyn(rest[0]) && ghLead(lit(rest[0])))) return;
+  const flagArgs = [];
+  const leads = [];
+  let i = 0;
+  let halted = false;
+  const stop = (m) => { ctx.problems.push(m); halted = true; return null; };
+  const next = () => {
+    while (i < rest.length && !halted) {
+      const w = rest[i++];
+      const t = lit(w);
+      if (isDyn(w)) {
+        if (t.charAt(0) === "-") return stop("gh: a flag before the command is built from an expansion and cannot be checked; " + FILE_ADVICE);
+        return { t: null };
+      }
+      if (t.charAt(0) !== "-" || t === "-") return { t: t };
+      if (t === "--") return stop("gh: a bare -- before the command cannot be checked");
+      leads.push(t);
+      flagArgs.push(w);
+      const swallows = t !== "--help" && t !== "--version" && t.indexOf("=") < 0 && (t.indexOf("--") === 0 || t.length === 2);
+      if (swallows && i < rest.length) flagArgs.push(rest[i++]);
+    }
+    return null;
+  };
+  const vet = (spec) => {
+    if (leads.every((t) => leadOk(t, spec))) return true;
+    ctx.problems.push("gh: a flag before the verb that this scan does not know (it could be a text flag); put flags after the verb, or " + FILE_ADVICE);
+    return false;
+  };
+  const first = next();
+  if (halted) return;
+  if (!first) { vet(null); return; }
+  if (first.t === null) { ctx.problems.push("gh: the subcommand is not statically known"); return; }
+  const g = first.t.toLowerCase();
   if (g === "api") {
-    ghFlags(seg, ws.slice(k + 1), API, SHORTS.api, "gh api", ctx);
+    if (vet(API)) ghFlags(seg, flagArgs.concat(rest.slice(i)), API, SHORTS.api, "gh api", ctx);
     return;
   }
-  if (k + 1 >= ws.length) return;
-  if (isDyn(ws[k + 1])) { ctx.problems.push("gh " + g + ": the verb is not statically known"); return; }
-  const raw = lit(ws[k + 1]).toLowerCase();
-  const v = ALIASES[g + " " + raw] ? ALIASES[g + " " + raw].split(" ")[1] : raw;
-  const spec = SPECS[g + " " + v];
-  if (!spec) {
-    if (SAFE_VERBS[g].indexOf(v) >= 0) return;
-    // A verb the table does not know (also a flag where the verb belongs): pass only without a text flag.
-    const rest = ws.slice(k + 1);
-    if (carriesTextFlag(rest, GROUP_TEXT[g])) {
-      ctx.problems.push("gh " + g + ": a verb this scan does not know carries a text flag (a new gh verb or alias, or flags placed " +
-        "before the verb); put the verb first and use a covered one (see scripts/README.md), or " + FILE_ADVICE);
+  if (own(SAFE_VERBS, g)) {
+    const vb = next();
+    if (halted) return;
+    if (!vb) { vet(null); return; }
+    if (vb.t === null) { ctx.problems.push("gh " + g + ": the verb is not statically known"); return; }
+    const raw = vb.t.toLowerCase();
+    const v = own(ALIASES, g + " " + raw) ? ALIASES[g + " " + raw].split(" ")[1] : raw;
+    const spec = own(SPECS, g + " " + v) ? SPECS[g + " " + v] : null;
+    if (spec) {
+      if (!vet(spec)) return;
+      ctx.pub.v = true;
+      ghFlags(seg, flagArgs.concat(rest.slice(i)), spec, SHORTS[g + " " + v], "gh " + g + " " + v, ctx);
+      return;
     }
+    if (SAFE_VERBS[g].indexOf(v) >= 0) { vet(null); return; }
+    if (own(SUBGROUPS, g + " " + v)) {
+      const sv = next();
+      if (halted) return;
+      if (!sv) { vet(null); return; }
+      if (sv.t !== null && SUBGROUPS[g + " " + v].indexOf(sv.t.toLowerCase()) >= 0) { vet(null); return; }
+      ctx.problems.push("gh " + g + " " + v + ": a verb this scan does not know (it publishes text or files this scan does not read, or is new to gh)");
+      return;
+    }
+    ctx.problems.push("gh " + g + ": a verb this scan does not know (a new gh verb, a user alias, or flags placed oddly); use a covered verb (see scripts/README.md)");
     return;
   }
-  ctx.pub.v = true;
-  ghFlags(seg, ws.slice(k + 2), spec, SHORTS[g + " " + v], "gh " + g + " " + v, ctx);
+  if (own(OTHER_TOP, g)) {
+    const top = OTHER_TOP[g];
+    if (top === ANY) { vet(null); return; }
+    const vb = next();
+    if (halted) return;
+    if (!vb) { vet(null); return; }
+    if (vb.t !== null && top.indexOf(vb.t.toLowerCase()) >= 0) { vet(null); return; }
+    ctx.problems.push("gh " + g + ": a verb this scan does not know (it publishes text this scan does not read, or is new to gh)");
+    return;
+  }
+  ctx.problems.push("gh: a command this scan does not know (an extension, a user alias, or a command new to gh), so it cannot be checked");
 }
 
-// True when any word looks like one of `flags` (long, short, `--flag=v`, attached `-bv`, a short-flag cluster),
-// or is a flag whose name is built from an expansion. Over-approximates on purpose: a false hit only blocks.
-function carriesTextFlag(words, flags) {
-  for (const w of words) {
+// The index of the word that actually runs, past assignments, shell keywords and prefix commands (see WRAPPERS); -1 when
+// nothing runs (only assignments or keywords).
+function commandIndex(ws, d) {
+  let i = 0;
+  while (i < ws.length) {
+    const w = ws[i];
+    if (isDyn(w)) return i;
     const t = lit(w);
-    if (!isDyn(w) && t === "--") return false;
-    if (isDyn(w) && t.charAt(0) === "-") return true;
-    if (t.indexOf("--") === 0) {
-      const eq = t.indexOf("=");
-      const nm = eq < 0 ? t.slice(2) : t.slice(2, eq);
-      if (flags.some((f) => f.l === nm)) return true;
-    } else if (/^-[A-Za-z]/.test(t)) {
-      // no table for an unknown verb: any letter before the first non-letter could be a text flag (`-wb=x`, `-wbx y`)
-      if (/^-[A-Za-z]+/.exec(t)[0].slice(1).split("").some((ch) => flags.some((f) => f.s === ch))) return true;
+    if (d === "sh" && /^[A-Za-z_][A-Za-z0-9_]*[+]?=/.test(t)) { i++; continue; }
+    if (KEYWORDS.indexOf(t.toLowerCase()) >= 0) { i++; continue; }
+    const name = baseName(t);
+    if (!own(WRAPPERS, name)) return i;
+    const valued = WRAPPERS[name];
+    let dur = false;
+    i++;
+    while (i < ws.length && !isDyn(ws[i])) {
+      const u = lit(ws[i]);
+      if (u === "--") { i++; break; }
+      if (/^-./.test(u)) { i += u.length === 2 && valued.indexOf(u.charAt(1)) >= 0 ? 2 : 1; continue; }
+      if (name === "env" && /^[A-Za-z_][A-Za-z0-9_]*=/.test(u)) { i++; continue; }
+      if (name === "timeout" && !dur && /^[0-9.]+[smhd]?$/.test(u)) { i++; dur = true; continue; }
+      break;
     }
   }
-  return false;
+  return -1;
 }
 
+// Judge the commands one command string runs. Every segment ends in exactly one of: a gh invocation judged by
+// ghInvocation, an interpreter or runner whose command text is re-parsed, or a recognised non-gh command; an
+// interpreter or runner that hides its command text (a variable, -EncodedCommand, a stdin the hook cannot read)
+// pushes a problem.
 function analyzeSegs(segs, ctx, depth) {
   collectWrites(segs, ctx);
   for (const seg of segs) {
     const ws = seg.words;
-    const gi = ws.findIndex((w) => !isDyn(w) && baseName(lit(w)) === "gh");
-    if (gi >= 0) { ghInvocation(seg, gi, ctx); continue; }
-    if (!ws.length) continue;
-    if (isDyn(ws[0]) && ws.length > 1 && !isDyn(ws[1]) && GROUPS.indexOf(lit(ws[1]).toLowerCase()) >= 0 && GH_RE.test(ctx.src)) {
-      ctx.problems.push("a command name built from an expansion runs a gh-like subcommand; call gh by name");
+    if (seg.stdin && seg.stdin.kind === "text" && seg.stdin.dyn && /[$][(]|`/.test(seg.stdin.text) && mentionsGh(seg.stdin.text)) {
+      ctx.problems.push("a heredoc that expands commands and mentions gh cannot be checked; quote its delimiter or call gh directly");
+    }
+    if (ws.some((w) => w.hereText && mentionsGh(w.hereText))) {
+      ctx.problems.push("a here-string that expands commands and mentions gh cannot be checked; use a single-quoted here-string or call gh directly");
+    }
+    const ci = commandIndex(ws, ctx.d);
+    if (ci < 0) continue;
+    const w0 = ws[ci];
+    const cmd = baseName(lit(w0));
+    if (cmd === "gh") { ghInvocation(seg, ci, ctx, false); continue; }
+    const runner = !isDyn(w0) && RUNNERS.indexOf(cmd) >= 0;
+    if (!runner) {
+      // An ordinary or unknown command: a gh word among its arguments is judged loosely (see ghInvocation).
+      const j = ws.findIndex((w, x) => x > ci && !isDyn(w) && baseName(lit(w)) === "gh");
+      if (j >= 0) { ghInvocation(seg, j, ctx, true); continue; }
+      if (isDyn(w0) && mentionsGh(ctx.src) &&
+          ws.slice(ci + 1).some((w) => !isDyn(w) && (GROUPS.indexOf(lit(w).toLowerCase()) >= 0 || leadOk(lit(w), null)))) {
+        ctx.problems.push("a command name built from an expansion runs a gh-like subcommand; call gh by name");
+      }
       continue;
     }
-    const cmd = isDyn(ws[0]) ? "" : baseName(lit(ws[0]));
-    if (INTERPRETERS.indexOf(cmd) < 0) continue;
-    const sub = cmd === "pwsh" || cmd === "powershell" ? "ps" : "sh";
-    for (let wi = 1; wi < ws.length; wi++) {
-      const w = ws[wi];
+    const sub = PS_RUNNERS.indexOf(cmd) >= 0 ? "ps" : "sh";
+    const reads = ["eval", "iex", "invoke-expression"].indexOf(cmd) >= 0;
+    const args = ws.slice(ci + 1);
+    let gh = false;
+    for (let wi = 0; wi < args.length; wi++) {
+      const w = args[wi];
       const t = lit(w);
       if (!isDyn(w) && /^-(e|ec|encodedcommand)$/i.test(t) && sub === "ps") {
         ctx.problems.push(cmd + " -EncodedCommand hides the command from the hook; call gh directly");
       }
       if (isDyn(w)) {
-        if (/^-(c|command)$/i.test(lit(ws[wi - 1])) || cmd === "eval") {
+        const prev = wi > 0 ? lit(args[wi - 1]) : "";
+        if (reads || (sub === "ps" ? /^-c(om(m(a(nd?)?)?)?)?$/i.test(prev) : /^-[A-Za-z]*c$/.test(prev) || /^[/][ck]$/i.test(prev))) {
           ctx.problems.push(cmd + ": the command string is not statically known; call gh directly");
         }
         continue;
       }
-      if (!GH_RE.test(t)) continue;
+      if (baseName(t) === "gh") {
+        // `cmd /c gh issue ...`, `pwsh -Command gh ...`, `ssh host gh ...`, `Start-Process gh ...`: the gh word is the command.
+        if (!gh) { gh = true; ghInvocation(seg, ci + 1 + wi, ctx, false); }
+        continue;
+      }
+      if (!mentionsGh(t)) continue;
       if (depth >= 3) { ctx.problems.push("interpreter nesting too deep to check"); continue; }
       const inner = [];
       new Parser(t, sub, inner).parseList(null);
       analyzeSegs(inner, Object.assign({}, ctx, { d: sub }), depth + 1);
+    }
+    // An interpreter fed its commands on stdin (a heredoc, a here-string, a pipe, `< file`) and given no script or string.
+    if (INTERPRETERS.indexOf(cmd) >= 0 && cmd !== "eval" && (seg.stdin || seg.pipedFrom) &&
+        args.every((a) => isDyn(a) ? false : lit(a).charAt(0) === "-" || lit(a) === "/c" || lit(a) === "/k")) {
+      const text = stdinText(seg, ctx);
+      if (text === null) {
+        if (mentionsGh(ctx.src)) ctx.problems.push(cmd + " reads its commands from a source the hook cannot see; call gh directly");
+      } else if (mentionsGh(text)) {
+        if (depth >= 3) { ctx.problems.push("interpreter nesting too deep to check"); continue; }
+        const inner = [];
+        new Parser(text, sub, inner).parseList(null);
+        analyzeSegs(inner, Object.assign({}, ctx, { d: sub }), depth + 1);
+      }
     }
   }
 }
@@ -818,7 +1031,7 @@ function hookMode() {
       if (typeof cmd !== "string") return block(["hook input carries no tool_input.command"]);
       const dialect = j.tool_name === "PowerShell" ? "ps" : j.tool_name === "Bash" ? "sh" : null;
       if (!dialect) return block(["tool is not Bash or PowerShell"]);
-      if (!GH_RE.test(cmd)) return;
+      if (!mentionsGh(cmd)) return;
       let ctx;
       try {
         ctx = analyze(cmd, dialect, typeof j.cwd === "string" && j.cwd ? j.cwd : process.cwd());

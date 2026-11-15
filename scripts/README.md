@@ -56,14 +56,27 @@ callers, one implementation:
   above the inner 6 s so the inner bound always fires first. A value the hook cannot
   read statically (a shell variable, another command's output, a file rewritten in the same command)
   blocks with advice to write the text to a file in an earlier call and pass `--body-file <file>`.
-  The `new` aliases (`gh issue|pr|release|repo new`) are scanned as their `create` verbs, and a verb of
-  a covered group that the scanner does not know (a new gh verb, or flags placed before the verb)
-  **blocks** when the command carries one of that group's text flags (`--body`, `-b`, `--title`, ...);
-  an unknown verb without one passes. The verb tables are read from `gh <group> <verb> --help`
-  (gh 2.103.3): re-check them after a gh upgrade. Short flags follow gh's pflag parsing (`-wb text`,
-  `-dt=x`, `-wbtext`): booleans chain and the first value-taking letter takes the rest of the token or
-  the next argument, so a text flag later in a cluster is scanned, a non-text one (`-l`, `-R`) is not,
-  and a letter the per-command short-flag table does not know **blocks**.
+  The `new` aliases (`gh issue|pr|release|repo new`) are scanned as their `create` verbs.
+  **It allows only on positive recognition.** Whatever follows a gh command word must be placed by a
+  table read from `gh --help` and `gh <group> <verb> --help` (gh 2.103.3: re-check them after a gh
+  upgrade): a covered verb has its text scanned; a known read-only or no-text command or verb (`gh run
+  list`, `gh auth status`, `gh search ...`, `gh pr view`) passes; **everything else blocks** - an
+  unknown command or verb (an extension, a user alias, a command new to gh), a verb that publishes
+  text the scan does not read (`gh gist create`, `gh workflow run`, `gh discussion create`, `gh project
+  item-create`, `gh variable set`, `gh agent-task create`, `gh repo autolink create`), an unknown long
+  flag on a covered verb, and an unknown flag before the verb. The gh word is found behind `env`,
+  `sudo`, `time`, `command`, `xargs`, `timeout`, shell keywords and `&&` `;` `|` `(` `{`, in a path or
+  as `gh.exe`, quoted or in capitals, inside `bash -c`, `cmd /c`, `ssh`, `iex`, `Start-Process`, and in
+  the text fed to an interpreter by a heredoc or a pipe; `command -v gh`, `grep gh docs/` and a path
+  ending in gh stay allowed. Flags BEFORE the verb count: gh accepts `gh -R o/r issue create` and even
+  `gh --body x issue comment 1`, so those words are judged with the verb's own flags. Short flags
+  follow gh's pflag parsing (`-wb text`, `-dt=x`, `-wbtext`): booleans chain and the first value-taking
+  letter takes the rest of the token or the next argument, so a text flag later in a cluster is
+  scanned, a non-text one (`-l`, `-R`) is not, and a letter the per-command table does not know
+  **blocks**. Also scanned: `--attach '<file>#<alt text>'` (the alt text after `#`),
+  `gh pr create -T/--template <file>` (a file: its contents) and `--recover <file>` (gh's JSON of a
+  failed create: raw and decoded; a file that is not JSON blocks). `gh issue create -T <name>` is a
+  template NAME from the repo's committed templates, not read.
   The block reason names only the command, the field and the line number: never the matched term, and
   never a filesystem path - the denylist is named as "DENYLIST_FILE, else the default under the XDG config
   dir", a `--file` input by its label.
@@ -79,13 +92,17 @@ callers, one implementation:
 
 **Known gaps.** The hook reads a body file at hook time and gh reads it again at run time, so a file
 changed in between is not seen (the audit mode is the backstop). User-defined aliases (`gh alias set`,
-stored in gh's own config; `gh alias list` shows them) and gh extensions are **invisible** to the hook:
-an alias outside the covered groups (`gh pub ...`) that expands to a publishing command passes
-unscanned, as does a shell alias (`!`), and only the audit sees what it published. An alias filed under
-a covered group (`gh issue mine`) is an unknown verb and blocks when it carries a text flag. `gh issue artifact create|edit` with a file
-named as a positional argument publishes that file's contents unscanned (a `--body` or `--body-file`
-on it blocks as an unknown verb). Branch, label and milestone names, release assets and gists are not
-scanned either.
+stored in gh's own config; `gh alias list` shows them) and gh extensions are not seen THROUGH, but
+they are no longer invisible: an alias or extension is an unknown command or verb and **blocks**, so
+none of them can run behind this hook. Not scanned, by design: the bytes of an `--attach`ed file and
+of a release asset or `issue artifact` file (only the alt text is read); text taken from commits or
+tags the push already published (`--fill`, `--fill-first`, `--fill-verbose`, `--generate-notes`,
+`--notes-from-tag`; the pre-push hook covers it); text typed in an interactive editor or browser the
+hook cannot see (`-e/--editor`, `-w/--web`); branch, label, milestone and template NAMES; a body that a
+shell variable or function assembled in an earlier call (only the audit sees it). Still passing
+unscanned: scripts a command merely runs (`bash x.sh`, `node x.js`), a gh word glued together by a
+glob or a variable (`g?`, `${x}h`), and a gh reached through a wrapper this scan does not list, when
+the next word is a flag gh itself would not accept in front of a command.
 
 `scripts/guard-matrix.js` scores both hook entries from the saved commands on disk with a fixture
 denylist, including the must-block controls (denylist missing, denylist empty, scanner script absent, a

