@@ -25,10 +25,14 @@ against the same private denylist the pre-push hook reads. Issues, PR descriptio
 release notes never pass through `git push`, so that hook could not see them. A new
 `scripts/denylist-scan.js` serves three callers: a blocking PreToolUse hook on both the Bash and the
 PowerShell tool, `scripts/publish-release.ps1` (title and notes file), and an `--audit` mode that
-re-scans what is already published. The hook scans field values and body-file contents, never the
-command line or a path, and it blocks when it cannot run or cannot read a value. No output names the
-matched term or a file path. A machine without the denylist file is blocked from gh publishing in
-this repo; `scripts/README.md` says how to provision it.
+re-scans what is already published. The hook does not interpret shell. A publishing `gh` command
+must be the only command in the call and written with plain literals; body and notes text must come
+from a file with a literal path, and short fields such as a title may be plain quoted text. Anything
+else blocks: inline bodies, heredocs, pipes, variables, a publishing command inside a chain. So do
+the gh commands whose text the scan cannot read (`gist create`, `workflow run`, `variable set`,
+discussion writes, extensions, user aliases). Read-only `gh` is unaffected. The hook blocks when it
+cannot run, and no output names the matched term or a file path. A machine without the denylist
+file is blocked from gh publishing in this repo; `scripts/README.md` says how to provision it.
 
 ## [1.22.0] — 2026-11-14
 

