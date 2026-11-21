@@ -4,6 +4,15 @@ Short entries, newest first. Format: date · decision · why · reversibility.
 
 ---
 
+**2026-11-21 · Per-plugin `claude plugin validate` also tolerates the "Provides" and "Hosts"
+output · reversible.**
+The user's call in the session chat, choosing to fix CI first as its own item (#92) over folding
+it into an unrelated PR. A CLI newer than 2.1.321 lists every shipped component under `Provides:`
+and adds two `Hosts not …` lines; none of it is a warning, but the 2026-10-11
+tolerate-only-known-output rule turned every push red. The skip follows the 2026-10-28 pattern:
+fail-closed, dropping only lines of the known shape. Pinning the CLI and adding the README install
+line stay rejected.
+
 **2026-10-28 · Per-plugin `claude plugin validate` also tolerates the "Plugin directory checks"
 block · reversible.**
 The user's call in the session chat, choosing "Tolerate the block" over adding a plugin icon or
