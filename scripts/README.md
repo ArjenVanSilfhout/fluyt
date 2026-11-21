@@ -83,9 +83,17 @@ callers, one implementation:
     `flock -c`, `python -c`, `node -e`, `eval`, `iex`, `pwsh -Command`, a pipe or heredoc into a
     shell), a script file run in a call that also holds a gh command as text, a variable, array,
     alias or git alias that holds a gh command, a command word built from an expansion, glob or brace
-    (`g$()h`, `g?`), `<( )` process substitution, `-EncodedCommand` (any prefix, `-`, `--` or `/` spelling), a gh behind
-    an argument-appending runner (`xargs`, `parallel`, `find -exec`, `fd`, `entr`), and parameter or arithmetic
-    expansions the lexer cannot follow also block.
+    (`g$()h`, `g?`), `<( )` process substitution, a gh behind an argument-appending runner
+    (`xargs`, `parallel`, `find -exec`, `fd`, `entr`), and parameter or arithmetic expansions the
+    lexer cannot follow also block.
+  - **Encoded PowerShell, checked first, before any `gh` test.** One text-level rule: a call whose
+    text names `pwsh`, `powershell` (or `.exe`) anywhere (inside quotes, `cmd /c`, `sh -c`, `wsl`,
+    `start`, `Start-Process -ArgumentList`) **and** carries a token that is an encoded flag blocks,
+    whatever follows the flag (a literal payload, `$E`, `$(cat f)`, `(Get-Content f)`). An encoded
+    flag is any prefix of `-EncodedCommand` from `-e` up, or `-ec`, in `-`, `--` or `/` spelling,
+    case-insensitive, quotes and a `:value` or `=value` suffix ignored. A call that does not name
+    PowerShell is never affected (`grep -e x`, `sed -e s/a/b/`, `node -e`). **Known over-block:** a
+    commit message or grep pattern that names `pwsh` and also holds an `-e` token blocks.
 
   **When blocked: write the text to a file in an earlier call** (the Write tool, or a command that
   only writes the file), then run the publishing `gh` command **alone**, with the file path as a
@@ -126,8 +134,17 @@ callers, one implementation:
   `HIT <kind> <id> <field> line N`, never the text. Exit 1 on a hit or any fetch error. Run it before
   a release.
 
+**Threat model.** The hook guards against an agent leaking a term **by mistake**: a call that
+names `gh` is held to the narrow forms above. Deliberate obfuscation is out of scope (the 2026-11-21
+decision on #88), so the disguises below are documented gaps, not defects; the one cheap exception
+is the encoded-PowerShell rule above.
+
 **Known gaps** (what still passes unscanned, or is not seen):
 
+- **Deliberate disguise:** text decoded and then run (`echo <base64> | base64 -d | bash`), a script
+  written by an earlier call and run later, pwsh fed from stdin (`pwsh -Command -`, `pwsh -File -`,
+  `Get-Content s.ps1 | Invoke-Expression`), and a payload taken from an expansion
+  (`$(cat f)`, a variable) when the call names no `gh` and no PowerShell encoded flag.
 - **Scripts that run `gh`** (`bash x.sh`, `node x.js`, a Makefile target): the hook sees the script
   call, not the commands inside it.
 - **Non-`gh` publishing:** `curl` to the API, a tag message pushed with `git push` (the pre-push
@@ -135,9 +152,9 @@ callers, one implementation:
   backstop.
 - **A `gh` word that is not spelled `gh`** and that no refusal above recognises: a function or alias
   from a shell profile, a wrapper command this scan does not list. Closed cheaply: `g$()h`,
-  `g${x}h`, `g?`, `{g,x}h`, a command word built from an expansion followed by a gh group and verb,
-  and `-EncodedCommand` in any prefix spelling. A hand-written lexer finds `gh` in compound commands, so a construct it
-  mis-lexes can hide one.
+  `g${x}h`, `g?`, `{g,x}h`, and a command word built from an expansion followed by a gh group and
+  verb. A hand-written lexer finds `gh` in compound commands, so a construct it mis-lexes can hide
+  one.
 - **Text the call does not carry:** `--fill`, `--fill-first`, `--fill-verbose`, `--generate-notes`,
   `--notes-from-tag` (commits and tags the push already published), and an editor or browser form
   (`-e`, `-w`).
@@ -146,7 +163,8 @@ callers, one implementation:
   another script). The audit mode reads the same stored text, so it shares the gap.
 - **Names and attachments:** branch, label, milestone, assignee and template names, `gh repo
   rename`, and the other names gh publishes (release tags, repo, fork and topic names, branch heads,
-  `gh issue develop --name`), the bytes of an `--attach`ed file, release assets and `issue artifact` files.
+  `gh issue develop --name`), the bytes of an `--attach`ed file, release assets and `issue artifact`
+  files.
 - **A body file changed after the hook read it** by *another* process before gh reads it (a race
   the single-command form removes only for the command itself).
 - **A relative path is resolved against the `cwd` the hook is given.** If the tool's shell has a

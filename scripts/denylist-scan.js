@@ -46,9 +46,12 @@
  *   interpreter, ssh, tmux, trap, read, source, find ...); a script file run in a call that also holds a gh command
  *   as text; a variable, array, alias or git alias that holds a gh command; a command word built from an expansion,
  *   glob or brace, or handed such a string; a gh followed by an expansion (a function forwarding "$@"); `<( )` and
- *   `>( )`; parameter and arithmetic expansions the lexer cannot follow; an encoded PowerShell command (it names no
- *   gh; any prefix of -EncodedCommand, in - -- or / spelling); a gh behind an argument-appending runner (xargs,
- *   parallel, find -exec, fd, entr: what follows gh is not what the scan sees). The gate in front of both tiers is mentionsGh (gh also spelled `g""h`, `g\<LF>h`) or ghGlued (an
+ *   `>( )`; parameter and arithmetic expansions the lexer cannot follow; a call that names pwsh/powershell and carries an
+ *   encoded-flag token (any prefix of -EncodedCommand, in - -- or / spelling; one text-level rule checked before the gate,
+ *   whatever follows the flag; the 2026-11-21 decision: the hook guards against accidents, deliberate disguise is a known
+ *   gap listed in scripts/README.md); a gh behind an argument-appending runner (xargs,
+ *   parallel, find -exec, fd, entr: what follows gh is not what the scan sees).
+ *   The gate in front of both tiers is mentionsGh (gh also spelled `g""h`, `g\<LF>h`) or ghGlued (an
  *   expansion, glob or brace token near a gh group and verb); a command through neither is not parsed. These rules
  *   were hardened against a differential fuzz: commands built from contexts x spellings of gh were run under real
  *   bash and PowerShell 7 with a stub gh, and every one in which the stub ran had to block.
@@ -697,8 +700,14 @@ const HOSTS = ["bash", "sh", "zsh", "dash", "ksh", "fish", "pwsh", "powershell",
 const STDIN_HOSTS = ["bash", "sh", "zsh", "dash", "ksh", "fish", "pwsh", "powershell", "cmd", "iex", "invoke-expression", "python", "python3", "py", "node", "perl", "ruby", "php", "lua", "source", "."];
 const STRING_HOSTS = ["eval", "iex", "invoke-expression", "invoke-command", "icm", "start-process", "saps", "ssh"];
 const STRING_FLAG = /^(?:-[A-Za-z]*[ceS]|-(?:c|e|ec|command|encodedcommand)|[/][ck])$/i;
-// PowerShell takes any prefix of -EncodedCommand (min -e) and the alias -ec, in -, -- or / spelling, case-insensitive, with an optional :value.
+// One text-level rule (the 2026-11-21 decision: accidents only): the call names pwsh/powershell anywhere (quoted,
+// nested in cmd /c, sh -c, wsl, start, Start-Process) AND carries an encoded-flag token anywhere (any prefix of
+// -EncodedCommand, min -e, plus -ec, in -, -- or / spelling, quotes and a :value or =value suffix ignored): blocked
+// whatever follows the flag.
+const PS_RE = /(?:^|[^A-Za-z0-9_-])(?:pwsh|powershell)(?:\.exe)?(?![A-Za-z0-9_-])/i;
 const isEncArg = (t) => { const m = /^(?:--?|[/])([A-Za-z]+)(?:[:=].*)?$/.exec(t); const n = m === null ? "" : m[1].toLowerCase(); return n === "ec" || (n !== "" && n.charAt(0) === "e" && "encodedcommand".indexOf(n) === 0); };
+const QUOTES_RE = /^[\\"'`\u2018-\u201f]+|[\\"'`\u2018-\u201f]+$/g;
+const encodedPs = (s) => PS_RE.test(s) && s.split(/[\s,;()]+/).some((t) => isEncArg(t.replace(QUOTES_RE, "")));
 // Runners that append arguments (stdin, -a file, {}) to the command they start: a gh behind one cannot be judged at all.
 const APPENDERS = ["xargs", "parallel", "find", "fd", "fdfind", "entr", "rush"];
 const KEYWORDS = ["if", "then", "else", "elif", "do", "while", "until", "!", "{"];
@@ -725,8 +734,6 @@ const mentionsGh = (s) => {
 const RISKY = /[$`*?[{(]/;
 const GH_VERBS = ["create", "new", "edit", "comment", "close", "reopen", "review", "merge", "revert"];
 function ghGlued(s) {
-  const et = s.split(/\s+/);
-  for (let i = 0; i < et.length; i++) if ((isEncArg(et[i]) && /^[A-Za-z0-9+/=]{16,}$/.test(et[i + 1] || "")) || (/[:=]/.test(et[i]) && isEncArg(et[i].replace(/[:=].*/, "")) && /^[A-Za-z0-9+/=]{16,}$/.test(et[i].replace(/^[^:=]*[:=]/, "")))) return true;
   const tk = s.toLowerCase().split(/\s+/);
   for (let i = 0; i < tk.length; i++) {
     if (!RISKY.test(tk[i])) continue;
@@ -1123,9 +1130,6 @@ function analyzeB(segs, ctx) {
       let gh = false;
       args.forEach((w, x) => {
         const prev = x > 0 && !isDyn(args[x - 1]) ? lit(args[x - 1]) : "";
-        if (!isDyn(w) && isEncArg(lit(w)) && /^(pwsh|powershell)$/.test(cmd)) {
-          ctx.problems.push(cmd + " -EncodedCommand hides the command from the hook; call gh directly");
-        }
         if (isDyn(w)) {
           if (STRING_HOSTS.indexOf(cmd) >= 0 || STRING_FLAG.test(prev)) ctx.problems.push(cmd + ": a command string built from an expansion cannot be checked; call gh directly");
         } else if (baseName(lit(w)) === "gh") {
@@ -1239,6 +1243,7 @@ function hookMode() {
       if (typeof cmd !== "string") return block(["hook input carries no tool_input.command"]);
       const dialect = j.tool_name === "PowerShell" ? "ps" : j.tool_name === "Bash" ? "sh" : null;
       if (!dialect) return block(["tool is not Bash or PowerShell"]);
+      if (encodedPs(cmd)) return block(["an encoded PowerShell command: -EncodedCommand hides the command from the hook; run the command in plain text"]);
       if (!mentionsGh(cmd) && !ghGlued(cmd)) return;
       let ctx;
       try {

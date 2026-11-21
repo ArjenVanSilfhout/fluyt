@@ -1628,6 +1628,47 @@ const ENC = Buffer.from("gh issue comment 1 --body " + TA, "utf16le").toString("
   });
 });
 gp("DENY", "powershell -enc:" + ENC, "BYPASS 16 - the attached -enc:<value> form", { msg: "-EncodedCommand hides the command" });
+// The 2026-11-21 rule: the call names pwsh/powershell and carries an encoded-flag token, whatever follows the flag or wraps it.
+const ENCM = { msg: "-EncodedCommand hides the command" };
+const LF = "\n";
+[
+  ["pwsh -e \"" + ENC + "\"", "a double-quoted payload"],
+  ["pwsh -e '" + ENC + "'", "a single-quoted payload"],
+  ["pwsh -e:\"" + ENC + "\"", "an attached quoted payload"],
+  ["pwsh -e=" + ENC, "an =value suffix"],
+  ["pwsh -e \\" + LF + ENC, "a line-continued payload"],
+  ["pwsh -e $E", "a variable payload"],
+  ["pwsh -EncodedCommand $E", "the full flag with a variable payload"],
+  ["pwsh -e $(cat enc.txt)", "a command-substitution payload"],
+  ["E=" + ENC + "; pwsh -e $E", "a variable set in the same call"],
+  ["cmd /c pwsh -e " + ENC, "nested in cmd /c"],
+  ["cmd.exe /c pwsh.exe -e " + ENC, "nested in cmd.exe /c"],
+  ["cmd /c \"pwsh -e " + ENC + "\"", "nested in a quoted cmd /c string"],
+  ["sh -c 'pwsh -e " + ENC + "'", "nested in sh -c"],
+  ["bash -c \"pwsh -e " + ENC + "\"", "nested in bash -c"],
+  ["wsl pwsh -e " + ENC, "behind wsl"],
+  ["start pwsh -e " + ENC, "behind start"]
+].forEach((r) => {
+  gb("DENY", r[0], "encoded-flag rule: " + r[1] + "; fails if only a bare unquoted payload next to a top-level pwsh is refused", ENCM);
+  gp("DENY", r[0], "encoded-flag rule (PowerShell entry): " + r[1], ENCM);
+});
+gp("DENY", "pwsh -e (Get-Content enc.txt)", "encoded-flag rule: a Get-Content payload", ENCM);
+gp("DENY", "Start-Process pwsh -ArgumentList '-e','" + ENC + "'", "encoded-flag rule: Start-Process with an argument array", ENCM);
+gp("DENY", "Start-Process pwsh -ArgumentList \"-e " + ENC + "\"", "encoded-flag rule: Start-Process with an argument string", ENCM);
+// Without a pwsh/powershell word the rule must not fire.
+[
+  "grep -e getUserAccountName src/x.js",
+  "grep -E getUserAccountNameXX src",
+  "rg -e SomeLongIdentifierName",
+  "git log -e abcdefghijklmnopqrstuvwx",
+  "sed -e s/abcdefghijklmnopqrstuvwxyz/b/ f",
+  "npm run x -- -e abcdefghijklmnopqrstuvwxyz",
+  "node -e \"console.log(1)\"",
+  "git commit -m \"fix the parser -e ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef\""
+].forEach((c) => {
+  gb("ALLOW", c, "encoded-flag rule: no pwsh/powershell word, so an -e token is an ordinary option; fails if the rule keys on the token or a base64-shaped word alone", { dl: "missing" });
+  gp("ALLOW", c, "encoded-flag rule (PowerShell entry): no pwsh/powershell word", { dl: "missing" });
+});
 gp("DENY", "Start-Process gh -ArgumentList 'issue create -b " + TA + "'", "Start-Process: the argument string is one word, which no table places as a command", { msg: "a command this scan does not know" });
 gp("DENY", "$u = gh issue create -t x -b '" + TA + "'", "an assignment from a gh call", MB);
 gp("DENY", "if (Test-Path x) { gh issue create -b '" + TA + "' }", "gh inside a script block", MB);
