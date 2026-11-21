@@ -184,6 +184,14 @@ jobs:
       # "Found N plugin directory warning(s):" header ends the span and prints the buffer, and an
       # unclosed span is printed at END - so a renamed or reshaped block still fails the build.
       # Seen only on the per-plugin call, so the marketplace step above does not carry it.
+      # PROVIDES + HOSTS (DECISIONS.md, 2026-11-21; #92): a CLI newer than 2.1.321 prints a
+      # "Provides:" section - one indented "<glyph> <kind>: <name>" line per shipped hook, skill
+      # and agent - then two un-indented lines, "Hosts not read for: <kind> (<n>), ..." and
+      # "Hosts not declared: list what these parts reach under "network.hosts" in plugin.json".
+      # None of it counts as a warning (the "Found N warning(s)" count is unchanged), so the awk
+      # drops the header plus ONLY indented lines of that "<glyph> <kind>: " shape (and blanks);
+      # any other line ends the span and is kept, so a reshaped section still fails closed. The two
+      # Hosts lines are dropped by exact shape below. Per-plugin call only, like the block above.
       - name: Validate each plugin (strict)
         if: ${{ !cancelled() && steps.changes.outputs.plugin_relevant != 'false' }}
         run: |
@@ -205,6 +213,10 @@ jobs:
                   note && /^[[:space:]]*$/ { next }
                   note && /^The directory also runs a safety scan and a policy review that this command does not\.[[:space:]]*$/ { note = 0; next }
                   { note = 0 }
+                  /^Provides:[[:space:]]*$/ { prov = 1; skip = 0; next }
+                  prov && /^[[:space:]]*$/ { next }
+                  prov && /^[[:space:]]+[^[:space:]]+ [A-Za-z]+: / { next }
+                  { prov = 0 }
                   /^[^[:space:]]+ Advice \(does not change the verdict\):[[:space:]]*$/ { skip = 1; next }
                   skip && /^[^[:space:]]/ { skip = 0 }
                   !skip { print }
@@ -215,6 +227,8 @@ jobs:
               | grep -Ev '^Validating plugin manifest: ' \
               | grep -Ev '^[^[:space:]]+ Found [0-9]+ warnings?:$' \
               | grep -Ev '^[^[:space:]]+ version: No version specified\. Consider adding a version following semver \(e\.g\., "1\.0\.0"\)$' \
+              | grep -Ev '^Hosts not read for: [A-Za-z]+ \([0-9]+\)(, [A-Za-z]+ \([0-9]+\))*$' \
+              | grep -Ev '^Hosts not declared: list what these parts reach under "network\.hosts" in plugin\.json$' \
               | grep -Ev '^[^[:space:]]+ Validation failed \(--strict treats warnings as errors\)$' \
               | grep -Ev '^$' \
               || true)
