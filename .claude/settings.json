@@ -51,6 +51,30 @@
             "statusMessage": "Blocking a piped grep/Select-String/sls read of the gate's verdict - check the exit code instead"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "s=\"${CLAUDE_PROJECT_DIR:-.}/scripts/denylist-scan.js\"; [ -f \"$s\" ] || { echo 'BLOCKED: scripts/denylist-scan.js is missing, so the gh publish scan cannot run' >&2; exit 2; }; timeout 6 node \"$s\" --hook || { rc=$?; [ \"$rc\" -eq 2 ] || echo \"BLOCKED: the gh publish scan did not complete (exit $rc): a hang, a crash or a missing timeout or node blocks the command\" >&2; exit 2; }",
+            "timeout": 20,
+            "statusMessage": "Scanning text published through gh against the private denylist (Bash)"
+          }
+        ]
+      },
+      {
+        "matcher": "PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "s=\"${CLAUDE_PROJECT_DIR:-.}/scripts/denylist-scan.js\"; [ -f \"$s\" ] || { echo 'BLOCKED: scripts/denylist-scan.js is missing, so the gh publish scan cannot run' >&2; exit 2; }; timeout 6 node \"$s\" --hook || { rc=$?; [ \"$rc\" -eq 2 ] || echo \"BLOCKED: the gh publish scan did not complete (exit $rc): a hang, a crash or a missing timeout or node blocks the command\" >&2; exit 2; }",
+            "timeout": 20,
+            "statusMessage": "Scanning text published through gh against the private denylist (PowerShell)"
+          }
+        ]
       }
     ],
     "SubagentStart": [
