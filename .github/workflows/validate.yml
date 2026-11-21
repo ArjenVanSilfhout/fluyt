@@ -213,7 +213,7 @@ jobs:
                   note && /^[[:space:]]*$/ { next }
                   note && /^The directory also runs a safety scan and a policy review that this command does not\.[[:space:]]*$/ { note = 0; next }
                   { note = 0 }
-                  /^Provides:[[:space:]]*$/ { prov = 1; next }
+                  /^Provides:[[:space:]]*$/ { prov = 1; skip = 0; next }
                   prov && /^[[:space:]]*$/ { next }
                   prov && /^[[:space:]]+[^[:space:]]+ [A-Za-z]+: / { next }
                   { prov = 0 }

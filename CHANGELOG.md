@@ -23,7 +23,7 @@ Current version: **1.22.1**
 **CI:** the per-plugin `claude plugin validate --strict` step tolerates two new verdict-neutral
 sections a newer CLI prints: the `Provides:` list of shipped hooks, skills and agents, and the two
 `Hosts not read for` / `Hosts not declared` lines. Every push was red without it. The skip is
-fail-closed like the plugin-directory block: only indented `<glyph> <kind>: ` lines are dropped,
+fail-closed like the plugin-directory block: only indented `<glyph> <kind>:` lines are dropped,
 and the Hosts lines only in their exact shape.
 
 ## [1.22.0] — 2026-11-14
