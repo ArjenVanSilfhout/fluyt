@@ -47,7 +47,8 @@
  *   as text; a variable, array, alias or git alias that holds a gh command; a command word built from an expansion,
  *   glob or brace, or handed such a string; a gh followed by an expansion (a function forwarding "$@"); `<( )` and
  *   `>( )`; parameter and arithmetic expansions the lexer cannot follow; an encoded PowerShell command (it names no
- *   gh). The gate in front of both tiers is mentionsGh (gh also spelled `g""h`, `g\<LF>h`) or ghGlued (an
+ *   gh; any prefix of -EncodedCommand, in - -- or / spelling); a gh behind an argument-appending runner (xargs,
+ *   parallel, find -exec, fd, entr: what follows gh is not what the scan sees). The gate in front of both tiers is mentionsGh (gh also spelled `g""h`, `g\<LF>h`) or ghGlued (an
  *   expansion, glob or brace token near a gh group and verb); a command through neither is not parsed. These rules
  *   were hardened against a differential fuzz: commands built from contexts x spellings of gh were run under real
  *   bash and PowerShell 7 with a stub gh, and every one in which the stub ran had to block.
@@ -696,10 +697,14 @@ const HOSTS = ["bash", "sh", "zsh", "dash", "ksh", "fish", "pwsh", "powershell",
 const STDIN_HOSTS = ["bash", "sh", "zsh", "dash", "ksh", "fish", "pwsh", "powershell", "cmd", "iex", "invoke-expression", "python", "python3", "py", "node", "perl", "ruby", "php", "lua", "source", "."];
 const STRING_HOSTS = ["eval", "iex", "invoke-expression", "invoke-command", "icm", "start-process", "saps", "ssh"];
 const STRING_FLAG = /^(?:-[A-Za-z]*[ceS]|-(?:c|e|ec|command|encodedcommand)|[/][ck])$/i;
+// PowerShell takes any prefix of -EncodedCommand (min -e) and the alias -ec, in -, -- or / spelling, case-insensitive, with an optional :value.
+const isEncArg = (t) => { const m = /^(?:--?|[/])([A-Za-z]+)(?:[:=].*)?$/.exec(t); const n = m === null ? "" : m[1].toLowerCase(); return n === "ec" || (n !== "" && n.charAt(0) === "e" && "encodedcommand".indexOf(n) === 0); };
+// Runners that append arguments (stdin, -a file, {}) to the command they start: a gh behind one cannot be judged at all.
+const APPENDERS = ["xargs", "parallel", "find", "fd", "fdfind", "entr", "rush"];
 const KEYWORDS = ["if", "then", "else", "elif", "do", "while", "until", "!", "{"];
 const PS_PAREN = ["if", "elseif", "while", "until", "foreach", "for", "switch"];
 const ALIAS_CMDS = ["alias", "set-alias", "new-alias", "sal", "nal"];
-const WRAPPERS = { env: "uCS", sudo: "ughprtCDUT", doas: "uC", xargs: "IJnLPsdEa", timeout: "sk", nice: "n", nohup: "", command: "",
+const WRAPPERS = { env: "uCS", sudo: "ughprtCDUT", doas: "uC", timeout: "sk", nice: "n", nohup: "", command: "",
   builtin: "", exec: "a", setsid: "", stdbuf: "ioe", ionice: "cnp", unbuffer: "", time: "" };
 const GH_RE = /(?:^|[^A-Za-z0-9_-])gh(?:\.exe)?(?![A-Za-z0-9_-])/i;
 // A command that mentions gh, also in the spellings the shell would unquote (`g""h`, `g\h`, ps `g``h`): the gate that decides
@@ -720,7 +725,8 @@ const mentionsGh = (s) => {
 const RISKY = /[$`*?[{(]/;
 const GH_VERBS = ["create", "new", "edit", "comment", "close", "reopen", "review", "merge", "revert"];
 function ghGlued(s) {
-  if (/(?:^|\s)-e(?:nc(?:odedcommand)?|c)?\s+[A-Za-z0-9+/=]{16,}/i.test(s)) return true;
+  const et = s.split(/\s+/);
+  for (let i = 0; i < et.length; i++) if ((isEncArg(et[i]) && /^[A-Za-z0-9+/=]{16,}$/.test(et[i + 1] || "")) || (/[:=]/.test(et[i]) && isEncArg(et[i].replace(/[:=].*/, "")) && /^[A-Za-z0-9+/=]{16,}$/.test(et[i].replace(/^[^:=]*[:=]/, "")))) return true;
   const tk = s.toLowerCase().split(/\s+/);
   for (let i = 0; i < tk.length; i++) {
     if (!RISKY.test(tk[i])) continue;
@@ -1109,11 +1115,15 @@ function analyzeB(segs, ctx) {
       continue;
     }
     const args = ws.slice(ci + 1);
+    if (!isDyn(w0) && APPENDERS.indexOf(cmd) >= 0) {
+      if (ws.slice(ci + 1).some((w) => !isDyn(w) && ghish(lit(w)))) ctx.problems.push(cmd + " appends arguments to the command it runs, so a gh behind it cannot be judged; call gh directly");
+      continue;
+    }
     if (!isDyn(w0) && HOSTS.indexOf(cmd) >= 0) {
       let gh = false;
       args.forEach((w, x) => {
         const prev = x > 0 && !isDyn(args[x - 1]) ? lit(args[x - 1]) : "";
-        if (!isDyn(w) && /^-(e|ec|encodedcommand)$/i.test(lit(w)) && /^(pwsh|powershell)$/.test(cmd)) {
+        if (!isDyn(w) && isEncArg(lit(w)) && /^(pwsh|powershell)$/.test(cmd)) {
           ctx.problems.push(cmd + " -EncodedCommand hides the command from the hook; call gh directly");
         }
         if (isDyn(w)) {

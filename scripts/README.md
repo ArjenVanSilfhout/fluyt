@@ -58,7 +58,8 @@ callers, one implementation:
     may hold no double-quote character of either kind, because Windows PowerShell 5.1 strips an
     embedded double quote from a native command line (checked on 5.1 and 7.7); put such a title in
     bash, or in a file. No newline, operator, redirection, pipe, comment, continuation, variable,
-    substitution, heredoc, here-string, call operator or wrapper (`env`, `sudo`, `xargs` ...).
+    substitution, heredoc, here-string, call operator or wrapper (`env`, `sudo`, `xargs` ...). The
+    PowerShell `&` call operator before gh therefore blocks by design.
     **Published text must come from a file** (`--body-file` / `-F`, `--notes-file`, `gh pr create
     --template`, `--recover`, `gh api --input`, `gh api -F key=@file`) named by a **literal path**:
     not `-`, an existing regular file, valid UTF-8 (one BOM is stripped; a NUL byte or invalid
@@ -82,7 +83,8 @@ callers, one implementation:
     `flock -c`, `python -c`, `node -e`, `eval`, `iex`, `pwsh -Command`, a pipe or heredoc into a
     shell), a script file run in a call that also holds a gh command as text, a variable, array,
     alias or git alias that holds a gh command, a command word built from an expansion, glob or brace
-    (`g$()h`, `g?`), `<( )` process substitution, `-EncodedCommand`, and parameter or arithmetic
+    (`g$()h`, `g?`), `<( )` process substitution, `-EncodedCommand` (any prefix, `-`, `--` or `/` spelling), a gh behind
+    an argument-appending runner (`xargs`, `parallel`, `find -exec`, `fd`, `entr`), and parameter or arithmetic
     expansions the lexer cannot follow also block.
 
   **When blocked: write the text to a file in an earlier call** (the Write tool, or a command that
@@ -134,7 +136,7 @@ callers, one implementation:
 - **A `gh` word that is not spelled `gh`** and that no refusal above recognises: a function or alias
   from a shell profile, a wrapper command this scan does not list. Closed cheaply: `g$()h`,
   `g${x}h`, `g?`, `{g,x}h`, a command word built from an expansion followed by a gh group and verb,
-  and `-EncodedCommand`. A hand-written lexer finds `gh` in compound commands, so a construct it
+  and `-EncodedCommand` in any prefix spelling. A hand-written lexer finds `gh` in compound commands, so a construct it
   mis-lexes can hide one.
 - **Text the call does not carry:** `--fill`, `--fill-first`, `--fill-verbose`, `--generate-notes`,
   `--notes-from-tag` (commits and tags the push already published), and an editor or browser form
@@ -143,7 +145,8 @@ callers, one implementation:
   Markdown escape or an HTML comment inside the term, combining marks, a lookalike letter from
   another script). The audit mode reads the same stored text, so it shares the gap.
 - **Names and attachments:** branch, label, milestone, assignee and template names, `gh repo
-  rename`, the bytes of an `--attach`ed file, release assets and `issue artifact` files.
+  rename`, and the other names gh publishes (release tags, repo, fork and topic names, branch heads,
+  `gh issue develop --name`), the bytes of an `--attach`ed file, release assets and `issue artifact` files.
 - **A body file changed after the hook read it** by *another* process before gh reads it (a race
   the single-command form removes only for the command itself).
 - **A relative path is resolved against the `cwd` the hook is given.** If the tool's shell has a

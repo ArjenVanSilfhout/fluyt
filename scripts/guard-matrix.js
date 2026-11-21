@@ -1457,7 +1457,7 @@ gb("DENY", "{ gh issue comment 5 --body-file clean.md; }", "in a brace group", M
 gb("DENY", "if true; then gh issue comment 5 --body-file clean.md; fi", "after then", MB);
 gb("DENY", "for i in 1 2; do gh issue comment $i --body-file clean.md; done", "after do", MB);
 gb("DENY", "u=$(gh issue create --title t --body-file clean.md)", "inside a command substitution", MB);
-gb("DENY", "find . -name x -exec gh issue comment 1 --body-file clean.md ;", "as a find -exec command", MB);
+gb("DENY", "find . -name x -exec gh issue comment 1 --body-file clean.md ;", "as a find -exec command", { msg: "appends arguments to the command it runs" });
 gb("DENY", "\"gh\" \"ISSUE\" \"Create\" -t x -F clean.md", "the command and verb quoted, the verb in capitals", MB);
 gb("DENY", "/usr/bin/gh issue create -t x -F clean.md", "a full path to gh", MB);
 gb("DENY", "command gh issue create -t x -F clean.md", "behind `command`", MB);
@@ -1486,7 +1486,31 @@ gb("DENY", "echo " + TA + " > f.md; gh issue comment 1 -F f.md; echo clean > f.m
 gb("DENY", "gh issue comment 1 --body-file <(echo " + TA + ")", "process substitution as the file", MB);
 gb("DENY", "cat <(gh issue comment 1 -b " + TA + ")", "a gh command inside a process substitution", MB);
 gb("DENY", "cat <<EOF | gh issue comment 1 -F -" + NL + "bowsprit-" + BSL + NL + "ledger" + NL + "EOF", "BYPASS 10 - an unquoted heredoc with a backslash-newline joining the term", MB);
-gb("DENY", "echo " + TA + " | xargs -I{} gh issue comment 1 -b {}", "BYPASS 11 - xargs -I{}", MB);
+gb("DENY", "echo " + TA + " | xargs -I{} gh issue comment 1 -b {}", "BYPASS 11 - xargs -I{}", { msg: "appends arguments to the command it runs" });
+const XB = [
+  ["echo \"issue comment 1 --body " + TA + "\" | xargs gh", "xargs appends its stdin to a bare gh: the words after gh are not the words the scan sees"],
+  ["xargs -a args.txt gh", "xargs -a appends a file's words to a bare gh"],
+  ["echo \"-f body=" + TA + "\" | xargs gh api repos/o/r/issues/1/comments", "xargs behind a method-less gh api, which reads as a GET"],
+  ["xargs -n 100 gh", "an xargs option does not make the gh behind it judgeable"],
+  ["xargs gh api repos/o/r/issues/1/comments < args.txt", "xargs fed from a redirect"],
+  ["ls | sudo xargs gh", "xargs behind a wrapper"],
+  ["ls | xargs env gh", "xargs then a wrapper then gh"],
+  ["xargs sh -c 'gh issue comment 1 --body " + TA + "'", "xargs running a shell string that mentions gh"],
+  ["cat l | parallel gh pr view", "parallel appends its arguments"],
+  ["find . -execdir gh pr list ;", "find -execdir"],
+  ["find . -ok gh pr list ;", "find -ok"],
+  ["fd -x gh pr view", "fd -x appends the match"],
+  ["ls | entr gh pr list", "entr runs the command it is given"],
+];
+XB.forEach((r) => {
+  gb("DENY", r[0], "BYPASS 17 - an argument-appending runner: " + r[1] + "; fails if a gh behind a runner is judged as read-only", { msg: "appends arguments to the command it runs" });
+});
+gp("DENY", "xargs -a args.txt gh", "BYPASS 17 - xargs on the PowerShell entry; fails if xargs is again treated as a transparent wrapper", { msg: "appends arguments to the command it runs" });
+gp("DENY", "echo \"-f body=" + TA + "\" | xargs gh api repos/o/r/issues/1/comments", "BYPASS 17 - xargs behind a method-less gh api on the PowerShell entry", { msg: "appends arguments to the command it runs" });
+gb("ALLOW", "gh pr view 1 | head", "a read piped to head: gh at the head of a pipeline is not behind a runner", { dl: "missing" });
+gb("ALLOW", "git status && gh pr list", "a read after a git command", { dl: "missing" });
+gb("ALLOW", "gh issue list | xargs echo", "xargs downstream of gh runs another command; fails if any xargs in the call blocks", { dl: "missing" });
+gp("ALLOW", "gh pr view 1 | Select-Object -First 3", "a read piped to a cmdlet on the PowerShell entry", { dl: "missing" });
 gb("DENY", "env -S 'gh issue comment 1 -b " + TA + "'", "BYPASS 14 - env -S with a command string", { msg: "a wrapper option hides a command string" });
 gb("DENY", "sudo -s 'gh issue comment 1 -b " + TA + "'", "BYPASS 14 - sudo -s with a command string", { msg: "a command string that mentions gh" });
 gb("DENY", "tmux new 'gh issue comment 1 -b " + TA + "'", "BYPASS 14 - tmux", { msg: "a command string that mentions gh" });
@@ -1596,6 +1620,14 @@ gp("DENY", "& (\"g\"+\"h\") issue comment 1 -b '" + TA + "'", "the same with dou
 gp("DENY", "pwsh -Command \"gh issue comment 1 -b '" + TA + "'\"", "BYPASS 14 - pwsh -Command with a string", { msg: "a command string that mentions gh" });
 gp("DENY", "iex \"gh issue comment 1 -b '" + TA + "'\"", "BYPASS 14 - Invoke-Expression", { msg: "a command string that mentions gh" });
 gp("DENY", "pwsh -EncodedCommand Z2ggaXNzdWUgY29tbWVudCAxIC1iIHg=", "BYPASS 14 - an encoded command (no gh word anywhere: the shape of the command is what is refused)", { msg: "-EncodedCommand hides the command" });
+const ENC = Buffer.from("gh issue comment 1 --body " + TA, "utf16le").toString("base64");
+["-enc", "-en", "-e", "-ec", "-enco", "-EncodedC", "-ENC", "--enc", "/enc", "/e", "-encodedcommand", "-NoProfile -en", "-nop -w hidden -enc"].forEach((f) => {
+  ["pwsh", "pwsh.exe", "powershell"].forEach((c) => {
+    gb("DENY", c + " " + f + " " + ENC, "BYPASS 16 - an abbreviated or re-spelled -EncodedCommand (" + c + " " + f + "); fails if only the full spellings are refused", { msg: "-EncodedCommand hides the command" });
+    gp("DENY", c + " " + f + " " + ENC, "BYPASS 16 - the same on the PowerShell entry (" + c + " " + f + ")", { msg: "-EncodedCommand hides the command" });
+  });
+});
+gp("DENY", "powershell -enc:" + ENC, "BYPASS 16 - the attached -enc:<value> form", { msg: "-EncodedCommand hides the command" });
 gp("DENY", "Start-Process gh -ArgumentList 'issue create -b " + TA + "'", "Start-Process: the argument string is one word, which no table places as a command", { msg: "a command this scan does not know" });
 gp("DENY", "$u = gh issue create -t x -b '" + TA + "'", "an assignment from a gh call", MB);
 gp("DENY", "if (Test-Path x) { gh issue create -b '" + TA + "' }", "gh inside a script block", MB);
