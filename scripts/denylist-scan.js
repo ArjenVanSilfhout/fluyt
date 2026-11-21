@@ -47,8 +47,8 @@
  *   as text; a variable, array, alias or git alias that holds a gh command; a command word built from an expansion,
  *   glob or brace, or handed such a string; a gh followed by an expansion (a function forwarding "$@"); `<( )` and
  *   `>( )`; parameter and arithmetic expansions the lexer cannot follow; a call that names pwsh/powershell and carries an
- *   encoded-flag token (any prefix of -EncodedCommand, in - -- or / spelling; one text-level rule checked before the gate,
- *   whatever follows the flag; the 2026-11-21 decision: the hook guards against accidents, deliberate disguise is a known
+ *   encoded-flag token after that word in the same segment (any prefix of -EncodedCommand, in - -- or / spelling; one
+ *   text-level rule checked before the gate, whatever follows the flag; the 2026-11-21 decision: the hook guards against accidents, deliberate disguise is a known
  *   gap listed in scripts/README.md); a gh behind an argument-appending runner (xargs,
  *   parallel, find -exec, fd, entr: what follows gh is not what the scan sees).
  *   The gate in front of both tiers is mentionsGh (gh also spelled `g""h`, `g\<LF>h`) or ghGlued (an
@@ -701,13 +701,18 @@ const STDIN_HOSTS = ["bash", "sh", "zsh", "dash", "ksh", "fish", "pwsh", "powers
 const STRING_HOSTS = ["eval", "iex", "invoke-expression", "invoke-command", "icm", "start-process", "saps", "ssh"];
 const STRING_FLAG = /^(?:-[A-Za-z]*[ceS]|-(?:c|e|ec|command|encodedcommand)|[/][ck])$/i;
 // One text-level rule (the 2026-11-21 decision: accidents only): the call names pwsh/powershell anywhere (quoted,
-// nested in cmd /c, sh -c, wsl, start, Start-Process) AND carries an encoded-flag token anywhere (any prefix of
-// -EncodedCommand, min -e, plus -ec, in -, -- or / spelling, quotes and a :value or =value suffix ignored): blocked
-// whatever follows the flag.
+// nested in cmd /c, sh -c, wsl, start, Start-Process) AND carries an encoded-flag token AFTER that word in the same
+// segment (any prefix of -EncodedCommand, min -e, plus -ec, in -, -- or / spelling, quotes and a :value or =value
+// suffix ignored): blocked whatever follows the flag. A segment ends at ; | && || or a newline, quoted or not; a
+// backslash or backtick before a newline is a continuation, not an end. Residue: a flag after the word by coincidence
+// (a commit message "pwsh gate -e flag") blocks.
 const PS_RE = /(?:^|[^A-Za-z0-9_-])(?:pwsh|powershell)(?:\.exe)?(?![A-Za-z0-9_-])/i;
 const isEncArg = (t) => { const m = /^(?:--?|[/])([A-Za-z]+)(?:[:=].*)?$/.exec(t); const n = m === null ? "" : m[1].toLowerCase(); return n === "ec" || (n !== "" && n.charAt(0) === "e" && "encodedcommand".indexOf(n) === 0); };
 const QUOTES_RE = /^[\\"'`\u2018-\u201f]+|[\\"'`\u2018-\u201f]+$/g;
-const encodedPs = (s) => PS_RE.test(s) && s.split(/[\s,;()]+/).some((t) => isEncArg(t.replace(QUOTES_RE, "")));
+const encodedPs = (s) => s.replace(/[\x5c`]\r?\n/g, " ").split(/;|\||&&|\r?\n/).some((seg) => {
+  const m = PS_RE.exec(seg);
+  return m !== null && seg.slice(m.index + m[0].length).split(/[\s,;()]+/).some((t) => isEncArg(t.replace(QUOTES_RE, "")));
+});
 // Runners that append arguments (stdin, -a file, {}) to the command they start: a gh behind one cannot be judged at all.
 const APPENDERS = ["xargs", "parallel", "find", "fd", "fdfind", "entr", "rush"];
 const KEYWORDS = ["if", "then", "else", "elif", "do", "while", "until", "!", "{"];

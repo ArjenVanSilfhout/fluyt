@@ -37,17 +37,17 @@ repo.
 
 ## gh-publish denylist scan
 
-Issues, PR descriptions, comments, release notes and milestones never pass through `git push`, so the
-pre-push hook cannot see them. `denylist-scan.js` checks that text against the **same denylist file**
-(`DENYLIST_FILE`, else `${XDG_CONFIG_HOME:-$HOME/.config}/denylist/terms.txt`; same parsing). Three
-callers, one implementation:
+Issues, PR descriptions, comments, release notes and milestones never pass through `git push`, so
+the pre-push hook cannot see them. `denylist-scan.js` checks that text against the **same denylist
+file** (`DENYLIST_FILE`, else `${XDG_CONFIG_HOME:-$HOME/.config}/denylist/terms.txt`; same parsing).
+Three callers, one implementation:
 
 - **The hook** (`.claude/settings.json`, PreToolUse, one entry for the Bash tool and one for the
-  PowerShell tool). **It does not interpret shell.** Four fix rounds on a hook that modelled heredocs,
-  pipes, `printf`, redirections, expansions and PowerShell expressions kept finding one more way to
-  get a term through, so published text is accepted only from a form whose value is certain without
-  interpreting anything, and every other publishing form is refused. Each tool call is judged in one
-  of two tiers:
+  PowerShell tool). **It does not interpret shell.** Four fix rounds on a hook that modelled
+  heredocs, pipes, `printf`, redirections, expansions and PowerShell expressions kept finding one
+  more way to get a term through, so published text is accepted only from a form whose value is
+  certain without interpreting anything, and every other publishing form is refused. Each tool call
+  is judged in one of two tiers:
 
   - **Accepted: the strict form.** The whole call is exactly **one `gh` invocation**, optionally
     after one `cd <dir>` joined with `&&` or `;`, written with literal words only: bare words of
@@ -69,31 +69,36 @@ callers, one implementation:
     title-like fields may be plain literals** and are scanned: `--title`/`-t`, `--subject`,
     `--comment`/`-c` (close, reopen), `--description`/`-d`, `--homepage`, the alt text of
     `--attach 'file#alt'`, and `gh api -f`/`-F key=value` fields (so `gh api graphql -f query='...'`
-    reads keep working). **An inline body or notes text is refused, even when clean:** `--body`/`-b`,
-    `--notes`/`-n`, and a `gh api` field named `body` or `notes`. JSON inputs (`--input`,
-    `--recover`) are scanned raw and as decoded strings; text that is not valid JSON blocks.
-    Because the call is one command, nothing in it can write the file the hook reads.
+    reads keep working). **An inline body or notes text is refused, even when clean:**
+    `--body`/`-b`, `--notes`/`-n`, and a `gh api` field named `body` or `notes`. JSON inputs
+    (`--input`, `--recover`) are scanned raw and as decoded strings; text that is not valid JSON
+    blocks. Because the call is one command, nothing in it can write the file the hook reads.
   - **Everything else that mentions `gh`.** The shell parser is used only to *find* `gh`
     invocations inside a compound command, never to resolve text. No `gh` invocation found (a commit
-    message that mentions gh, `grep gh docs/`): allowed. Every `gh` invocation found is read-only and
-    recognised (`cd x; gh pr view 9 --json state --jq .state; gh run list | head`): allowed. **Any
-    `gh` invocation that publishes, is unknown or cannot be parsed blocks** with "a publishing gh
-    command must be the only command in the call, in the strict form". A command that hands a
-    command STRING that mentions gh to a host (`bash -c`, `env -S`, `sudo -s`, `ssh`, `tmux`,
-    `flock -c`, `python -c`, `node -e`, `eval`, `iex`, `pwsh -Command`, a pipe or heredoc into a
-    shell), a script file run in a call that also holds a gh command as text, a variable, array,
-    alias or git alias that holds a gh command, a command word built from an expansion, glob or brace
-    (`g$()h`, `g?`), `<( )` process substitution, a gh behind an argument-appending runner
-    (`xargs`, `parallel`, `find -exec`, `fd`, `entr`), and parameter or arithmetic expansions the
-    lexer cannot follow also block.
+    message that mentions gh, `grep gh docs/`): allowed. Every `gh` invocation found is read-only
+    and recognised (`cd x; gh pr view 9 --json state --jq .state; gh run list | head`): allowed.
+    **Any `gh` invocation that publishes, is unknown or cannot be parsed blocks** with "a publishing
+    gh command must be the only command in the call, in the strict form". A command that hands a
+    command STRING that mentions gh to a host (`bash -c`, `env -S`, `sudo -s`, `ssh`, `tmux`, `flock
+    -c`, `python -c`, `node -e`, `eval`, `iex`, `pwsh -Command`, a pipe or heredoc into a shell), a
+    script file run in a call that also holds a gh command as text, a variable, array, alias or git
+    alias that holds a gh command, a command word built from an expansion, glob or brace (`g$()h`,
+    `g?`), `<( )` process substitution, a gh behind an argument-appending runner (`xargs`,
+    `parallel`, `find -exec`, `fd`, `entr`), and parameter or arithmetic expansions the lexer cannot
+    follow also block.
   - **Encoded PowerShell, checked first, before any `gh` test.** One text-level rule: a call whose
     text names `pwsh`, `powershell` (or `.exe`) anywhere (inside quotes, `cmd /c`, `sh -c`, `wsl`,
-    `start`, `Start-Process -ArgumentList`) **and** carries a token that is an encoded flag blocks,
-    whatever follows the flag (a literal payload, `$E`, `$(cat f)`, `(Get-Content f)`). An encoded
-    flag is any prefix of `-EncodedCommand` from `-e` up, or `-ec`, in `-`, `--` or `/` spelling,
-    case-insensitive, quotes and a `:value` or `=value` suffix ignored. A call that does not name
-    PowerShell is never affected (`grep -e x`, `sed -e s/a/b/`, `node -e`). **Known over-block:** a
-    commit message or grep pattern that names `pwsh` and also holds an `-e` token blocks.
+    `start`, `Start-Process -ArgumentList`) **and** carries a token that is an encoded flag
+    **after that word, in the same segment**, blocks, whatever follows the flag (a literal payload,
+    `$E`, `$(cat f)`, `(Get-Content f)`). An encoded flag is any prefix of `-EncodedCommand` from
+    `-e` up, or `-ec`, in `-`, `--` or `/` spelling, case-insensitive, quotes and a `:value` or
+    `=value` suffix ignored. A segment ends at `;`, `|`, `&&`, `||` or a newline (quoted or not); a
+    backslash or backtick before a newline is a line continuation, not an end. A call that does not
+    name PowerShell, or whose `-e` belongs to another program or segment, is never affected
+    (`grep -E "pwsh|powershell" f`, `sed -e s/a/b/`, `node -e "...pwsh..."`, `echo -e`).
+    **Known over-block:** an encoded-flag token after a `pwsh`/`powershell` word in the same
+    segment blocks whichever program owns it (`git commit -m "fix: pwsh gate -e flag"`,
+    `python -c "print('pwsh -e')"`); reword, or write the script to a file in an earlier call.
 
   **When blocked: write the text to a file in an earlier call** (the Write tool, or a command that
   only writes the file), then run the publishing `gh` command **alone**, with the file path as a
@@ -126,13 +131,13 @@ callers, one implementation:
   inner 6 s so the inner bound always fires first. Commands that do not mention `gh` are not parsed
   and pass silently.
 - **`publish-release.ps1`** runs the same scan on the title and the notes file before anything else
-  (also under `-DryRun`) and aborts through its usual error path. A tool hook only sees that script's
-  call, never the `gh release create` inside it.
+  (also under `-DryRun`) and aborts through its usual error path. A tool hook only sees that
+  script's call, never the `gh release create` inside it.
 - **Audit mode**, for what is already published (and web-UI edits, which no hook sees):
   `node scripts/denylist-scan.js --audit [--repo OWNER/REPO]` pulls issues, PRs, comments, reviews,
   review comments, releases, milestones and labels through read-only `gh api` and prints
-  `HIT <kind> <id> <field> line N`, never the text. Exit 1 on a hit or any fetch error. Run it before
-  a release.
+  `HIT <kind> <id> <field> line N`, never the text. Exit 1 on a hit or any fetch error. Run it
+  before a release.
 
 **Threat model.** The hook guards against an agent leaking a term **by mistake**: a call that
 names `gh` is held to the narrow forms above. Deliberate obfuscation is out of scope (the 2026-11-21
@@ -174,13 +179,13 @@ is the encoded-PowerShell rule above.
   (`/c` becomes `C:/`), which can change a title's text but not add one.
 
 `scripts/guard-matrix.js` scores both hook entries from the saved commands on disk with a fixture
-denylist, including the must-block controls (denylist missing, denylist empty, scanner script absent, a
-scanner that never returns, a PATH without `timeout`/`node`) under a per-row time limit, so a hang
-scores as a failure instead of stalling the run.
+denylist, including the must-block controls (denylist missing, denylist empty, scanner script
+absent, a scanner that never returns, a PATH without `timeout`/`node`) under a per-row time limit,
+so a hang scores as a failure instead of stalling the run.
 
 **Second machine.** The hook lives in committed settings, so a machine without the denylist file is
-**blocked from all gh publishing** in this repo (reads such as `gh pr view` still pass). Provision the
-file as in the pre-push section above (`mkdir -p ~/.config/denylist`, one term per line), or point
-`DENYLIST_FILE` at it. Nothing else is needed; the hook finds the script through `$CLAUDE_PROJECT_DIR`
-(unset, the session's working directory), so the session must be rooted at this repo - otherwise this
-settings file is not loaded at all.
+**blocked from all gh publishing** in this repo (reads such as `gh pr view` still pass). Provision
+the file as in the pre-push section above (`mkdir -p ~/.config/denylist`, one term per line), or
+point `DENYLIST_FILE` at it. Nothing else is needed; the hook finds the script through
+`$CLAUDE_PROJECT_DIR` (unset, the session's working directory), so the session must be rooted at
+this repo - otherwise this settings file is not loaded at all.

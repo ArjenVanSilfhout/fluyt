@@ -1669,6 +1669,33 @@ gp("DENY", "Start-Process pwsh -ArgumentList \"-e " + ENC + "\"", "encoded-flag 
   gb("ALLOW", c, "encoded-flag rule: no pwsh/powershell word, so an -e token is an ordinary option; fails if the rule keys on the token or a base64-shaped word alone", { dl: "missing" });
   gp("ALLOW", c, "encoded-flag rule (PowerShell entry): no pwsh/powershell word", { dl: "missing" });
 });
+// A pwsh/powershell word BEFORE the flag, or in another segment, is not an encoded command: the flag must follow the word in one segment.
+[
+  "grep -E \"pwsh|powershell\" docs/x.md",
+  "grep -rn -e pwsh scripts",
+  "sed -e 's/pwsh/pwsh7/' f.md",
+  "node -e \"console.log('pwsh')\"",
+  "perl -e 'print \"powershell\"'",
+  "echo -e \"pwsh ok\"",
+  "echo pwsh; ls -e x",
+  "echo pwsh" + LF + "sed -e s/a/b/ f"
+].forEach((c) => {
+  gb("ALLOW", c, "encoded-flag rule: the -e belongs to another program or segment (it does not follow the pwsh word in one segment); fails if the rule fires on the two words in any order", { dl: "missing" });
+  gp("ALLOW", c, "encoded-flag rule (PowerShell entry): the -e does not follow the pwsh word in one segment", { dl: "missing" });
+});
+// Segment ends (; | && || newline) do not hide a real encoded command from the rule, and a coincidence in one segment still blocks (documented residue).
+[
+  ["echo x; pwsh -e " + ENC, "after ;"],
+  ["echo x && pwsh -e " + ENC, "after &&"],
+  ["echo x || pwsh -e " + ENC, "after ||"],
+  ["echo x | pwsh -e " + ENC, "after a pipe"],
+  ["echo x" + LF + "pwsh -e " + ENC, "after a newline"],
+  ["git commit -m \"fix: pwsh gate -e flag\"", "RESIDUE: the flag follows the pwsh word in one segment by coincidence"],
+  ["python -c \"print('pwsh -e')\"", "RESIDUE: the same inside a string argument"]
+].forEach((r) => {
+  gb("DENY", r[0], "encoded-flag rule: " + r[1], ENCM);
+  gp("DENY", r[0], "encoded-flag rule (PowerShell entry): " + r[1], ENCM);
+});
 gp("DENY", "Start-Process gh -ArgumentList 'issue create -b " + TA + "'", "Start-Process: the argument string is one word, which no table places as a command", { msg: "a command this scan does not know" });
 gp("DENY", "$u = gh issue create -t x -b '" + TA + "'", "an assignment from a gh call", MB);
 gp("DENY", "if (Test-Path x) { gh issue create -b '" + TA + "' }", "gh inside a script block", MB);
